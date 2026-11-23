@@ -3,13 +3,47 @@
     {
       "name": "single_part_placed_in_target_bin",
       "steps": [
-        { "write": { "PRG_TestPick.xActive": true, "PRG_TestPick.xBeltRun": true } },
-        { "waitMs": 2500 },
-        { "write": { "PRG_TestPick.fbSeq.xRun": true } },
-        { "waitMs": 8000 },
-        { "expect": { "PRG_TestPick.fbSeq.eStep": "E_PickStep.WaitPart" } },
-        { "write": { "PRG_TestPick.usiInjClass": 1, "PRG_TestPick.eInjQuality": 1, "PRG_TestPick.lrInjX": 1000, "PRG_TestPick.xInject": true } },
-        { "waitMs": 16000 },
+        {
+          "write": {
+            "GVL_Config.xCellEnabled": false
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
+            "PRG_TestPick.xActive": true,
+            "PRG_TestPick.xBeltRun": true
+          }
+        },
+        {
+          "waitMs": 2500
+        },
+        {
+          "write": {
+            "PRG_TestPick.fbSeq.xRun": true
+          }
+        },
+        {
+          "waitMs": 8000
+        },
+        {
+          "expect": {
+            "PRG_TestPick.fbSeq.eStep": "E_PickStep.WaitPart"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPick.usiInjClass": 1,
+            "PRG_TestPick.eInjQuality": 1,
+            "PRG_TestPick.lrInjX": 1000,
+            "PRG_TestPick.xInject": true
+          }
+        },
+        {
+          "waitMs": 16000
+        },
         {
           "expect": {
             "PRG_TestPick.fbSeq.udiPlaced": 1,
@@ -24,18 +58,45 @@
     {
       "name": "run_false_finishes_then_idles",
       "steps": [
-        { "write": { "PRG_TestPick.fbSeq.xRun": false } },
-        { "waitMs": 8000 },
-        { "expect": { "PRG_TestPick.fbSeq.eStep": "E_PickStep.Idle", "PRG_TestPick.fbSeq.xIdleAtHome": true } }
+        {
+          "write": {
+            "PRG_TestPick.fbSeq.xRun": false
+          }
+        },
+        {
+          "waitMs": 8000
+        },
+        {
+          "expect": {
+            "PRG_TestPick.fbSeq.eStep": "E_PickStep.Idle",
+            "PRG_TestPick.fbSeq.xIdleAtHome": true
+          }
+        }
       ]
     },
     {
       "name": "vacuum_lost_in_transfer_stops_cell",
       "steps": [
-        { "write": { "PRG_TestPick.xDropOnTransfer": true, "PRG_TestPick.fbSeq.xRun": true } },
-        { "waitMs": 8000 },
-        { "write": { "PRG_TestPick.usiInjClass": 0, "PRG_TestPick.eInjQuality": 1, "PRG_TestPick.lrInjX": 1000, "PRG_TestPick.xInject": true } },
-        { "waitMs": 16000 },
+        {
+          "write": {
+            "PRG_TestPick.xDropOnTransfer": true,
+            "PRG_TestPick.fbSeq.xRun": true
+          }
+        },
+        {
+          "waitMs": 8000
+        },
+        {
+          "write": {
+            "PRG_TestPick.usiInjClass": 0,
+            "PRG_TestPick.eInjQuality": 1,
+            "PRG_TestPick.lrInjX": 1000,
+            "PRG_TestPick.xInject": true
+          }
+        },
+        {
+          "waitMs": 16000
+        },
         {
           "expect": {
             "PRG_TestPick.fbSeq.eStep": "E_PickStep.Error",
@@ -48,13 +109,41 @@
     {
       "name": "abort_keeps_vacuum",
       "steps": [
-        { "write": { "PRG_TestPick.xDropOnTransfer": false, "PRG_TestPick.fbSeq.xRun": false, "PRG_TestPick.xResetSeq": true } },
-        { "waitMs": 1000 },
-        { "expect": { "PRG_TestPick.fbSeq.eStep": "E_PickStep.Idle" } },
-        { "write": { "PRG_TestPick.xAbortOnLift": true, "PRG_TestPick.fbSeq.xRun": true } },
-        { "waitMs": 8000 },
-        { "write": { "PRG_TestPick.usiInjClass": 2, "PRG_TestPick.eInjQuality": 1, "PRG_TestPick.lrInjX": 1000, "PRG_TestPick.xInject": true } },
-        { "waitMs": 12000 },
+        {
+          "write": {
+            "PRG_TestPick.xDropOnTransfer": false,
+            "PRG_TestPick.fbSeq.xRun": false,
+            "PRG_TestPick.xResetSeq": true
+          }
+        },
+        {
+          "waitMs": 1000
+        },
+        {
+          "expect": {
+            "PRG_TestPick.fbSeq.eStep": "E_PickStep.Idle"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPick.xAbortOnLift": true,
+            "PRG_TestPick.fbSeq.xRun": true
+          }
+        },
+        {
+          "waitMs": 8000
+        },
+        {
+          "write": {
+            "PRG_TestPick.usiInjClass": 2,
+            "PRG_TestPick.eInjQuality": 1,
+            "PRG_TestPick.lrInjX": 1000,
+            "PRG_TestPick.xInject": true
+          }
+        },
+        {
+          "waitMs": 12000
+        },
         {
           "expect": {
             "PRG_TestPick.fbSeq.eStep": "E_PickStep.Aborted",
@@ -62,11 +151,29 @@
             "PRG_TestPick.fbRobot.xMoving": false
           }
         },
-        { "write": { "PRG_TestPick.xAbortOnLift": false, "PRG_TestPick.fbSeq.xRun": false, "PRG_TestPick.xResetSeq": true } },
-        { "waitMs": 500 },
-        { "write": { "PRG_TestPick.xActive": false } },
-        { "waitMs": 200 },
-        { "expect": { "PRG_TestPick.xActive": false } }
+        {
+          "write": {
+            "PRG_TestPick.xAbortOnLift": false,
+            "PRG_TestPick.fbSeq.xRun": false,
+            "PRG_TestPick.xResetSeq": true
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "write": {
+            "PRG_TestPick.xActive": false
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestPick.xActive": false
+          }
+        }
       ]
     }
   ]

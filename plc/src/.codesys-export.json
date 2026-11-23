@@ -1,7 +1,8 @@
 {
   "project": "C:\\dev\\codesys-ai-industrial-robot-control\\plc\\RobotCell.project",
-  "exported": "2026-11-23T17:26:01.432Z",
+  "exported": "2026-11-23T17:45:38.739Z",
   "files": [
+    "Comm/FB_BridgeWatchdog.st",
     "Comm/FB_MessageIntake.st",
     "Comm/GVL_Bridge.st",
     "Comm/GVL_Hmi.st",
@@ -69,10 +70,12 @@
     "Process/FB_PickSequence/NextStep.st",
     "Process/FB_PickSequence/Request.st",
     "Process/FB_PickSequence/TrackedPose.st",
+    "Process/FB_SortingCell.st",
     "Process/F_SelectBin.st",
     "Programs/PRG_Comm.st",
     "Programs/PRG_Main.st",
     "Tests/PRG_TestAlarms.st",
+    "Tests/PRG_TestCell.st",
     "Tests/PRG_TestEquipment.st",
     "Tests/PRG_TestJointMonitor.st",
     "Tests/PRG_TestMotion.st",

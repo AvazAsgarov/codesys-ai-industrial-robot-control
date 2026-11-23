@@ -1,4 +1,5 @@
 // Alarm definitions: class and operator text for every E_AlarmId.
+// Critical -> PackML Abort, Error -> Stop, Warning -> no state change (BinFull suspends the unit).
 {attribute 'qualified_only'}
 VAR_GLOBAL CONSTANT
     aDefs : ARRAY[E_AlarmId.None..E_AlarmId.QueueOverflow] OF ST_AlarmDef := [
@@ -14,7 +15,7 @@ VAR_GLOBAL CONSTANT
         (eClass := E_AlarmClass.Error, sText := 'Vacuum not reached - part not gripped'),
         (eClass := E_AlarmClass.Error, sText := 'Vacuum lost while carrying a part'),
         (eClass := E_AlarmClass.Warning, sText := 'Part left the pick window unpicked'),
-        (eClass := E_AlarmClass.Error, sText := 'Target bin is full'),
+        (eClass := E_AlarmClass.Warning, sText := 'A bin is full - cell suspended until it is emptied'),
         (eClass := E_AlarmClass.Warning, sText := 'No vision result for a captured part'),
         (eClass := E_AlarmClass.Warning, sText := 'AI decision late - fallback rule used'),
         (eClass := E_AlarmClass.Warning, sText := 'Low detection confidence - part quarantined'),

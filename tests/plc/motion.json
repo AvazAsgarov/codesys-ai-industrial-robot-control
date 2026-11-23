@@ -3,35 +3,124 @@
     {
       "name": "conveyor_runs_at_speed",
       "steps": [
-        { "write": { "PRG_TestMotion.xActive": true } },
-        { "waitMs": 300 },
-        { "write": { "PRG_TestMotion.fbConv.xEnable": true, "PRG_TestMotion.fbConv.lrVelocity": 100 } },
-        { "waitMs": 1000 },
-        { "expect": { "PRG_TestMotion.fbConv.xPowered": true } },
-        { "write": { "PRG_TestMotion.fbConv.xRun": true } },
-        { "waitMs": 2000 },
-        { "expect": { "PRG_TestMotion.fbConv.lrPosition": { "op": ">=", "value": 150 } } },
-        { "expect": { "PRG_TestMotion.fbConv.lrPosition": { "op": "<=", "value": 320 } } },
-        { "expect": { "PRG_TestMotion.fbConv.xAtSpeed": true } },
-        { "write": { "PRG_TestMotion.fbConv.xRun": false } },
-        { "waitMs": 600 },
-        { "expect": { "PRG_TestMotion.fbConv.lrActVelocity": { "op": "=", "value": 0, "tolerance": 0.5 } } }
+        {
+          "write": {
+            "GVL_Config.xCellEnabled": false
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
+            "PRG_TestMotion.xActive": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
+            "PRG_TestMotion.fbConv.xEnable": true,
+            "PRG_TestMotion.fbConv.lrVelocity": 100
+          }
+        },
+        {
+          "waitMs": 1000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbConv.xPowered": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestMotion.fbConv.xRun": true
+          }
+        },
+        {
+          "waitMs": 2000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbConv.lrPosition": {
+              "op": ">=",
+              "value": 150
+            }
+          }
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbConv.lrPosition": {
+              "op": "<=",
+              "value": 320
+            }
+          }
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbConv.xAtSpeed": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestMotion.fbConv.xRun": false
+          }
+        },
+        {
+          "waitMs": 600
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbConv.lrActVelocity": {
+              "op": "=",
+              "value": 0,
+              "tolerance": 0.5
+            }
+          }
+        }
       ]
     },
     {
       "name": "robot_ptp_home",
       "steps": [
-        { "write": { "PRG_TestMotion.fbRobot.xEnable": true } },
-        { "waitMs": 2000 },
-        { "expect": { "PRG_TestMotion.fbRobot.xReady": true } },
-        { "write": { "PRG_TestMotion.iTargetSel": 1, "PRG_TestMotion.eCmd": 1, "PRG_TestMotion.xGo": true } },
-        { "waitMs": 5000 },
+        {
+          "write": {
+            "PRG_TestMotion.fbRobot.xEnable": true
+          }
+        },
+        {
+          "waitMs": 2000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbRobot.xReady": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestMotion.iTargetSel": 1,
+            "PRG_TestMotion.eCmd": 1,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 5000
+        },
         {
           "expect": {
             "PRG_TestMotion.xLastDone": true,
             "PRG_TestMotion.xLastError": false,
-            "PRG_TestMotion.fbRobot.stActAcs.a.a1": { "op": "=", "value": -30, "tolerance": 0.05 },
-            "PRG_TestMotion.fbRobot.stActAcs.a.a2": { "op": "=", "value": 60, "tolerance": 0.05 }
+            "PRG_TestMotion.fbRobot.stActAcs.a.a1": {
+              "op": "=",
+              "value": -30,
+              "tolerance": 0.05
+            },
+            "PRG_TestMotion.fbRobot.stActAcs.a.a2": {
+              "op": "=",
+              "value": 60,
+              "tolerance": 0.05
+            }
           }
         }
       ]
@@ -39,13 +128,25 @@
     {
       "name": "robot_linear_mcs",
       "steps": [
-        { "write": { "PRG_TestMotion.iTargetSel": 2, "PRG_TestMotion.eCmd": 2, "PRG_TestMotion.xGo": true } },
-        { "waitMs": 4000 },
+        {
+          "write": {
+            "PRG_TestMotion.iTargetSel": 2,
+            "PRG_TestMotion.eCmd": 2,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 4000
+        },
         {
           "expect": {
             "PRG_TestMotion.xLastDone": true,
             "PRG_TestMotion.xLastError": false,
-            "PRG_TestMotion.lrZDelta": { "op": "=", "value": -50, "tolerance": 0.2 }
+            "PRG_TestMotion.lrZDelta": {
+              "op": "=",
+              "value": -50,
+              "tolerance": 0.2
+            }
           }
         }
       ]
@@ -53,32 +154,93 @@
     {
       "name": "robot_override_half_is_slower",
       "steps": [
-        { "write": { "PRG_TestMotion.iTargetSel": 1, "PRG_TestMotion.eCmd": 1, "PRG_TestMotion.xGo": true } },
-        { "waitMs": 4000 },
-        { "write": { "PRG_TestMotion.fbRobot.lrOverride": 1.0, "PRG_TestMotion.iTargetSel": 3, "PRG_TestMotion.eCmd": 1, "PRG_TestMotion.xGo": true } },
-        { "waitMs": 5000 },
-        { "write": { "PRG_TestMotion.fbRobot.lrOverride": 0.5, "PRG_TestMotion.iTargetSel": 1, "PRG_TestMotion.eCmd": 1, "PRG_TestMotion.xGo": true } },
-        { "waitMs": 8000 },
-        { "expect": { "PRG_TestMotion.xLastDone": true, "PRG_TestMotion.xSlower": true } }
+        {
+          "write": {
+            "PRG_TestMotion.iTargetSel": 1,
+            "PRG_TestMotion.eCmd": 1,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 4000
+        },
+        {
+          "write": {
+            "PRG_TestMotion.fbRobot.lrOverride": 1.0,
+            "PRG_TestMotion.iTargetSel": 3,
+            "PRG_TestMotion.eCmd": 1,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 5000
+        },
+        {
+          "write": {
+            "PRG_TestMotion.fbRobot.lrOverride": 0.5,
+            "PRG_TestMotion.iTargetSel": 1,
+            "PRG_TestMotion.eCmd": 1,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 8000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.xLastDone": true,
+            "PRG_TestMotion.xSlower": true
+          }
+        }
       ]
     },
     {
       "name": "robot_stop_cancels_move",
       "steps": [
-        { "write": { "PRG_TestMotion.fbRobot.lrOverride": 0.2, "PRG_TestMotion.iTargetSel": 3, "PRG_TestMotion.eCmd": 1, "PRG_TestMotion.xGo": true } },
-        { "waitMs": 800 },
-        { "write": { "PRG_TestMotion.eCmd": 4, "PRG_TestMotion.xGo": true } },
-        { "waitMs": 2500 },
+        {
+          "write": {
+            "PRG_TestMotion.fbRobot.lrOverride": 0.2,
+            "PRG_TestMotion.iTargetSel": 3,
+            "PRG_TestMotion.eCmd": 1,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 800
+        },
+        {
+          "write": {
+            "PRG_TestMotion.eCmd": 4,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 2500
+        },
         {
           "expect": {
             "PRG_TestMotion.fbRobot.xMoving": false,
             "PRG_TestMotion.xLastDone": true,
-            "PRG_TestMotion.fbRobot.stActAcs.a.a0": { "op": "<", "value": 59 }
+            "PRG_TestMotion.fbRobot.stActAcs.a.a0": {
+              "op": "<",
+              "value": 59
+            }
           }
         },
-        { "write": { "PRG_TestMotion.fbRobot.lrOverride": 1.0, "PRG_TestMotion.xActive": false } },
-        { "waitMs": 200 },
-        { "expect": { "PRG_TestMotion.xActive": false } }
+        {
+          "write": {
+            "PRG_TestMotion.fbRobot.lrOverride": 1.0,
+            "PRG_TestMotion.xActive": false
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.xActive": false
+          }
+        }
       ]
     }
   ]

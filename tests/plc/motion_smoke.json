@@ -5,6 +5,14 @@
       "steps": [
         {
           "write": {
+            "GVL_Config.xCellEnabled": false
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
             "PRG_TestMotionSmoke.xGo": true
           }
         },

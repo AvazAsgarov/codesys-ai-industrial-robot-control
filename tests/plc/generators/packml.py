@@ -156,6 +156,19 @@ cases = [
         ],
     },
     {
+        "name": "abort_held_still_reaches_aborted",
+        "steps": [
+            *to_execute(),
+            {"write": {P + "xAbortRequest": True}},
+            {"cycles": 2},
+            *expect_state("Aborting"),
+            *complete(),
+            *expect_state("Aborted"),
+            {"write": {P + "xAbortRequest": False}},
+            {"cycles": 1},
+        ],
+    },
+    {
         "name": "invalid_command_ignored",
         "steps": reinit()
         + cmd("Start")

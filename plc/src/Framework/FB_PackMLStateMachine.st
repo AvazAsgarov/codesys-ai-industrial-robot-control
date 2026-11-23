@@ -44,10 +44,11 @@ eLastCommand := eCommand;
 
 eNext := eState;
 
-IF xAbortRequest OR eCmd = E_PackMLCommand.Abort THEN
-    IF eState <> E_PackMLState.Aborting AND eState <> E_PackMLState.Aborted THEN
-        eNext := E_PackMLState.Aborting;
-    END_IF
+// An abort condition only enters Aborting; Aborting and Aborted are then handled by the state
+// CASE below, so a condition that is still present (E-stop held) cannot block Aborting -> Aborted.
+IF (xAbortRequest OR eCmd = E_PackMLCommand.Abort)
+   AND eState <> E_PackMLState.Aborting AND eState <> E_PackMLState.Aborted THEN
+    eNext := E_PackMLState.Aborting;
 ELSIF (xStopRequest OR eCmd = E_PackMLCommand.Stop)
       AND eState <> E_PackMLState.Stopped AND eState <> E_PackMLState.Stopping
       AND eState <> E_PackMLState.Aborting AND eState <> E_PackMLState.Aborted

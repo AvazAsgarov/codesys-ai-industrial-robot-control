@@ -949,6 +949,140 @@
       ]
     },
     {
+      "name": "abort_held_still_reaches_aborted",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestPackML.xReinit": true
+          }
+        },
+        {
+          "cycles": 3
+        },
+        {
+          "expect": {
+            "PRG_TestPackML.fbSm.eState": "E_PackMLState.Stopped"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.eCommand": 1
+          }
+        },
+        {
+          "cycles": 2
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.eCommand": 0
+          }
+        },
+        {
+          "cycles": 1
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.xStateComplete": true
+          }
+        },
+        {
+          "cycles": 2
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.xStateComplete": false
+          }
+        },
+        {
+          "cycles": 1
+        },
+        {
+          "expect": {
+            "PRG_TestPackML.fbSm.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.eCommand": 2
+          }
+        },
+        {
+          "cycles": 2
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.eCommand": 0
+          }
+        },
+        {
+          "cycles": 1
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.xStateComplete": true
+          }
+        },
+        {
+          "cycles": 2
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.xStateComplete": false
+          }
+        },
+        {
+          "cycles": 1
+        },
+        {
+          "expect": {
+            "PRG_TestPackML.fbSm.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.xAbortRequest": true
+          }
+        },
+        {
+          "cycles": 2
+        },
+        {
+          "expect": {
+            "PRG_TestPackML.fbSm.eState": "E_PackMLState.Aborting"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.xStateComplete": true
+          }
+        },
+        {
+          "cycles": 2
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.xStateComplete": false
+          }
+        },
+        {
+          "cycles": 1
+        },
+        {
+          "expect": {
+            "PRG_TestPackML.fbSm.eState": "E_PackMLState.Aborted"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPackML.fbSm.xAbortRequest": false
+          }
+        },
+        {
+          "cycles": 1
+        }
+      ]
+    },
+    {
       "name": "invalid_command_ignored",
       "steps": [
         {
