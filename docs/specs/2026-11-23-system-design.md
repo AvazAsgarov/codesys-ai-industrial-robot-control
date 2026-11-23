@@ -186,19 +186,22 @@ The camera-to-pick distance and belt speed are chosen so that **THX-02 has at le
 
 ```
 Application
-├── 00_Config        GVL_Config, GVL_Constants, parameter lists, recipe definitions
-├── 01_Types         E_*, ST_*, aliases (E_PackMLState, E_PackMLMode, ST_PartRecord, ST_Pose6D …)
-├── 02_Interfaces    I_Equipment, I_Resettable, I_AlarmSource, I_Station …
-├── 10_Framework     FB_PackMLStateMachine, FB_AlarmManagerAdapter, FB_EventLogger,
-│                    FB_RingBuffer, FB_Statistics (OEE)
-├── 20_Equipment     FB_Robot (axis group wrapper), FB_Conveyor, FB_VacuumGripper,
-│                    FB_PhotoEye, FB_Bin, FB_SafetyMonitor, FB_CameraTrigger
-├── 30_Process       FB_PartTracker (queue), FB_PickScheduler, FB_SortingCell (top-level unit),
-│                    FB_RecipeManager
-├── 40_Comm          GVL_Bridge, GVL_Hmi, FB_BridgeWatchdog, FB_DecisionIntake
-├── 50_Programs      PRG_Main, PRG_Motion, PRG_Comm (thin: instantiate and call)
-└── 90_Tests         TEST_* programs/FBs for simulation-based unit tests
+├── Config        GVL_Config, GVL_Constants, parameter lists, recipe definitions
+├── Types         E_*, ST_*, aliases (E_PackMLState, E_PackMLMode, ST_PartRecord, ST_Pose6D …)
+├── Interfaces    I_Equipment, I_Resettable, I_AlarmSource, I_Station …
+├── Framework     FB_PackMLStateMachine, FB_AlarmManagerAdapter, FB_EventLogger,
+│                 FB_RingBuffer, FB_Statistics (OEE)
+├── Equipment     FB_Robot (axis group wrapper), FB_Conveyor, FB_VacuumGripper,
+│                 FB_PhotoEye, FB_Bin, FB_SafetyMonitor, FB_CameraTrigger, FB_JointMonitor
+├── Process       FB_PartTracker (queue), FB_PickScheduler, FB_SortingCell (top-level unit),
+│                 FB_SortingLogic, FB_RecipeManager
+├── Comm          GVL_Bridge, GVL_Hmi, FB_BridgeWatchdog, FB_DecisionIntake
+├── Programs      PRG_Main, PRG_Motion, PRG_Comm (thin: instantiate and call)
+└── Tests         TEST_* programs/FBs for simulation-based unit tests
 ```
+
+*(Folder names are IEC identifiers without numeric prefixes; the CODESYS tooling requires
+identifiers, which cannot start with a digit. Changed during Phase 0.)*
 
 Every equipment FB implements `I_Equipment` (`Enable`, `Reset`, `Stop`, `Abort`, properties `State`, `HasError`, `ErrorId`). `FB_SortingCell` owns all equipment and maps PackML commands to it.
 

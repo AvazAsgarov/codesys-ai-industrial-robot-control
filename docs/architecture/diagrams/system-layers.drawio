@@ -1,0 +1,122 @@
+<mxfile host="drawio" version="26.0.0">
+  <diagram id="system-layers" name="System layers">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1380" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="System architecture: control layers and data flows" style="text;html=1;fontFamily=Arial;fontSize=16;fontStyle=1;align=left;verticalAlign=middle;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="0" y="15" width="700" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Layer bands (background) -->
+        <mxCell id="band-l3" value="L3 · Supervisory AI (async, 0.2–2 s)" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;fontStyle=1;fillColor=#fafafa;strokeColor=#b0bec5;verticalAlign=top;align=left;spacingLeft=60;spacingTop=4;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="0" y="60" width="1000" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="band-l2" value="L2 · Perception (20–100 ms)" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;fontStyle=1;fillColor=#fafafa;strokeColor=#b0bec5;verticalAlign=top;align=left;spacingLeft=60;spacingTop=4;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="0" y="195" width="1000" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="band-l1" value="L1 · Integration (20 ms)" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;fontStyle=1;fillColor=#fafafa;strokeColor=#b0bec5;verticalAlign=top;align=left;spacingLeft=60;spacingTop=4;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="0" y="330" width="1000" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="band-l0" value="L0 · Control: CODESYS Control Win V3 x64 (2 ms motion, 10 ms logic)" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;fontStyle=1;fillColor=#f3e5f5;strokeColor=#6a1b9a;verticalAlign=top;align=left;spacingLeft=60;spacingTop=4;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="0" y="465" width="1000" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="band-plant" value="Plant · MuJoCo digital twin (2 ms physics, 15 Hz render)" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=12;fontStyle=1;fillColor=#eceff1;strokeColor=#455a64;verticalAlign=top;align=left;spacingLeft=60;spacingTop=4;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="0" y="600" width="1000" height="120" as="geometry"/>
+        </mxCell>
+
+        <!-- L3 -->
+        <mxCell id="dec" value="&lt;b&gt;Decision client&lt;/b&gt;&lt;br&gt;rate limit · 2.5 s deadline · fallback" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#e3f2fd;strokeColor=#1565c0;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="102" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="thx" value="&lt;b&gt;THX-02 hosted API&lt;/b&gt;&lt;br&gt;api.hal-x.ai (external)" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#eceff1;strokeColor=#455a64;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="102" width="230" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- L2 -->
+        <mxCell id="det" value="&lt;b&gt;YOLO26 / YOLOE-26&lt;/b&gt;&lt;br&gt;zero-shot · OpenVINO on CPU" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#e3f2fd;strokeColor=#1565c0;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="237" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="pose" value="&lt;b&gt;Pose estimation&lt;/b&gt;&lt;br&gt;mask → (x, y, θ) on belt" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#e3f2fd;strokeColor=#1565c0;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="237" width="260" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- L1 -->
+        <mxCell id="log" value="&lt;b&gt;Evaluation recorder&lt;/b&gt;&lt;br&gt;ground truth · decisions (JSONL)" style="shape=cylinder3;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#e8f5e9;strokeColor=#2e7d32;size=8;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="367" width="260" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="bridge" value="&lt;b&gt;OPC UA bridge (asyncua)&lt;/b&gt;&lt;br&gt;tag map · heartbeat · part records" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#fff3e0;strokeColor=#e65100;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="372" width="260" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- L0 -->
+        <mxCell id="hmi" value="&lt;b&gt;HMI&lt;/b&gt;&lt;br&gt;CODESYS Visualization (Target/WebVisu)" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#ffffff;strokeColor=#6a1b9a;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="507" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="logic" value="&lt;b&gt;Cell logic&lt;/b&gt;&lt;br&gt;PackML · alarms · interlocks · part queue" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#ffffff;strokeColor=#6a1b9a;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="507" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="motion" value="&lt;b&gt;SoftMotion&lt;/b&gt;&lt;br&gt;6-DOF axis group · conveyor tracking" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#ffffff;strokeColor=#6a1b9a;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="507" width="260" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Plant -->
+        <mxCell id="cam" value="&lt;b&gt;Overhead camera&lt;/b&gt;&lt;br&gt;1280×720 offscreen render" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#ffffff;strokeColor=#455a64;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="642" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="belt" value="&lt;b&gt;Belt · parts · suction gripper&lt;/b&gt;&lt;br&gt;photo-eyes · 6 bins · door · E-stop" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#ffffff;strokeColor=#455a64;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="642" width="260" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="servo" value="&lt;b&gt;Simulated servo joints&lt;/b&gt;&lt;br&gt;PD control · encoders · torque" style="rounded=0;whiteSpace=wrap;html=1;fontFamily=Arial;fontSize=11;fillColor=#ffffff;strokeColor=#455a64;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="642" width="260" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges -->
+        <mxCell id="e-dec-thx" value="1 request / part&lt;br&gt;crop + typed questions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Arial;fontSize=10;endArrow=classic;endFill=1;startArrow=classic;startFill=1;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;convertToSvg=1;" edge="1" parent="1" source="dec" target="thx">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-det-pose" value="masks" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Arial;fontSize=10;endArrow=classic;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;convertToSvg=1;" edge="1" parent="1" source="det" target="pose">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-pose-bridge" value="part record&lt;br&gt;class · x · y · θ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Arial;fontSize=10;endArrow=classic;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;convertToSvg=1;" edge="1" parent="1" source="pose" target="bridge">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-bridge-dec" value="crop ↑ · decision ↓&lt;br&gt;(async)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Arial;fontSize=10;endArrow=classic;endFill=1;startArrow=classic;startFill=1;dashed=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;convertToSvg=1;" edge="1" parent="1" source="bridge" target="dec">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-bridge-log" value="records" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Arial;fontSize=10;endArrow=classic;endFill=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;convertToSvg=1;" edge="1" parent="1" source="bridge" target="log">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-bridge-motion" value="OPC UA · 20 ms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Arial;fontSize=10;endArrow=classic;endFill=1;startArrow=classic;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;convertToSvg=1;" edge="1" parent="1" source="bridge" target="motion">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-logic-motion" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="logic" target="motion">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-hmi-logic" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;startArrow=classic;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="hmi" target="logic">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-servo-bridge" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Arial;fontSize=10;endArrow=classic;endFill=1;startArrow=classic;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;convertToSvg=1;" edge="1" parent="1" source="servo" target="bridge">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1030" y="672"/>
+              <mxPoint x="1030" y="402"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-cam-det" value="frames · 15 Hz" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Arial;fontSize=10;endArrow=classic;endFill=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;labelBackgroundColor=#ffffff;horizontal=0;convertToSvg=1;" edge="1" parent="1" source="cam" target="det">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="30" y="672"/>
+              <mxPoint x="30" y="267"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="servo-note" value="setpoints ↓&lt;br&gt;feedback ↑&lt;br&gt;(encoders, torque, sensors)" style="text;html=1;fontFamily=Arial;fontSize=10;align=left;verticalAlign=middle;convertToSvg=1;" vertex="1" parent="1">
+          <mxGeometry x="1045" y="505" width="170" height="50" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
