@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "name": "defaults_are_sane",
+      "steps": [
+        { "cycles": 2 },
+        {
+          "expect": {
+            "GVL_Params.lrBeltSpeed": { "op": "=", "value": 100, "tolerance": 0.001 },
+            "PRG_TestTypes.xLoopback": true,
+            "PRG_TestTypes.eClassBin0": "E_Bin.TypeA",
+            "PRG_TestTypes.eFaultClass": "E_AlarmClass.Critical",
+            "PRG_TestTypes.eWarnClass": "E_AlarmClass.Warning"
+          }
+        }
+      ]
+    }
+  ]
+}
