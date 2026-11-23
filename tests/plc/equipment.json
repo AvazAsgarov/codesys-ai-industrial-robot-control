@@ -1,0 +1,260 @@
+{
+  "cases": [
+    {
+      "name": "photoeye_debounce",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestEquipment.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.udiPulseMs": 100,
+            "PRG_TestEquipment.xStartPulse": true
+          }
+        },
+        {
+          "waitMs": 1000
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.uiPeRises": 0,
+            "PRG_TestEquipment.fbPe.xBlocked": false
+          }
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.udiPulseMs": 5000,
+            "PRG_TestEquipment.xStartPulse": true
+          }
+        },
+        {
+          "waitMs": 600
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.uiPeRises": 1,
+            "PRG_TestEquipment.fbPe.xBlocked": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "vacuum_no_grip_timeout",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestEquipment.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbVac.xCmdVacuum": true,
+            "PRG_TestEquipment.fbVac.xVacuumOk": false
+          }
+        },
+        {
+          "waitMs": 1000
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbVac.xValveOn": true,
+            "PRG_TestEquipment.eVacError": "E_AlarmId.VacuumNoGrip",
+            "PRG_TestEquipment.fbAlarms.xErrorActive": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "vacuum_lost_raises",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestEquipment.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbVac.xCmdVacuum": true,
+            "PRG_TestEquipment.fbVac.xVacuumOk": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbVac.xHolding": true,
+            "PRG_TestEquipment.eVacError": "E_AlarmId.None"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbVac.xVacuumOk": false
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.eVacError": "E_AlarmId.VacuumLost",
+            "PRG_TestEquipment.fbVac.xHolding": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "bin_counts_rising_edges",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestEquipment.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbBin.xPlaced": true
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbBin.xPlaced": false
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbBin.xPlaced": true
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbBin.uiCount": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "estop_latches_until_reset",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestEquipment.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbSafety.xSafeToMove": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbSafety.xEStopOk": false
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbSafety.xSafeToMove": false,
+            "PRG_TestEquipment.fbAlarms.xCriticalActive": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbSafety.xEStopOk": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbSafety.xSafeToMove": false
+          }
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbSafety.xResetCmd": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbSafety.xSafeToMove": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "door_open_manual_reduced_speed",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestEquipment.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbSafety.eMode": 3,
+            "PRG_TestEquipment.fbSafety.xDoorClosed": false
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbSafety.xSafeToMove": true,
+            "PRG_TestEquipment.fbSafety.xReducedSpeed": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestEquipment.fbSafety.eMode": 1
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestEquipment.fbSafety.xSafeToMove": false,
+            "PRG_TestEquipment.fbSafety.xReducedSpeed": false
+          }
+        }
+      ]
+    }
+  ]
+}

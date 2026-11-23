@@ -1,0 +1,152 @@
+{
+  "cases": [
+    {
+      "name": "loopback_never_faults",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.fbMon.xLoopback": true,
+            "PRG_TestJointMonitor.fbMon.xActive": true,
+            "PRG_TestJointMonitor.fbMon.aSetpoint[1]": 50.0,
+            "PRG_TestJointMonitor.fbMon.aFeedback[1]": 0.0
+          }
+        },
+        {
+          "waitMs": 400
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.fbMon.xWarn": false,
+            "PRG_TestJointMonitor.fbMon.xFault": false,
+            "PRG_TestJointMonitor.fbMon.xStale": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "warn_threshold",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.xAutoSeq": true,
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true,
+            "PRG_TestJointMonitor.fbMon.aSetpoint[2]": 10.0,
+            "PRG_TestJointMonitor.fbMon.aFeedback[2]": 7.0
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.fbMon.xWarn": true,
+            "PRG_TestJointMonitor.fbMon.xFault": false,
+            "PRG_TestJointMonitor.fbMon.iWorstJoint": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "fault_threshold_and_worst_joint",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.fbMon.aFeedback[2]": 10.0,
+            "PRG_TestJointMonitor.fbMon.aSetpoint[4]": 20.0,
+            "PRG_TestJointMonitor.fbMon.aFeedback[4]": 12.0
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.fbMon.xFault": true,
+            "PRG_TestJointMonitor.fbMon.iWorstJoint": 4,
+            "PRG_TestJointMonitor.fbMon.aFollowingError[4]": {
+              "op": "=",
+              "value": 8.0,
+              "tolerance": 0.01
+            },
+            "PRG_TestJointMonitor.fbAlarms.xCriticalActive": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "stale_feedback_faults",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.xAutoSeq": false,
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true
+          }
+        },
+        {
+          "waitMs": 1000
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.fbMon.xStale": true,
+            "PRG_TestJointMonitor.fbMon.xFault": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "inactive_no_stale_check",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.xAutoSeq": false,
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": false
+          }
+        },
+        {
+          "waitMs": 1000
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.fbMon.xStale": false,
+            "PRG_TestJointMonitor.fbMon.xFault": false
+          }
+        }
+      ]
+    }
+  ]
+}

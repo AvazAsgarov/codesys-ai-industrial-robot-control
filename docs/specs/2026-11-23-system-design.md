@@ -176,8 +176,8 @@ The camera-to-pick distance and belt speed are chosen so that **THX-02 has at le
 | Item | Setting |
 |---|---|
 | Device | CODESYS Control Win V3 x64 |
-| `MotionTask` | 2 ms, highest priority: SoftMotion bus cycle, axis group, conveyor tracking |
-| `MainTask` | 10 ms: PackML, equipment logic, part tracking, alarms |
+| `MainTask` | 4 ms, highest priority, SoftMotion bus cycle task: PackML, equipment logic, axis group, conveyor tracking, part tracking, alarms *(changed in Phase 1, ADR 0007: one control task instead of separate 2 ms / 10 ms tasks)* |
+| `SoftMotion_PlanningTask` | freewheeling, priority 15: robotics path planning |
 | `CommTask` | 50 ms: OPC UA tag packing, watchdog, statistics |
 | `VisuTask` | 100 ms: visualization |
 | OPC UA | Symbol configuration with OPC UA, exposing only `GVL_Bridge` and `GVL_Hmi` structures (read/write rights per variable) |
@@ -214,14 +214,14 @@ Every equipment FB implements `I_Equipment` (`Enable`, `Reset`, `Stop`, `Abort`,
 
 ### 5.4 Alarms and interlocks
 
-- CODESYS **AlarmManager** with classes `Critical` (→ Abort), `Error` (→ Stop), `Warning` (no state change), `Info`.
+- Alarm classes `Critical` (→ Abort), `Error` (→ Stop), `Warning` (no state change; BinFull suspends), `Info`. *(Phase 1: latching alarm list in ST, `FB_AlarmHandler`; native CODESYS AlarmManager alarms are generated from it with the HMI in Phase 5 — ADR 0007.)*
 - Initial alarm list (extended during build): joint following error (setpoint vs. twin encoder), motor torque limit / stall, encoder implausible; E-stop pressed; safety door open in Production; axis group error (with SoftMotion error ID); following error / joint limit; vacuum lost during transfer; part missed (left the tracking window); bin full; vision timeout; THX-02 timeout/fallback used (warning); OPC UA bridge heartbeat lost (critical: robot stops); low AI confidence (warning).
 - Interlocks: no motion unless group powered AND no critical alarm AND (door closed OR Manual mode at reduced speed); gripper cannot release outside a bin zone except on abort; conveyor stops if robot reports blocked.
 - Bridge watchdog: the bridge toggles a heartbeat every cycle; if the PLC sees no change for 500 ms it raises a critical alarm and the cell aborts.
 
 ### 5.5 Recipes
 
-CODESYS Recipe Management: belt speed, pick height, approach/retreat offsets, max TCP velocity/acceleration, confidence threshold, THX-02 deadline, class→bin mapping, fallback policy. Two shipped recipes: `Standard` and `HighSpeed`.
+Recipes (Phase 1: generated ST `PRG_Recipe_Cell` / `GVL_Recipe_Cell`, ADR 0007): belt speed, pick height, approach/retreat offsets, max TCP velocity/acceleration, confidence threshold, THX-02 deadline, class→bin mapping, fallback policy. Two shipped recipes: `Standard` and `HighSpeed`.
 
 ### 5.6 Source control of the PLC project
 
