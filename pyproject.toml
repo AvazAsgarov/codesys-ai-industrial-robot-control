@@ -51,6 +51,7 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D", "ANN", "PLR2004"]
+"tests/plc/generators/**" = ["RUF005"]  # readable step sequences
 
 [tool.pyright]
 include = ["src", "tests", "tools"]
