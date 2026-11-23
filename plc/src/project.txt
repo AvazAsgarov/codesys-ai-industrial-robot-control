@@ -3,18 +3,29 @@ Application: Application
 Compiler: 3.5.22.40
 
 [Tasks]
+SoftMotion_PlanningTask: Freewheeling, interval t#2ms, priority 15; calls nothing
 CommTask: Cyclic, interval t#50ms, priority 10; calls PRG_Comm
-MotionTask: Cyclic, interval t#2ms, priority 1; calls PRG_Motion
-MainTask: Cyclic, interval t#10ms, priority 5; calls PRG_Main
+MainTask: Cyclic, interval 4 ms, priority 1; calls PRG_Main, PRG_Tests
 
 [Libraries]
-Standard, * (System)
-#CAA Device Diagnosis -> CAA Device Diagnosis, 3.5.22.0 (CAA Technical Workgroup)
-#BreakpointLogging -> Breakpoint Logging Functions, 3.5.17.0 (3S - Smart Software Solutions GmbH)
+#Standard -> Standard, 3.5.22.0 (System)
+#SM3_Robotics -> SM3_Robotics, 4.20.1.0 (CODESYS)
+#SM3_Transformation -> SM3_Transformation, 4.20.0.0 (CODESYS)
+#SM3_Basic -> SM3_Basic, 4.20.0.0 (CODESYS)
 #IoStandard -> IoStandard, 3.5.22.0 (System)
 #3SLicense -> 3SLicense, 3.5.22.0 (CODESYS)
+#CAA Device Diagnosis -> CAA Device Diagnosis, 3.5.22.0 (CAA Technical Workgroup)
+#BreakpointLogging -> Breakpoint Logging Functions, 3.5.17.0 (3S - Smart Software Solutions GmbH)
 
 [Devices]
-PLCWinNT (type 4096, id 0000 0004, version 3.5.22.40)
+Device (type 4096, id 0000 0004, version 3.5.22.40)
+  SoftMotion General Axis Pool (type 1249, id 0000 0001, version 4.11.0.0)
+    Axis_J1 (type 1024, id FFFF 0001, version 4.18.0.0)
+    Axis_J2 (type 1024, id FFFF 0001, version 4.18.0.0)
+    Axis_J3 (type 1024, id FFFF 0001, version 4.18.0.0)
+    Axis_J4 (type 1024, id FFFF 0001, version 4.18.0.0)
+    Axis_J5 (type 1024, id FFFF 0001, version 4.18.0.0)
+    Axis_J6 (type 1024, id FFFF 0001, version 4.18.0.0)
+    Axis_Conveyor (type 1024, id FFFF 0001, version 4.18.0.0)
 
 [Alarms]

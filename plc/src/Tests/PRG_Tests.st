@@ -1,0 +1,10 @@
+(*
+    PRG_Tests
+    Purpose : Calls every simulation test harness (TEST programs in this folder).
+    Task    : TestTask, cyclic 10 ms
+*)
+PROGRAM PRG_Tests
+VAR
+END_VAR
+
+PRG_TestMotionSmoke();

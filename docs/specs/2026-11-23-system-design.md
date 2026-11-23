@@ -176,8 +176,8 @@ The camera-to-pick distance and belt speed are chosen so that **THX-02 has at le
 | Item | Setting |
 |---|---|
 | Device | CODESYS Control Win V3 x64 |
-| `MotionTask` | 2 ms, highest priority: SoftMotion bus cycle, axis group, conveyor tracking |
-| `MainTask` | 10 ms: PackML, equipment logic, part tracking, alarms |
+| `MainTask` | 4 ms, highest priority, SoftMotion bus cycle task: PackML, equipment logic, axis group, conveyor tracking, part tracking, alarms *(changed in Phase 1, ADR 0007: one control task instead of separate 2 ms / 10 ms tasks)* |
+| `SoftMotion_PlanningTask` | freewheeling, priority 15: robotics path planning |
 | `CommTask` | 50 ms: OPC UA tag packing, watchdog, statistics |
 | `VisuTask` | 100 ms: visualization |
 | OPC UA | Symbol configuration with OPC UA, exposing only `GVL_Bridge` and `GVL_Hmi` structures (read/write rights per variable) |
