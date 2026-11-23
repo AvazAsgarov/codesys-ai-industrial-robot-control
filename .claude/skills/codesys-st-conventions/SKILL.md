@@ -52,4 +52,24 @@ Authoritative rules: `docs/conventions.md` §1. This skill is the working checkl
 3. `export_sources dir=<repo>/plc/src`; commit the `.project` and the export together. A second
    export without changes must write 0 files.
 
-Extended in phase P1 (PackML, alarms, test harness patterns).
+## Gotchas found in Phase 1
+
+- Reserved names cannot be used for methods: `Add`, `IndexOf` (use `AddRecord`, `FindPart`).
+- Object/folder names must be IEC identifiers (no leading digit).
+- Methods of an FB must not use its `VAR_IN_OUT` references; do that work in the FB body
+  (methods only touch the FB's own variables).
+- Unreferenced global variables are not linked: tests read them through a harness output.
+- Enum inputs are written in simulation tests as integers; expectations use symbolic names.
+- Placeholder libraries are removed by their `#Name`.
+
+## Simulation test pattern
+
+1. Write `tests/plc/<area>.json` (or a generator in `tests/plc/generators/`) first.
+2. Add a harness program `PRG_Test<Area>` in `Tests`, called by `PRG_Tests` (MainTask). Logic-only
+   harnesses may re-initialise by assigning a fresh instance; SoftMotion harnesses must not
+   (gate with `xActive` instead).
+3. Compile → RED (unknown FB) → implement → compile 0/0 → `codesys_sim_start {run: true}` →
+   `codesys_sim_test` → `codesys_sim_stop`.
+4. Time-based cases use `waitMs` (the app keeps running); `cycles` stops the app, so do not mix
+   them in one session. Tool writes take ~100 ms: generate short pulses inside the harness.
+5. `export_sources`, commit.
