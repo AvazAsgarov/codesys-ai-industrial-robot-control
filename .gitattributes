@@ -1,0 +1,15 @@
+* text=auto eol=lf
+
+*.ps1 text eol=crlf
+
+# CODESYS project and its text export (CODESYS writes CRLF; keep it to avoid churn)
+*.project binary
+plc/src/** text eol=crlf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.gif binary
+*.pdf binary
+*.stl binary
+*.obj binary

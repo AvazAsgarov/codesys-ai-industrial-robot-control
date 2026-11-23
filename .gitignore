@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Secrets / environment
+.env
+.env.*
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# CODESYS build and user artefacts
+*.~u
+*.compileinfo
+*.precompilecache
+*.opt
+*.bootinfo
+*.bootinfo_guids
+plc/**/*.project.bak
+plc/**/*.backup
+
+# LaTeX
+paper/build/
+*.aux
+*.log
+*.out
+*.synctex.gz
+
+# Data, models and media (downloaded or generated, never committed)
+experiments/runs/
+assets/models/*.pt
+*.onnx
+*.bin
+*.safetensors
+media/*.mp4
+
+# Local tool workspaces
+.superpowers/
