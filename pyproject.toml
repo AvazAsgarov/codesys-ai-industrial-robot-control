@@ -41,6 +41,7 @@ addopts = "-q --strict-markers"
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+extend-exclude = ["plc/scripts"]  # CODESYS IronPython 2.7 scripts, not part of the package
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "PL", "PT", "ANN", "D"]
@@ -53,6 +54,7 @@ convention = "google"
 
 [tool.pyright]
 include = ["src", "tests"]
+exclude = ["plc/scripts"]
 strict = ["src/airc"]
 pythonVersion = "3.12"
 venvPath = "."

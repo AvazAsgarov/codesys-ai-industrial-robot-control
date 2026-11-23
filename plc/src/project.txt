@@ -1,0 +1,20 @@
+Project: RobotCell.project
+Application: Application
+Compiler: 3.5.22.40
+
+[Tasks]
+CommTask: Cyclic, interval t#50ms, priority 10; calls PRG_Comm
+MotionTask: Cyclic, interval t#2ms, priority 1; calls PRG_Motion
+MainTask: Cyclic, interval t#10ms, priority 5; calls PRG_Main
+
+[Libraries]
+Standard, * (System)
+#CAA Device Diagnosis -> CAA Device Diagnosis, 3.5.22.0 (CAA Technical Workgroup)
+#BreakpointLogging -> Breakpoint Logging Functions, 3.5.17.0 (3S - Smart Software Solutions GmbH)
+#IoStandard -> IoStandard, 3.5.22.0 (System)
+#3SLicense -> 3SLicense, 3.5.22.0 (CODESYS)
+
+[Devices]
+PLCWinNT (type 4096, id 0000 0004, version 3.5.22.40)
+
+[Alarms]

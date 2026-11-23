@@ -1,0 +1,11 @@
+{
+  "project": "C:\\dev\\codesys-ai-industrial-robot-control\\plc\\RobotCell.project",
+  "exported": "2026-11-23T15:11:48.618Z",
+  "files": [
+    "Config/GVL_Constants.st",
+    "Programs/PRG_Comm.st",
+    "Programs/PRG_Main.st",
+    "Programs/PRG_Motion.st",
+    "project.txt"
+  ]
+}
