@@ -8,6 +8,7 @@ TYPE E_RobotCmd :
     MoveLinMcs := 2,       // linear, target in machine coordinates
     MoveLinPcs1 := 3,      // linear, target in PCS_1 (conveyor tracking frame)
     Stop := 4,             // controlled stop, aborts any motion
-    Reset := 5             // reset axis group errors
+    Reset := 5,            // reset axis group errors
+    MovePtpMcs := 6        // point-to-point, Cartesian target in machine coordinates
 );
 END_TYPE

@@ -15,3 +15,4 @@ PRG_TestEquipment();
 PRG_TestMotion();
 PRG_TestJointMonitor();
 PRG_TestTracking();
+PRG_TestPick();

@@ -79,7 +79,12 @@ fbOverride(AxisGroup := AxisGroup,
 
 fbPtp.Position := stTarget;
 fbPtp.VelFactor := GVL_Params.lrPtpVelFactor;
-fbPtp(AxisGroup := AxisGroup, Execute := eActive = E_RobotCmd.MovePtpAcs);
+IF eActive = E_RobotCmd.MovePtpMcs THEN
+    fbPtp.CoordSystem := SMC_COORD_SYSTEM.MCS;
+ELSE
+    fbPtp.CoordSystem := SMC_COORD_SYSTEM.ACS;
+END_IF
+fbPtp(AxisGroup := AxisGroup, Execute := eActive = E_RobotCmd.MovePtpAcs OR eActive = E_RobotCmd.MovePtpMcs);
 
 fbLin.Position := stTarget;
 fbLin.Velocity := GVL_Params.lrLinVelocity;
@@ -119,7 +124,7 @@ aSetAcs[5] := fbReadSet.Position.a.a4;
 aSetAcs[6] := fbReadSet.Position.a.a5;
 
 CASE eActive OF
-    E_RobotCmd.MovePtpAcs:
+    E_RobotCmd.MovePtpAcs, E_RobotCmd.MovePtpMcs:
         xBusy := fbPtp.Busy; xDone := fbPtp.Done; xError := fbPtp.Error;
         IF fbPtp.Error THEN eSmcError := fbPtp.ErrorID; END_IF
     E_RobotCmd.MoveLinMcs, E_RobotCmd.MoveLinPcs1:

@@ -2,19 +2,18 @@
     PRG_TestMotion
     Purpose : Simulation test harness for FB_Robot and FB_Conveyor (tests/plc/motion.json).
     Inputs  : xActive - only then are the FBs called; xGo - start eCmd with the target chosen by
-              iTargetSel (1 = home, 2 = current TCP - 50 mm in Z, 3 = home with J1 = 60 deg)
+              iTargetSel (1 = home, 2 = current TCP - 50 mm in Z, 3 = home with J1 = 60 deg,
+              4 = stProbe as written by the test)
     Outputs : xLastDone / xLastError of the last command, udiMoveMsLast / udiMoveMsPrev,
               xSlower (last move took > 1.5 x the previous one), lrZDelta
+    Note    : SoftMotion FB instances are never re-initialised by assignment (corrupts them).
 *)
 PROGRAM PRG_TestMotion
 VAR
     fbRobot : FB_Robot;
     fbConv : FB_Conveyor;
-    fbRobotInitial : FB_Robot;
-    fbConvInitial : FB_Conveyor;
     fbAlarms : FB_AlarmHandler;
     xActive : BOOL;
-    xReinit : BOOL;
     iTargetSel : INT;
     eCmd : E_RobotCmd;
     xGo : BOOL;
@@ -28,15 +27,11 @@ VAR
     lrZStart : LREAL;
     lrZDelta : LREAL;
     stTarget : SMC_POS_REF;
+    stProbe : SMC_POS_REF;
 END_VAR
 
 IF NOT xActive THEN
     RETURN;
-END_IF
-IF xReinit THEN
-    xReinit := FALSE;
-    fbRobot := fbRobotInitial;
-    fbConv := fbConvInitial;
 END_IF
 fbRobot.itfAlarms := fbAlarms;
 fbConv.itfAlarms := fbAlarms;
@@ -50,6 +45,7 @@ IF xGo THEN
            stTarget.c.Z := lrZStart - 50;
         3: stTarget := GVL_CellGeometry.HOME_ACS;
            stTarget.a.a0 := 60;
+        4: stTarget := stProbe;
     END_CASE
     fbRobot.stTarget := stTarget;
     fbRobot.eCmd := eCmd;
