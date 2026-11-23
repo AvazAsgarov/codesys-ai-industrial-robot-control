@@ -1,0 +1,6 @@
+project:
+  name: codesys-ai-industrial-robot-control
+  version: 0.1.0
+plc:
+  project_file: plc/RobotCell.project
+  opcua_endpoint: opc.tcp://localhost:4840

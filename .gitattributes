@@ -2,9 +2,8 @@
 
 *.ps1 text eol=crlf
 
-# CODESYS project and its text export (CODESYS writes CRLF; keep it to avoid churn)
+# CODESYS project (binary) and its text export (the MCP export writes LF)
 *.project binary
-plc/src/** text eol=crlf
 
 # Binary assets
 *.png binary

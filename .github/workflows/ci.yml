@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.4.0  # no floating major tag is published
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --locked
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format check
+        run: uv run ruff format --check .
+      - name: Type check
+        run: uv run pyright
+      - name: Tests
+        run: uv run pytest --cov=airc --cov-report=term-missing
+
+  paper:
+    name: Paper (IEEEtran)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: wtfjoke/setup-tectonic@v4
+      - name: Build PDF
+        # paper/build is git-ignored, and Tectonic refuses a missing output directory.
+        run: |
+          mkdir -p paper/build
+          tectonic -X compile paper/main.tex --outdir paper/build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: paper-pdf
+          path: paper/build/main.pdf
