@@ -5,7 +5,7 @@ Compiler: 3.5.22.40
 [Tasks]
 SoftMotion_PlanningTask: Freewheeling, interval t#2ms, priority 15; calls nothing
 CommTask: Cyclic, interval t#50ms, priority 10; calls PRG_Comm
-MainTask: Cyclic, interval 4 ms, priority 1; calls PRG_Main, PRG_Tests
+MainTask: Cyclic, interval 4 ms, priority 1; calls PRG_Main, PRG_Tests, PRG_Recipe_Cell
 
 [Libraries]
 #Standard -> Standard, 3.5.22.0 (System)

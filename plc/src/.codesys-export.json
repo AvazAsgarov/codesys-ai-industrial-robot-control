@@ -1,6 +1,6 @@
 {
   "project": "C:\\dev\\codesys-ai-industrial-robot-control\\plc\\RobotCell.project",
-  "exported": "2026-11-23T17:45:38.739Z",
+  "exported": "2026-11-23T17:48:50.467Z",
   "files": [
     "Comm/FB_BridgeWatchdog.st",
     "Comm/FB_MessageIntake.st",
@@ -49,6 +49,7 @@
     "Framework/FB_PartQueue/GetRecord.st",
     "Framework/FB_PartQueue/PutRecord.st",
     "Framework/FB_PartQueue/Release.st",
+    "GVL_Recipe_Cell.st",
     "Interfaces/I_AlarmSink.st",
     "Interfaces/I_AlarmSink/Clear.st",
     "Interfaces/I_AlarmSink/Raise.st",
@@ -56,6 +57,7 @@
     "Interfaces/I_Equipment/ErrorId.st",
     "Interfaces/I_Equipment/HasError.st",
     "Interfaces/I_Equipment/Reset.st",
+    "PRG_Recipe_Cell.st",
     "Process/FB_PartTracker.st",
     "Process/FB_PartTracker/Count.st",
     "Process/FB_PartTracker/Count/Get.st",
@@ -74,6 +76,7 @@
     "Process/F_SelectBin.st",
     "Programs/PRG_Comm.st",
     "Programs/PRG_Main.st",
+    "ST_Recipe_Cell.st",
     "Tests/PRG_TestAlarms.st",
     "Tests/PRG_TestCell.st",
     "Tests/PRG_TestEquipment.st",
