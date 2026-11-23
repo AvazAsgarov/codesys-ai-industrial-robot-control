@@ -1,0 +1,456 @@
+{
+  "cases": [
+    {
+      "name": "capture_creates_record",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xReinit": true,
+            "PRG_TestTracking.lrBeltPos": 0.0
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiCount": 1,
+            "PRG_TestTracking.fbTracker.stCapture.udiSeq": 1,
+            "PRG_TestTracking.fbTracker.stCapture.udiPartId": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "vision_then_decision_sets_bin",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.udiPartId": 1,
+            "PRG_TestTracking.stVisIn.xValid": true,
+            "PRG_TestTracking.stVisIn.usiClass": 1,
+            "PRG_TestTracking.stVisIn.rConfidence": 0.9,
+            "PRG_TestTracking.stVisIn.lrX": 300.0,
+            "PRG_TestTracking.stVisIn.lrY": 0.0,
+            "PRG_TestTracking.stVisIn.lrTheta": 15.0,
+            "PRG_TestTracking.xSendVision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stDecIn.udiPartId": 1,
+            "PRG_TestTracking.stDecIn.eQuality": 1,
+            "PRG_TestTracking.stDecIn.rQualityProb": 0.95,
+            "PRG_TestTracking.stDecIn.xIdentReliable": true,
+            "PRG_TestTracking.xSendDecision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.udiQueryId": 1
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.stRec.eState": "E_PartState.Decided",
+            "PRG_TestTracking.stRec.eTargetBin": "E_Bin.TypeB",
+            "PRG_TestTracking.stRec.eDecisionSource": "E_DecisionSource.Ai"
+          }
+        }
+      ]
+    },
+    {
+      "name": "scrap_goes_to_scrap",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.udiPartId": 2,
+            "PRG_TestTracking.stVisIn.xValid": true,
+            "PRG_TestTracking.stVisIn.usiClass": 0,
+            "PRG_TestTracking.stVisIn.rConfidence": 0.9,
+            "PRG_TestTracking.stVisIn.lrX": 300.0,
+            "PRG_TestTracking.stVisIn.lrY": 0.0,
+            "PRG_TestTracking.stVisIn.lrTheta": 15.0,
+            "PRG_TestTracking.xSendVision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stDecIn.udiPartId": 2,
+            "PRG_TestTracking.stDecIn.eQuality": 3,
+            "PRG_TestTracking.stDecIn.rQualityProb": 0.95,
+            "PRG_TestTracking.stDecIn.xIdentReliable": true,
+            "PRG_TestTracking.xSendDecision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.udiQueryId": 2
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.stRec.eTargetBin": "E_Bin.Scrap"
+          }
+        }
+      ]
+    },
+    {
+      "name": "low_confidence_quarantine",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.udiPartId": 3,
+            "PRG_TestTracking.stVisIn.xValid": true,
+            "PRG_TestTracking.stVisIn.usiClass": 0,
+            "PRG_TestTracking.stVisIn.rConfidence": 0.3,
+            "PRG_TestTracking.stVisIn.lrX": 300.0,
+            "PRG_TestTracking.stVisIn.lrY": 0.0,
+            "PRG_TestTracking.stVisIn.lrTheta": 15.0,
+            "PRG_TestTracking.xSendVision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stDecIn.udiPartId": 3,
+            "PRG_TestTracking.stDecIn.eQuality": 1,
+            "PRG_TestTracking.stDecIn.rQualityProb": 0.95,
+            "PRG_TestTracking.stDecIn.xIdentReliable": true,
+            "PRG_TestTracking.xSendDecision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.udiQueryId": 3
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.stRec.eTargetBin": "E_Bin.Quarantine"
+          }
+        }
+      ]
+    },
+    {
+      "name": "duplicate_result_ignored",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.udiPartId": 4,
+            "PRG_TestTracking.stVisIn.xValid": true,
+            "PRG_TestTracking.stVisIn.usiClass": 2,
+            "PRG_TestTracking.stVisIn.rConfidence": 0.9,
+            "PRG_TestTracking.stVisIn.lrX": 300.0,
+            "PRG_TestTracking.stVisIn.lrY": 0.0,
+            "PRG_TestTracking.stVisIn.lrTheta": 15.0,
+            "PRG_TestTracking.xSendVision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.usiClass": 0,
+            "PRG_TestTracking.xResendVision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.udiQueryId": 4
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.stRec.usiClass": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "unknown_part_result_ignored",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.udiPartId": 99,
+            "PRG_TestTracking.stVisIn.xValid": true,
+            "PRG_TestTracking.stVisIn.usiClass": 0,
+            "PRG_TestTracking.stVisIn.rConfidence": 0.9,
+            "PRG_TestTracking.stVisIn.lrX": 300.0,
+            "PRG_TestTracking.stVisIn.lrY": 0.0,
+            "PRG_TestTracking.stVisIn.lrTheta": 15.0,
+            "PRG_TestTracking.xSendVision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.udiQueryId": 99
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.xQueryFound": false,
+            "PRG_TestTracking.uiCount": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "deadline_uses_fallback",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.udiPartId": 5,
+            "PRG_TestTracking.stVisIn.xValid": true,
+            "PRG_TestTracking.stVisIn.usiClass": 2,
+            "PRG_TestTracking.stVisIn.rConfidence": 0.9,
+            "PRG_TestTracking.stVisIn.lrX": 300.0,
+            "PRG_TestTracking.stVisIn.lrY": 0.0,
+            "PRG_TestTracking.stVisIn.lrTheta": 15.0,
+            "PRG_TestTracking.xSendVision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "write": {
+            "PRG_TestTracking.udiQueryId": 5
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.stRec.eState": "E_PartState.Decided",
+            "PRG_TestTracking.stRec.eTargetBin": "E_Bin.TypeC",
+            "PRG_TestTracking.stRec.eDecisionSource": "E_DecisionSource.Fallback"
+          }
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.fbAlarms.xWarningActive": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "no_vision_goes_to_quarantine",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "write": {
+            "PRG_TestTracking.udiQueryId": 6
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.stRec.eTargetBin": "E_Bin.Quarantine",
+            "PRG_TestTracking.stRec.eDecisionSource": "E_DecisionSource.Fallback"
+          }
+        }
+      ]
+    },
+    {
+      "name": "missed_part_is_skipped",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xReinit": true,
+            "PRG_TestTracking.lrBeltPos": 0.0
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.udiPartId": 1,
+            "PRG_TestTracking.stVisIn.xValid": true,
+            "PRG_TestTracking.stVisIn.usiClass": 0,
+            "PRG_TestTracking.stVisIn.rConfidence": 0.9,
+            "PRG_TestTracking.stVisIn.lrX": 300.0,
+            "PRG_TestTracking.stVisIn.lrY": 0.0,
+            "PRG_TestTracking.stVisIn.lrTheta": 15.0,
+            "PRG_TestTracking.xSendVision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stDecIn.udiPartId": 1,
+            "PRG_TestTracking.stDecIn.eQuality": 1,
+            "PRG_TestTracking.stDecIn.rQualityProb": 0.95,
+            "PRG_TestTracking.stDecIn.xIdentReliable": true,
+            "PRG_TestTracking.xSendDecision": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.lrBeltPos": 1000.0
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiNext": 1
+          }
+        },
+        {
+          "write": {
+            "PRG_TestTracking.lrBeltPos": 1500.0
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiNext": 0,
+            "PRG_TestTracking.uiCount": 0,
+            "PRG_TestTracking.fbTracker.udiMissed": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "queue_overflow_alarm",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xReinit": true,
+            "PRG_TestTracking.lrBeltPos": 0.0
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.uiFillCount": 33
+          }
+        },
+        {
+          "waitMs": 1500
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiCount": 32,
+            "PRG_TestTracking.fbAlarms.xErrorActive": true
+          }
+        }
+      ]
+    }
+  ]
+}

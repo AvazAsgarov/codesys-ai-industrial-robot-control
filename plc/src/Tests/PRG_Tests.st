@@ -13,3 +13,5 @@ PRG_TestPackML();
 PRG_TestAlarms();
 PRG_TestEquipment();
 PRG_TestMotion();
+PRG_TestJointMonitor();
+PRG_TestTracking();
