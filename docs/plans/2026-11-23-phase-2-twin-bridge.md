@@ -25,7 +25,7 @@ The spike's runtime was stopped afterwards and its config restored, because it l
 
 ## Decision for the owner (before Task 1)
 
-**OPC UA security mode.** Option A is my recommendation.
+**OPC UA security mode.** **Decided by the owner (2026-11-23): Option A.**
 
 - **A — Anonymous, plaintext, localhost only.** The project's runtime config enables anonymous login and binds OPC UA and the PLC programming port to the loopback adapter only (Task 1 must prove that nothing listens on the LAN; if binding cannot be restricted, fall back to B). Fully scriptable, zero manual steps. Honest in the paper as "lab setup, single host".
 - **B — Signed & encrypted with a user.** Matches industrial practice (spec §5.4 spirit). Needs a one-time manual step in the CODESYS IDE (*Device → Security settings*: create the OPC UA server certificate), then the bridge connects with `Basic256Sha256` + the runtime test user from `.env`. Costs ~10 minutes of clicking once per machine, and the client certificate must be trusted on the PLC once.
