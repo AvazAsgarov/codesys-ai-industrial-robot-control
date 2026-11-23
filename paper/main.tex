@@ -1,0 +1,66 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{iftex}
+\ifXeTeX
+  % Tectonic/XeTeX: use a Times clone so the output matches IEEE's pdfTeX look.
+  \usepackage{fontspec}
+  % Load by file name: Tectonic has no fontconfig, so family names do not resolve.
+  \setmainfont{texgyretermes}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+    ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+  \setsansfont{texgyreheros}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+    ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+  \setmonofont{texgyrecursor}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold,
+    ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage{newtxtext,newtxmath}
+\fi
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}}
+
+\begin{document}
+
+\title{A Vision-Guided, AI-Supervised Robotic Sorting Cell on an IEC 61131-3 Soft-PLC with a MuJoCo Digital Twin}
+
+% TODO(P7): real author metadata from owner (names, department, university, city, email).
+\author{\IEEEauthorblockN{Author Name}
+\IEEEauthorblockA{\textit{Department} \\
+\textit{University}\\
+City, Country \\
+email@example.com}}
+
+\maketitle
+
+\begin{abstract}
+% TODO(P7): 150--250 words. Problem, architecture (PLC / vision / decision layer / twin),
+% key quantitative results from experiments/results/, conclusion.
+This paper presents a vision-guided robotic sorting and quality-inspection cell.
+\end{abstract}
+
+\begin{IEEEkeywords}
+IEC 61131-3, CODESYS, robot control, PackML, computer vision, open-vocabulary detection,
+decision model, digital twin, OPC UA, HMI
+\end{IEEEkeywords}
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-system-architecture}
+\input{sections/04-plc-control}
+\input{sections/05-perception}
+\input{sections/06-decision-layer}
+\input{sections/07-digital-twin}
+\input{sections/08-hmi}
+\input{sections/09-evaluation}
+\input{sections/10-conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
