@@ -1,0 +1,82 @@
+{
+  "cases": [
+    {
+      "name": "raise_sets_class_flag",
+      "steps": [
+        { "write": { "PRG_TestAlarms.xReinit": true } },
+        { "cycles": 2 },
+        { "write": { "PRG_TestAlarms.eId": 1, "PRG_TestAlarms.xRaise": true } },
+        { "cycles": 2 },
+        {
+          "expect": {
+            "PRG_TestAlarms.fbAlarms.xCriticalActive": true,
+            "PRG_TestAlarms.fbAlarms.xErrorActive": false,
+            "PRG_TestAlarms.fbAlarms.uiActiveCount": 1,
+            "PRG_TestAlarms.fbAlarms.eNewest": "E_AlarmId.EStop"
+          }
+        }
+      ]
+    },
+    {
+      "name": "clear_without_ack_keeps_flag",
+      "steps": [
+        { "write": { "PRG_TestAlarms.eId": 1, "PRG_TestAlarms.xClear": true } },
+        { "cycles": 2 },
+        {
+          "expect": {
+            "PRG_TestAlarms.fbAlarms.xCriticalActive": true,
+            "PRG_TestAlarms.fbAlarms.uiActiveCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "ack_after_clear_resets",
+      "steps": [
+        { "write": { "PRG_TestAlarms.xAck": true } },
+        { "cycles": 2 },
+        { "expect": { "PRG_TestAlarms.fbAlarms.xCriticalActive": false } }
+      ]
+    },
+    {
+      "name": "raise_twice_counts_once",
+      "steps": [
+        { "write": { "PRG_TestAlarms.xReinit": true } },
+        { "cycles": 2 },
+        { "write": { "PRG_TestAlarms.eId": 11, "PRG_TestAlarms.xRaise": true } },
+        { "cycles": 2 },
+        { "write": { "PRG_TestAlarms.xRaise": true } },
+        { "cycles": 2 },
+        { "expect": { "PRG_TestAlarms.fbAlarms.uiActiveCount": 1 } }
+      ]
+    },
+    {
+      "name": "warning_does_not_set_error",
+      "steps": [
+        { "cycles": 1 },
+        {
+          "expect": {
+            "PRG_TestAlarms.fbAlarms.xWarningActive": true,
+            "PRG_TestAlarms.fbAlarms.xErrorActive": false,
+            "PRG_TestAlarms.fbAlarms.xCriticalActive": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "ack_while_active_keeps_flag_until_clear",
+      "steps": [
+        { "write": { "PRG_TestAlarms.xReinit": true } },
+        { "cycles": 2 },
+        { "write": { "PRG_TestAlarms.eId": 1, "PRG_TestAlarms.xRaise": true } },
+        { "cycles": 2 },
+        { "write": { "PRG_TestAlarms.xAck": true } },
+        { "cycles": 2 },
+        { "expect": { "PRG_TestAlarms.fbAlarms.xCriticalActive": true } },
+        { "write": { "PRG_TestAlarms.eId": 1, "PRG_TestAlarms.xClear": true } },
+        { "cycles": 2 },
+        { "expect": { "PRG_TestAlarms.fbAlarms.xCriticalActive": false } }
+      ]
+    }
+  ]
+}
