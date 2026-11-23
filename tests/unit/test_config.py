@@ -13,7 +13,9 @@ def test_load_config_default():
     assert cfg.plc.opcua_endpoint == "opc.tcp://localhost:4840"
 
 
-def test_load_config_default_path_independent_of_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_load_config_default_path_independent_of_cwd(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     monkeypatch.chdir(tmp_path)
     cfg = load_config()
     assert cfg.plc.project_file == Path("plc/RobotCell.project")

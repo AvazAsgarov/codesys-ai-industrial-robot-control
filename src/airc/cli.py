@@ -29,7 +29,7 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
-    version: Annotated[  # noqa: ARG001 - consumed by the eager callback
+    version: Annotated[
         bool,
         typer.Option(
             "--version",
@@ -55,4 +55,8 @@ def config_show(
     except ConfigError as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_CONFIG_ERROR) from None
-    typer.echo(yaml.safe_dump(cfg.model_dump(mode="json"), sort_keys=False).rstrip())
+    # The types-PyYAML stubs leave one safe_dump parameter partially unknown.
+    dumped: str = yaml.safe_dump(  # pyright: ignore[reportUnknownMemberType]
+        cfg.model_dump(mode="json"), sort_keys=False
+    )
+    typer.echo(dumped.rstrip())

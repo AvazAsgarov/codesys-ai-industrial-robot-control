@@ -36,3 +36,24 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "PL", "PT", "ANN", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "ANN", "PLR2004"]
+
+[tool.pyright]
+include = ["src", "tests"]
+strict = ["src/airc"]
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
