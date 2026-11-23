@@ -24,6 +24,14 @@ uv run pre-commit install
 > **If `UV_PROJECT_ENVIRONMENT` is set on your machine** (for another project), uv will install
 > into that environment instead of `.venv`. Clear it for this repository first:
 > `Remove-Item Env:UV_PROJECT_ENVIRONMENT` (PowerShell, current session only).
+> The git hooks are safe either way: they call `python tools/uv_run.py`, which clears the
+> variable before running `uv run`.
+
+## Configuration
+
+`airc` reads `config/cell.yaml` from the repository (independent of the current folder).
+Override it with `--config <file>` or the `AIRC_CONFIG` environment variable. Relative paths in a
+config file are resolved against the folder that contains its `config/` folder.
 
 ## Check
 
