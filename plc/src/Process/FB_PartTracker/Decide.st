@@ -12,6 +12,6 @@ stOut := stRecIn;
 stOut.eTargetBin := F_SelectBin(stOut, GVL_Params.rConfidenceThreshold, GVL_Params.aClassToBin);
 stOut.eState := E_PartState.Decided;
 IF stOut.xVisionValid AND stOut.rConfidence < GVL_Params.rConfidenceThreshold THEN
-    RaiseAlarm(E_AlarmId.LowConfidence);
+    RaiseEventAlarm(E_AlarmId.LowConfidence);
 END_IF
 fbQueue.PutRecord(uiIdx, stOut);

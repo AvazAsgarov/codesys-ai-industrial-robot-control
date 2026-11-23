@@ -38,11 +38,14 @@ kinematics are in [`plc/scripts/README.md`](../../plc/scripts/README.md); design
 | Resetting | acknowledge alarms, reset robot / gripper / conveyor | safe, robot ready, no Critical/Error alarm |
 | Starting, Unholding, Unsuspending | robot home → ready pose, conveyor at speed (Manual: robot ready) | sequence waiting for parts and belt at speed |
 | Execute | pick sequence runs (Manual: joint jogging) | — (producing state) |
-| Stopping, Holding, Suspending, Completing | finish the current part, go home | sequence idle |
+| Stopping, Holding, Suspending, Completing | finish the current part, go home | sequence resting, robot and belt standing still |
 | Aborting | controlled group stop, conveyor halt, **vacuum kept** | robot standing still, sequence aborted |
 | Clearing | reset the sequence and equipment | safe, sequence idle, no Critical alarm |
 
-Interlocks: Critical alarm or not safe → Abort; Error alarm → Stop; any bin full → Suspend.
+Interlocks: Critical alarm or not safe → Abort; Error alarm → Stop; any bin full → Suspend, with an
+automatic Unsuspend once the bin is emptied (an operator Suspend waits for the Unsuspend command).
+Resetting and Clearing are not interrupted by the alarms they clear. HMI commands are one-shot:
+`PRG_Main` consumes `GVL_Hmi.eCommand` every cycle.
 Mode changes only in Stopped, Idle or Aborted. Maintenance and Manual-with-door-open run at 25 %.
 
 ## Pick-and-place sequence (`FB_PickSequence`)
@@ -53,6 +56,12 @@ Mode changes only in Stopped, Idle or Aborted. Maintenance and Manual-with-door-
 `Grip` (vacuum OK) → `Lift` (linear in PCS_1) → `MoveToBin` (PTP, MCS) → `Release` → `Retract`
 → `MoveReady`. Linear moves are used only for the short tracked moves; long transfers are PTP,
 which avoids wrist and base singularities on Cartesian paths across the cell.
+
+Faults: every error (tracking, motion, vacuum) first stops the robot (`Aborting`), then rests in
+`Error`. A part lost in transfer keeps the valve on (no release outside a bin). If a part passes the
+pick window end before it is gripped, the pick is abandoned and the part is marked missed. On reset,
+a part still on the cup is placed in the Quarantine bin on the next run; a scheduled part that was not
+gripped is marked missed.
 
 ## Bin selection (`F_SelectBin`, spec §7.2)
 
@@ -71,6 +80,10 @@ Without a decision by `tDecisionDeadline` (2.5 s), the fallback rule applies (so
 | ConveyorError, VacuumNoGrip, VacuumLost, QueueOverflow | Error | Stop |
 | FollowingErrorWarn, PartMissed, BinFull, VisionMissing, DecisionFallback, LowConfidence | Warning | none (BinFull: Suspend) |
 
+PartMissed, VisionMissing, DecisionFallback and LowConfidence are one-shot events (`RaiseEvent`):
+shown until acknowledged, never active, so they cannot block a reset. QueueOverflow clears itself
+as soon as a record fits again.
+
 ## Simulation tests
 
 Each file in `tests/plc/` is run with the MCP toolkit's `codesys_sim_test` against CODESYS's own
@@ -81,12 +94,15 @@ simulation (see `plc/scripts/README.md`).
 | `types.json` | 1 | configuration defaults |
 | `motion_smoke.json` | 1 | SoftMotion PTP move |
 | `packml.json` | 8 | state machine, modes, held abort condition |
-| `alarms.json` | 6 | latching, acknowledgement, classes |
+| `alarms.json` | 7 | latching, acknowledgement, classes, one-shot events |
 | `equipment.json` | 6 | photo-eye, vacuum gripper, bin, safety monitor |
 | `motion.json` | 5 | conveyor, robot PTP/linear, override, stop |
 | `joint_monitor.json` | 5 | following error, stale feedback |
 | `tracking.json` | 10 | capture, messages, fallback, missed parts, overflow |
-| `pick.json` | 4 | tracked pick-and-place, vacuum loss, abort |
-| `cell.json` | 6 | **end-to-end cell (exit test)**, E-stop, door, bin full, manual jog |
+| `pick.json` | 5 | tracked pick-and-place, vacuum loss, window end, abort and quarantine recovery |
+| `cell.json` | 8 | **end-to-end cell (exit test)**, E-stop recovery, door, bin full, operator suspend, restart after vacuum loss, manual jog |
 | `recipes.json` | 2 | Standard / HighSpeed |
-| **Total** | **54** | |
+| **Total** | **58** | |
+
+Time-based cases use real-time waits; CODESYS's simulation slows down under CPU load, so the waits
+have margin and expectations check steady states.

@@ -1,4 +1,5 @@
-// Updates a part's state. Placed and Dropped parts are counted and their slot is freed.
+// Updates a part's state. Placed, Dropped and Missed parts are counted and their slot is freed;
+// a missed part raises the PartMissed event.
 METHOD SetState
 VAR_INPUT
     uiIdx : UINT;
@@ -18,6 +19,10 @@ CASE eState OF
         fbQueue.Release(uiIdx);
     E_PartState.Dropped:
         udiDropped := udiDropped + 1;
+        fbQueue.Release(uiIdx);
+    E_PartState.Missed:
+        udiMissed := udiMissed + 1;
+        RaiseEventAlarm(E_AlarmId.PartMissed);
         fbQueue.Release(uiIdx);
 ELSE
     stR.eState := eState;

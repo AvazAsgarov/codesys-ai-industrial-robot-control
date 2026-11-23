@@ -215,6 +215,7 @@ tr_cases = [
             w(TR, **{"stVisIn.usiClass": 0}, xResendVision=True),
             wait(200),
             *query(4, usiClass=2),
+            e(TR, **{"fbTracker.udiVisionMsgs": 4}),
         ],
     },
     {
@@ -238,7 +239,7 @@ tr_cases = [
                 eTargetBin="E_Bin.TypeC",
                 eDecisionSource="E_DecisionSource.Fallback",
             ),
-            e(TR, **{"fbAlarms.xWarningActive": True}),
+            e(TR, **{"fbAlarms.eNewest": "E_AlarmId.DecisionFallback"}),
         ],
     },
     {
@@ -262,7 +263,12 @@ tr_cases = [
             e(TR, uiNext=1),
             w(TR, lrBeltPos=1500.0),
             wait(200),
-            e(TR, uiNext=0, uiCount=0, **{"fbTracker.udiMissed": 1}),
+            e(
+                TR,
+                uiNext=0,
+                uiCount=0,
+                **{"fbTracker.udiMissed": 1, "fbAlarms.eNewest": "E_AlarmId.PartMissed"},
+            ),
         ],
     },
     {
@@ -273,6 +279,14 @@ tr_cases = [
             w(TR, uiFillCount=33),
             wait(1500),
             e(TR, uiCount=32, **{"fbAlarms.xErrorActive": True}),
+            # parts leave the window -> slots free; the next capture clears the overflow
+            w(TR, lrBeltPos=5000.0),
+            wait(300),
+            e(TR, uiCount=0),
+            *capture(),
+            w(TR, xAck=True),
+            wait(300),
+            e(TR, uiCount=1, **{"fbAlarms.xErrorActive": False}),
         ],
     },
 ]

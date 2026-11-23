@@ -9,7 +9,7 @@ full_cycle_three_parts is the Phase 1 exit test.
 import json
 import sys
 
-CMD = {"Reset": 1, "Start": 2, "Stop": 3, "Clear": 9}
+CMD = {"Reset": 1, "Start": 2, "Stop": 3, "Suspend": 6, "Unsuspend": 7, "Clear": 9}
 MODE = {"Production": 1, "Manual": 3}
 QUALITY = {"Ok": 1, "Scrap": 3}
 CELL = "PRG_Main.fbCell."
@@ -38,7 +38,7 @@ def inject(cls, quality):
 
 
 def start_from_stopped():
-    return [*cmd("Reset", 3000), state("Idle"), *cmd("Start", 12000), state("Execute")]
+    return [*cmd("Reset", 3000), state("Idle"), *cmd("Start", 16000), state("Execute")]
 
 
 def recover_to_stopped():
@@ -74,7 +74,7 @@ cases = [
     {
         "name": "stop_completes_at_home",
         "steps": [
-            *cmd("Stop", 9000),
+            *cmd("Stop", 12000),
             state("Stopped"),
             {"expect": {CELL + "fbSeq.xIdleAtHome": True}},
         ],
@@ -91,6 +91,18 @@ cases = [
             {"write": {T + "xEStopOnTransfer": False, "GVL_Bridge.xEStopOk": True}},
             {"waitMs": 300},
             *recover_to_stopped(),
+            # restart: the part still on the cup is placed in quarantine first
+            *start_from_stopped(),
+            {"waitMs": 8000},
+            {
+                "expect": {
+                    CELL + "aBins[5].uiCount": 1,
+                    "GVL_Bridge.xVacuumOn": False,
+                    "GVL_Bridge.eState": "E_PackMLState.Execute",
+                }
+            },
+            *cmd("Stop", 12000),
+            state("Stopped"),
         ],
     },
     {
@@ -115,7 +127,38 @@ cases = [
             {"write": {"GVL_Bridge.axBinFull[0]": False}},
             {"waitMs": 12000},
             state("Execute"),
-            *cmd("Stop", 9000),
+            *cmd("Stop", 12000),
+            state("Stopped"),
+        ],
+    },
+    {
+        "name": "operator_suspend_holds_until_unsuspend",
+        "steps": [
+            *start_from_stopped(),
+            *cmd("Suspend", 9000),
+            state("Suspended"),
+            {"waitMs": 2000},
+            state("Suspended"),
+            *cmd("Unsuspend", 12000),
+            state("Execute"),
+            *cmd("Stop", 12000),
+            state("Stopped"),
+        ],
+    },
+    {
+        "name": "restart_after_vacuum_loss",
+        "steps": [
+            *start_from_stopped(),
+            {"write": {T + "xVacLostOnTransfer": True}},
+            *inject(0, "Ok"),
+            {"waitMs": 16000},
+            state("Stopped"),
+            {"expect": {CELL + "fbRobot.xMoving": False, CELL + "fbConv.lrActVelocity": 0}},
+            {"write": {T + "xVacLostOnTransfer": False}},
+            {"waitMs": 300},
+            *start_from_stopped(),
+            {"expect": {CELL + "ePickStep": "E_PickStep.WaitPart"}},
+            *cmd("Stop", 12000),
             state("Stopped"),
         ],
     },
@@ -129,7 +172,7 @@ cases = [
             {"waitMs": 1500},
             {"write": {"GVL_Hmi.axJogPlus[1]": False}},
             {"expect": {T + "lrJ1Delta": {"op": "=", "value": 0, "tolerance": 0.01}}},
-            *cmd("Stop", 9000),
+            *cmd("Stop", 12000),
             state("Stopped"),
             {"write": {"GVL_Hmi.eModeRequest": MODE["Manual"]}},
             {"waitMs": 500},

@@ -5,12 +5,17 @@
     In/Out  : AxisGroup (AxisGroup_Robot), ConveyorAxis (Axis_Conveyor)
     Inputs  : operator commands (GVL_Hmi), sensors and messages (GVL_Bridge), xLoopback
     Outputs : setpoints, belt and vacuum to the bridge; eState, eMode, ePickStep, aActAcs
-    States  : Resetting  - acknowledge alarms, reset equipment; done when safe and fault-free
+    States  : Resetting  - acknowledge alarms, reset equipment and the pick sequence; done when
+                           safe and fault-free
               Starting / Unholding / Unsuspending - robot home -> ready, conveyor at speed
+                           (a part still on the cup is placed in quarantine first)
               Execute    - automatic: pick sequence runs; Manual: jogging
-              Stopping / Holding / Suspending / Completing - finish the current part, go home
+              Stopping / Holding / Suspending / Completing - finish the current part, go home;
+                           done when the sequence rests, the robot and the belt stand still
               Aborting   - controlled stop, vacuum kept; Clearing - reset the sequence
-    Interlocks: Critical alarm or not safe -> Abort; Error alarm -> Stop; any bin full -> Suspend
+    Interlocks: Critical alarm or not safe -> Abort; Error alarm -> Stop; any bin full -> Suspend,
+              and Unsuspend automatically when that bin is emptied (not after an operator Suspend).
+              Resetting and Clearing are not interrupted by the alarms they are clearing.
 *)
 FUNCTION_BLOCK FB_SortingCell
 VAR_IN_OUT
@@ -65,10 +70,12 @@ VAR
     eBin : E_Bin;
     i : INT;
     xAnyBinFull : BOOL;
+    xSuspendedByBin : BOOL;             // the current suspension was caused by a full bin
     xComplete : BOOL;
     xAutoMode : BOOL;
     xRunBelt : BOOL;
     xJog : BOOL;
+    xMotionStill : BOOL;                // pick sequence resting, robot and belt standing still
     lrSpeedFactor : LREAL;
     aFeedback : ARRAY[1..6] OF LREAL;
 END_VAR
@@ -79,6 +86,7 @@ VAR CONSTANT
     JOG_JERK : LREAL := 3000;               // [deg/s3]
     JOG_MAX_LINEAR : LREAL := 100;          // [mm] per jog edge
     JOG_MAX_ANGULAR : LREAL := 45;          // [deg] per jog edge
+    BELT_STANDSTILL : LREAL := 0.5;         // [mm/s] belt counts as stopped below this
 END_VAR
 
 eState := fbSm.eState;
@@ -121,12 +129,17 @@ xJog := FALSE;
 fbSeq.xRun := FALSE;
 fbSeq.xAbort := FALSE;
 fbSeq.xReset := FALSE;
+xMotionStill := (fbSeq.eStep = E_PickStep.Idle OR fbSeq.eStep = E_PickStep.Error
+                 OR fbSeq.eStep = E_PickStep.Aborted)
+                AND NOT fbRobot.xMoving AND ABS(fbConv.lrActVelocity) < BELT_STANDSTILL;
 CASE eState OF
     E_PackMLState.Resetting:
+        fbSeq.xReset := TRUE;
         fbRobot.Reset();
         fbVac.Reset();
         fbConv.Reset();
-        xComplete := fbSafety.xSafeToMove AND fbRobot.xReady
+        xSuspendedByBin := FALSE;
+        xComplete := fbSafety.xSafeToMove AND fbRobot.xReady AND fbSeq.eStep = E_PickStep.Idle
                      AND NOT fbAlarms.xCriticalActive AND NOT fbAlarms.xErrorActive;
 
     E_PackMLState.Starting, E_PackMLState.Unholding, E_PackMLState.Unsuspending:
@@ -139,6 +152,7 @@ CASE eState OF
         END_IF
 
     E_PackMLState.Execute:
+        xSuspendedByBin := xAnyBinFull;          // a full bin in Execute raises the suspension
         IF xAutoMode THEN
             fbSeq.xRun := TRUE;
             xRunBelt := TRUE;
@@ -147,8 +161,7 @@ CASE eState OF
         END_IF
 
     E_PackMLState.Stopping, E_PackMLState.Holding, E_PackMLState.Suspending, E_PackMLState.Completing:
-        xComplete := fbSeq.eStep = E_PickStep.Idle OR fbSeq.eStep = E_PickStep.Error
-                     OR fbSeq.eStep = E_PickStep.Aborted;
+        xComplete := xMotionStill;
 
     E_PackMLState.Aborting:
         fbSeq.xAbort := TRUE;
@@ -176,7 +189,7 @@ fbTracker(lrBeltPos := fbConv.lrPosition, xPE1Rising := fbPe1.xRising,
           stVision := stVision, stDecision := stDecision);
 fbSeq(AxisGroup := AxisGroup, ConveyorAxis := ConveyorAxis,
       Robot := fbRobot, Gripper := fbVac, Tracker := fbTracker);
-fbVac(xVacuumOk := xVacuumOk);
+fbVac(xVacuumOk := xVacuumOk, tGripTimeout := GVL_Params.tVacuumTimeout);
 
 fbRobot.xEnable := eState <> E_PackMLState.Stopped;
 fbRobot.lrOverride := REAL_TO_LREAL(rOverride) * lrSpeedFactor;
@@ -220,10 +233,12 @@ fbAlarms();
 fbSm(eCommand := eCommand,
      eModeRequest := eModeRequest,
      xStateComplete := xComplete,
-     xAbortRequest := fbAlarms.xCriticalActive OR NOT fbSafety.xSafeToMove,
-     xStopRequest := fbAlarms.xErrorActive,
+     xAbortRequest := NOT fbSafety.xSafeToMove
+                      OR (fbAlarms.xCriticalActive AND eState <> E_PackMLState.Resetting
+                          AND eState <> E_PackMLState.Clearing),
+     xStopRequest := fbAlarms.xErrorActive AND eState <> E_PackMLState.Resetting,
      xSuspendRequest := xAnyBinFull,
-     xUnsuspendRequest := NOT xAnyBinFull);
+     xUnsuspendRequest := xSuspendedByBin AND NOT xAnyBinFull);
 
 // --- outputs to the bridge ---------------------------------------------------------------------
 aJointPosSp := fbRobot.aSetAcs;

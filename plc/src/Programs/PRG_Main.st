@@ -41,4 +41,6 @@ fbCell(AxisGroup := AxisGroup_Robot,
        stCapture => GVL_Bridge.stCapture,
        eState => GVL_Bridge.eState,
        eMode => GVL_Bridge.eMode);
+// commands are one-shot: consumed once the state machine has seen them
+GVL_Hmi.eCommand := E_PackMLCommand.None;
 GVL_Hmi.xAlarmAck := FALSE;

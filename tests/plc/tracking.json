@@ -229,6 +229,11 @@
           "expect": {
             "PRG_TestTracking.stRec.usiClass": 2
           }
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.fbTracker.udiVisionMsgs": 4
+          }
         }
       ]
     },
@@ -312,7 +317,7 @@
         },
         {
           "expect": {
-            "PRG_TestTracking.fbAlarms.xWarningActive": true
+            "PRG_TestTracking.fbAlarms.eNewest": "E_AlarmId.DecisionFallback"
           }
         }
       ]
@@ -419,7 +424,8 @@
           "expect": {
             "PRG_TestTracking.uiNext": 0,
             "PRG_TestTracking.uiCount": 0,
-            "PRG_TestTracking.fbTracker.udiMissed": 1
+            "PRG_TestTracking.fbTracker.udiMissed": 1,
+            "PRG_TestTracking.fbAlarms.eNewest": "E_AlarmId.PartMissed"
           }
         }
       ]
@@ -448,6 +454,41 @@
           "expect": {
             "PRG_TestTracking.uiCount": 32,
             "PRG_TestTracking.fbAlarms.xErrorActive": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestTracking.lrBeltPos": 5000.0
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiCount": 0
+          }
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xAck": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiCount": 1,
+            "PRG_TestTracking.fbAlarms.xErrorActive": false
           }
         }
       ]

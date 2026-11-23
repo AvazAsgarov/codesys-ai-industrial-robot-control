@@ -5,3 +5,4 @@ END_VAR
 
 eStep := eNew;
 xRequested := FALSE;
+tonRelease(IN := FALSE);

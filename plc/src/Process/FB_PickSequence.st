@@ -8,8 +8,12 @@
               Tracker (FB_PartTracker). The owner calls Robot, Gripper and Tracker each cycle.
     Inputs  : xRun - work on parts (FALSE: finish the current part, then go home and idle)
               xAbort - controlled stop now; the vacuum stays as it is (no dropped part)
-              xReset - leave Error / Aborted to Idle
+              xReset - leave Error / Aborted to Idle. A part still held is placed in the
+                       Quarantine bin on the next run; a scheduled part is marked missed.
     Outputs : eStep, xIdleAtHome, xBusy, udiPicked, udiPlaced, eLastBin, xPlacedPulse (one cycle)
+    Errors  : every error first stops the robot (Aborting), then rests in Error.
+    Window  : a pick is abandoned (part missed) if the part passes the pick window end before
+              it is gripped.
     Moves   : linear only for the short tracked moves (PCS_1); PTP for long transfers, which
               avoids wrist/base singularities on Cartesian paths across the cell.
 *)
@@ -39,11 +43,14 @@ VAR
     fbTrack : MC_TrackConveyorBelt;
     tonRelease : TON;
     xTrackExec : BOOL;
-    uiIdx : UINT;
+    uiIdx : UINT;                       // slot of the part being handled, 0 = none
     stPart : ST_PartRecord;
     stObject : MC_COORD_REF;
     stTarget : SMC_POS_REF;
+    stHeld : ST_PartRecord;
     xAtHome : BOOL;
+    xFaultPending : BOOL;               // Aborting was entered because of an error
+    xRecover : BOOL;                    // a held part must go to quarantine on the next run
     // robot command handshake
     iCmdPhase : INT;
     xRequested : BOOL;
@@ -96,18 +103,37 @@ IF xAbort AND eStep <> E_PickStep.Idle AND eStep <> E_PickStep.Aborting
     xRequested := FALSE;
 END_IF
 IF xReset AND (eStep = E_PickStep.Error OR eStep = E_PickStep.Aborted) THEN
+    IF Gripper.xHolding AND uiIdx > 0 THEN
+        stPart.eTargetBin := E_Bin.Quarantine;       // unknown history: quarantine it
+        xRecover := TRUE;
+    ELSE
+        Gripper.xCmdVacuum := FALSE;
+        xRecover := FALSE;
+        IF uiIdx > 0 THEN
+            stHeld := Tracker.GetRecord(uiIdx);
+            IF stHeld.eState = E_PartState.Scheduled OR stHeld.eState = E_PartState.Picked THEN
+                Tracker.SetState(uiIdx, E_PartState.Missed);
+            END_IF
+            uiIdx := 0;
+        END_IF
+    END_IF
     eStep := E_PickStep.Idle;
     iCmdPhase := 0;
     xRequested := FALSE;
     xTrackExec := FALSE;
     xAtHome := FALSE;
+    xFaultPending := FALSE;
     Robot.xExecute := FALSE;
 END_IF
 
 CASE eStep OF
     E_PickStep.Idle:
         IF xRun THEN
-            NextStep(E_PickStep.MoveHome);
+            IF xRecover THEN
+                NextStep(E_PickStep.MoveToBin);
+            ELSE
+                NextStep(E_PickStep.MoveHome);
+            END_IF
         END_IF
 
     E_PickStep.MoveHome:
@@ -154,7 +180,7 @@ CASE eStep OF
         IF fbTrack.Done THEN
             NextStep(E_PickStep.Approach);
         ELSIF fbTrack.Error THEN
-            NextStep(E_PickStep.Error);
+            GoError();
         END_IF
 
     E_PickStep.Approach:
@@ -176,9 +202,10 @@ CASE eStep OF
             udiPicked := udiPicked + 1;
             NextStep(E_PickStep.Lift);
         ELSIF Gripper.HasError THEN
-            Gripper.xCmdVacuum := FALSE;
+            Gripper.xCmdVacuum := FALSE;          // nothing is held
             Tracker.SetState(uiIdx, E_PartState.Dropped);
-            NextStep(E_PickStep.Error);
+            uiIdx := 0;
+            GoError();
         END_IF
 
     E_PickStep.Lift:
@@ -199,8 +226,9 @@ CASE eStep OF
         Gripper.xCmdVacuum := FALSE;
         tonRelease(IN := TRUE, PT := RELEASE_TIME);
         IF tonRelease.Q THEN
-            tonRelease(IN := FALSE);
             Tracker.SetState(uiIdx, E_PartState.Placed);
+            uiIdx := 0;
+            xRecover := FALSE;
             udiPlaced := udiPlaced + 1;
             eLastBin := stPart.eTargetBin;
             xPlacedPulse := TRUE;
@@ -223,21 +251,41 @@ CASE eStep OF
         Request(E_RobotCmd.Stop, stTarget);
         IF xCmdDone OR xCmdError THEN
             xTrackExec := FALSE;
-            NextStep(E_PickStep.Aborted);
+            IF xFaultPending THEN
+                xFaultPending := FALSE;
+                NextStep(E_PickStep.Error);
+            ELSE
+                NextStep(E_PickStep.Aborted);
+            END_IF
         END_IF
 
     E_PickStep.Aborted, E_PickStep.Error:
         ;   // wait for xReset
 END_CASE
 
-// A part lost while carrying it: the cell must stop (VacuumLost is an Error-class alarm).
-IF (eStep = E_PickStep.Lift OR eStep = E_PickStep.MoveToBin) AND Gripper.HasError THEN
+// The part passed the pick window end before it was gripped: give it up, do not chase it.
+IF (eStep = E_PickStep.StartTracking OR eStep = E_PickStep.Approach OR eStep = E_PickStep.Descend
+    OR eStep = E_PickStep.Grip) AND uiIdx > 0 AND NOT Gripper.xHolding
+   AND Tracker.CurrentX(uiIdx) > GVL_CellGeometry.PICK_WINDOW_END_X THEN
     Gripper.xCmdVacuum := FALSE;
-    Tracker.SetState(uiIdx, E_PartState.Dropped);
-    NextStep(E_PickStep.Error);
+    Tracker.SetState(uiIdx, E_PartState.Missed);
+    uiIdx := 0;
+    xTrackExec := FALSE;
+    iCmdPhase := 0;
+    Robot.xExecute := FALSE;
+    NextStep(E_PickStep.MoveReady);
 END_IF
-IF xCmdError AND eStep <> E_PickStep.Aborted THEN
-    NextStep(E_PickStep.Error);
+
+// A part lost while carrying it: stop the robot; the valve stays on (spec 5.4: no release outside
+// a bin), Stopping / recovery decide what happens next.
+IF (eStep = E_PickStep.Lift OR eStep = E_PickStep.MoveToBin) AND Gripper.HasError THEN
+    Tracker.SetState(uiIdx, E_PartState.Dropped);
+    uiIdx := 0;
+    GoError();
+END_IF
+IF xCmdError AND eStep <> E_PickStep.Aborting AND eStep <> E_PickStep.Aborted
+   AND eStep <> E_PickStep.Error THEN
+    GoError();
 END_IF
 
 xIdleAtHome := eStep = E_PickStep.Idle AND xAtHome;

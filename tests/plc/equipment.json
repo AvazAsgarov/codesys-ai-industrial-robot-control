@@ -28,7 +28,7 @@
         },
         {
           "write": {
-            "PRG_TestEquipment.udiPulseMs": 1000,
+            "PRG_TestEquipment.udiPulseMs": 5000,
             "PRG_TestEquipment.xStartPulse": true
           }
         },

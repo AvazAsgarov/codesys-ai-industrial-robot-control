@@ -36,7 +36,7 @@
           }
         },
         {
-          "waitMs": 12000
+          "waitMs": 16000
         },
         {
           "expect": {
@@ -107,7 +107,7 @@
           }
         },
         {
-          "waitMs": 9000
+          "waitMs": 12000
         },
         {
           "expect": {
@@ -143,7 +143,7 @@
           }
         },
         {
-          "waitMs": 12000
+          "waitMs": 16000
         },
         {
           "expect": {
@@ -200,6 +200,55 @@
           "expect": {
             "GVL_Bridge.eState": "E_PackMLState.Stopped"
           }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 1
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 2
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "waitMs": 8000
+        },
+        {
+          "expect": {
+            "PRG_Main.fbCell.aBins[5].uiCount": 1,
+            "GVL_Bridge.xVacuumOn": false,
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 3
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
         }
       ]
     },
@@ -225,7 +274,7 @@
           }
         },
         {
-          "waitMs": 12000
+          "waitMs": 16000
         },
         {
           "expect": {
@@ -290,7 +339,7 @@
           }
         },
         {
-          "waitMs": 12000
+          "waitMs": 16000
         },
         {
           "expect": {
@@ -329,7 +378,197 @@
           }
         },
         {
+          "waitMs": 12000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
+        }
+      ]
+    },
+    {
+      "name": "operator_suspend_holds_until_unsuspend",
+      "steps": [
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 1
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 2
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 6
+          }
+        },
+        {
           "waitMs": 9000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Suspended"
+          }
+        },
+        {
+          "waitMs": 2000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Suspended"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 7
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 3
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
+        }
+      ]
+    },
+    {
+      "name": "restart_after_vacuum_loss",
+      "steps": [
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 1
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 2
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.xVacLostOnTransfer": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.usiInjClass": 0,
+            "PRG_TestCell.eInjQuality": 1,
+            "PRG_TestCell.xInject": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
+        },
+        {
+          "expect": {
+            "PRG_Main.fbCell.fbRobot.xMoving": false,
+            "PRG_Main.fbCell.fbConv.lrActVelocity": 0
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.xVacLostOnTransfer": false
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 1
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 2
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "expect": {
+            "PRG_Main.fbCell.ePickStep": "E_PickStep.WaitPart"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 3
+          }
+        },
+        {
+          "waitMs": 12000
         },
         {
           "expect": {
@@ -360,7 +599,7 @@
           }
         },
         {
-          "waitMs": 12000
+          "waitMs": 16000
         },
         {
           "expect": {
@@ -403,7 +642,7 @@
           }
         },
         {
-          "waitMs": 9000
+          "waitMs": 12000
         },
         {
           "expect": {

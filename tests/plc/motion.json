@@ -43,23 +43,12 @@
         },
         {
           "expect": {
-            "PRG_TestMotion.fbConv.lrPosition": {
-              "op": ">=",
-              "value": 150
+            "PRG_TestMotion.fbConv.xAtSpeed": true,
+            "PRG_TestMotion.fbConv.lrActVelocity": {
+              "op": "=",
+              "value": 100,
+              "tolerance": 1
             }
-          }
-        },
-        {
-          "expect": {
-            "PRG_TestMotion.fbConv.lrPosition": {
-              "op": "<=",
-              "value": 320
-            }
-          }
-        },
-        {
-          "expect": {
-            "PRG_TestMotion.fbConv.xAtSpeed": true
           }
         },
         {

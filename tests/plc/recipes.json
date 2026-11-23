@@ -3,13 +3,41 @@
     {
       "name": "apply_highspeed",
       "steps": [
-        { "write": { "PRG_Recipe_Cell.iApply": 1 } },
-        { "waitMs": 500 },
+        {
+          "write": {
+            "GVL_Config.xCellEnabled": true
+          }
+        },
+        {
+          "write": {
+            "PRG_Recipe_Cell.iApply": 1
+          }
+        },
+        {
+          "waitMs": 500
+        },
         {
           "expect": {
-            "GVL_Params.lrBeltSpeed": { "op": "=", "value": 200, "tolerance": 0.001 },
-            "GVL_Params.lrLinVelocity": { "op": "=", "value": 800, "tolerance": 0.001 },
-            "GVL_Params.lrPtpVelFactor": { "op": "=", "value": 0.8, "tolerance": 0.0001 }
+            "GVL_Params.lrBeltSpeed": {
+              "op": "=",
+              "value": 200,
+              "tolerance": 0.001
+            },
+            "GVL_Params.lrLinVelocity": {
+              "op": "=",
+              "value": 800,
+              "tolerance": 0.001
+            },
+            "GVL_Params.lrPtpVelFactor": {
+              "op": "=",
+              "value": 0.8,
+              "tolerance": 0.0001
+            },
+            "PRG_Main.fbCell.fbConv.lrVelocity": {
+              "op": "=",
+              "value": 200,
+              "tolerance": 0.001
+            }
           }
         }
       ]
@@ -17,13 +45,31 @@
     {
       "name": "apply_standard_restores",
       "steps": [
-        { "write": { "PRG_Recipe_Cell.iApply": 0 } },
-        { "waitMs": 500 },
+        {
+          "write": {
+            "PRG_Recipe_Cell.iApply": 0
+          }
+        },
+        {
+          "waitMs": 500
+        },
         {
           "expect": {
-            "GVL_Params.lrBeltSpeed": { "op": "=", "value": 100, "tolerance": 0.001 },
-            "GVL_Params.lrLinVelocity": { "op": "=", "value": 500, "tolerance": 0.001 },
-            "GVL_Params.lrPtpVelFactor": { "op": "=", "value": 0.5, "tolerance": 0.0001 }
+            "GVL_Params.lrBeltSpeed": {
+              "op": "=",
+              "value": 100,
+              "tolerance": 0.001
+            },
+            "GVL_Params.lrLinVelocity": {
+              "op": "=",
+              "value": 500,
+              "tolerance": 0.001
+            },
+            "GVL_Params.lrPtpVelFactor": {
+              "op": "=",
+              "value": 0.5,
+              "tolerance": 0.0001
+            }
           }
         }
       ]

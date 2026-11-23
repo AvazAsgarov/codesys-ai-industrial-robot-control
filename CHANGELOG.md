@@ -22,7 +22,9 @@ Phase 1 — PLC core.
 - Tracked pick-and-place sequence (`MC_TrackConveyorBelt`) from the moving belt.
 - Sorting cell unit with interlocks, bridge watchdog and manual jogging.
 - Standard and HighSpeed recipes.
-- 54 simulation test cases in `tests/plc/` (validated in CI) and ADR 0007.
+- Fault recovery: errors stop the robot before resting in Error; a part still on the cup goes to
+  quarantine after a reset; picks are abandoned at the window end; one-shot event alarms.
+- 58 simulation test cases in `tests/plc/` (validated in CI) and ADR 0007.
 
 ## [0.1.0] - 2026-11-23
 

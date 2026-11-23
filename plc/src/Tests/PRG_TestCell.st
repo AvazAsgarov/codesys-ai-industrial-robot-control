@@ -2,8 +2,10 @@
     PRG_TestCell
     Purpose : Simulation test harness for the whole cell in PRG_Main (tests/plc/cell.json).
               Simulates the vacuum switch, injects parts (PE1 pulse, then vision and decision
-              messages for the captured part id) and can press the E-stop during a transfer.
-    Inputs  : xActive; xInject (+ usiInjClass, eInjQuality); xEStopOnTransfer; xMark (J1 reference)
+              messages for the captured part id) and can press the E-stop or lose the vacuum
+              during a transfer.
+    Inputs  : xActive; xInject (+ usiInjClass, eInjQuality); xEStopOnTransfer; xVacLostOnTransfer;
+              xMark (J1 reference)
     Outputs : lrJ1Delta - J1 movement since xMark [deg]
 *)
 PROGRAM PRG_TestCell
@@ -16,6 +18,8 @@ VAR
     tonPulse : TON;
     tonVac : TON;
     xEStopOnTransfer : BOOL;
+    xVacLostOnTransfer : BOOL;
+    xVacLost : BOOL;                    // latched until xVacLostOnTransfer is released
     xMark : BOOL;
     lrJ1Start : LREAL;
     lrJ1Delta : LREAL;
@@ -28,8 +32,13 @@ IF NOT xActive THEN
     RETURN;
 END_IF
 
+IF xVacLostOnTransfer AND PRG_Main.fbCell.ePickStep = E_PickStep.MoveToBin THEN
+    xVacLost := TRUE;
+ELSIF NOT xVacLostOnTransfer THEN
+    xVacLost := FALSE;
+END_IF
 tonVac(IN := GVL_Bridge.xVacuumOn, PT := T#100MS);
-GVL_Bridge.xVacuumOk := tonVac.Q;
+GVL_Bridge.xVacuumOk := tonVac.Q AND NOT xVacLost;
 
 CASE iInject OF
     0:
