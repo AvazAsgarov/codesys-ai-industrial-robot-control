@@ -12,3 +12,4 @@ PRG_TestTypes();
 PRG_TestPackML();
 PRG_TestAlarms();
 PRG_TestEquipment();
+PRG_TestMotion();

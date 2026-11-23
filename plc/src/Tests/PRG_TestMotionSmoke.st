@@ -17,17 +17,20 @@ VAR
     xMoveError : BOOL;
 END_VAR
 
-fbPower(AxisGroup := AxisGroup_Robot, Enable := xGo, bRegulatorOn := TRUE, bDriveStart := TRUE);
-fbEnable(AxisGroup := AxisGroup_Robot, Execute := fbPower.Status);
-fbMove.Position.a.a0 := 30;
-fbMove.Position.a.a1 := -20;
-fbMove.Position.a.a2 := 40;
-fbMove.Position.a.a3 := 0;
-fbMove.Position.a.a4 := 45;
-fbMove.Position.a.a5 := 0;
-fbMove(AxisGroup := AxisGroup_Robot, Execute := xGo AND fbEnable.Done);
-fbReadPos(AxisGroup := AxisGroup_Robot);
-lrJ1 := fbReadPos.Position.a.a0;
-lrJ2 := fbReadPos.Position.a.a1;
-xMoveDone := fbMove.Done;
-xMoveError := fbMove.Error;
+// Only commands the robot while the test runs, so other harnesses can use it.
+IF xGo THEN
+    fbPower(AxisGroup := AxisGroup_Robot, Enable := TRUE, bRegulatorOn := TRUE, bDriveStart := TRUE);
+    fbEnable(AxisGroup := AxisGroup_Robot, Execute := fbPower.Status);
+    fbMove.Position.a.a0 := 30;
+    fbMove.Position.a.a1 := -20;
+    fbMove.Position.a.a2 := 40;
+    fbMove.Position.a.a3 := 0;
+    fbMove.Position.a.a4 := 45;
+    fbMove.Position.a.a5 := 0;
+    fbMove(AxisGroup := AxisGroup_Robot, Execute := fbEnable.Done);
+    fbReadPos(AxisGroup := AxisGroup_Robot);
+    lrJ1 := fbReadPos.Position.a.a0;
+    lrJ2 := fbReadPos.Position.a.a1;
+    xMoveDone := fbMove.Done;
+    xMoveError := fbMove.Error;
+END_IF
