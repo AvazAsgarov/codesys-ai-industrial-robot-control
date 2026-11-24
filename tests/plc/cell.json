@@ -93,7 +93,11 @@
         },
         {
           "expect": {
-            "GVL_Bridge.eState": "E_PackMLState.Execute"
+            "GVL_Bridge.eState": "E_PackMLState.Execute",
+            "GVL_Bridge.udiSetpointSeq": {
+              "op": ">",
+              "value": 1000
+            }
           }
         }
       ]
@@ -510,7 +514,7 @@
           "waitMs": 300
         },
         {
-          "waitMs": 16000
+          "waitMs": 24000
         },
         {
           "expect": {
@@ -574,6 +578,164 @@
           "expect": {
             "GVL_Bridge.eState": "E_PackMLState.Stopped"
           }
+        }
+      ]
+    },
+    {
+      "name": "bridge_loss_aborts_cell",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestCell.xBridgeSim": true
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 1
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 2
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "expect": {
+            "PRG_Main.fbCell.fbAlarms.xCriticalActive": false
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.xBridgeStallOnTransfer": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.usiInjClass": 1,
+            "PRG_TestCell.eInjQuality": 1,
+            "PRG_TestCell.xInject": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Aborted"
+          }
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eNewestAlarm": "E_AlarmId.BridgeLost",
+            "GVL_Bridge.xAlarmCritical": true,
+            "GVL_Bridge.xVacuumOn": true,
+            "PRG_Main.fbCell.fbRobot.xMoving": false,
+            "PRG_TestCell.lrAbortDelayMs": {
+              "op": "<",
+              "value": 1000
+            }
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.xBridgeStallOnTransfer": false,
+            "PRG_TestCell.xBridgeStall": false
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 9
+          }
+        },
+        {
+          "waitMs": 4000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 1
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 2
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "waitMs": 8000
+        },
+        {
+          "expect": {
+            "PRG_Main.fbCell.aBins[5].uiCount": 2,
+            "GVL_Bridge.xVacuumOn": false
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eCommand": 3
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.xBridgeSim": false,
+            "GVL_Bridge.xTwinActive": false
+          }
+        },
+        {
+          "waitMs": 300
         }
       ]
     },

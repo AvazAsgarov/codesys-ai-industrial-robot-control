@@ -1,6 +1,6 @@
 project:
   name: codesys-ai-industrial-robot-control
-  version: 0.1.0
+  version: 0.3.0
 plc:
   project_file: plc/RobotCell.project
-  opcua_endpoint: opc.tcp://localhost:4840
+  opcua_endpoint: opc.tcp://127.0.0.1:4840  # IPv4: OPC UA is bound to 127.0.0.1 only

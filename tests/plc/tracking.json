@@ -492,6 +492,69 @@
           }
         }
       ]
+    },
+    {
+      "name": "clear_forgets_all_parts",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xReinit": true,
+            "PRG_TestTracking.lrBeltPos": 0.0
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiCount": 2,
+            "PRG_TestTracking.fbTracker.stCapture.udiPartId": 2
+          }
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xClear": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiCount": 0
+          }
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.uiCount": 1,
+            "PRG_TestTracking.fbTracker.stCapture.udiPartId": 3
+          }
+        }
+      ]
     }
   ]
 }

@@ -8,6 +8,14 @@
     Outputs : xReady (enabled, no error), xBusy / xDone / xError of the running command,
               eSmcError, xMoving, stActAcs, stActMcs, aSetAcs[1..6] (joint setpoints, deg)
     Alarms  : AxisGroupError
+    Lag     : SoftMotion's own TCP lag check compares the virtual drives' actual position, which
+              trails the setpoint by one task cycle by design; its default (1 mm) trips at speed
+              with Windows task jitter. MAX_TCP_LAG covers that; the real following error of the
+              servo motors is supervised by FB_JointMonitor against the twin's feedback.
+    Reset   : MC_GroupReset answers "no error to reset" when the group already left ErrorStop;
+              that is a successful reset (otherwise the fault, and Clearing, would never end).
+              The group is enabled only while it is disabled: re-enabling a group that a reset
+              left enabled is an error of MC_GroupEnable.
     Note    : call once per cycle in the SoftMotion bus cycle task.
 *)
 FUNCTION_BLOCK FB_Robot IMPLEMENTS I_Equipment
@@ -37,6 +45,9 @@ VAR CONSTANT
     MIN_OVERRIDE : LREAL := 0.01;
     STOP_DECELERATION : LREAL := 5000;     // path deceleration of a controlled stop [mm/s2]
     STOP_JERK : LREAL := 100000;           // path jerk of a controlled stop [mm/s3]
+    MAX_TCP_LAG : LREAL := 10;             // SoftMotion TCP lag tolerance [mm]
+    MAX_ORIENTATION_LAG : LREAL := 2;      // [deg]
+    MAX_AXIS_LAG : LREAL := 2;             // per joint [deg]
 END_VAR
 VAR
     fbPower : SMC_GroupPower;
@@ -50,11 +61,14 @@ VAR
     fbReadMcs : MC_GroupReadActualPosition := (Enable := TRUE, CoordSystem := SMC_COORD_SYSTEM.MCS);
     fbReadSet : SMC_GroupReadSetPosition := (Enable := TRUE, CoordSystem := SMC_COORD_SYSTEM.ACS);
     fbStatus : MC_GroupReadStatus := (Enable := TRUE);
+    fbPathTol : SMC_GroupSetPathTolerance := (MaxPositionLag := MAX_TCP_LAG,
+                                              MaxOrientationLag := MAX_ORIENTATION_LAG);
     rtExecute : R_TRIG;
     eActive : E_RobotCmd;
     xResetRequest : BOOL;
     xFault : BOOL;
     lrOverrideLimited : LREAL;
+    xEnabled : BOOL;                       // powered and enabled, not in error
 END_VAR
 
 rtExecute(CLK := xExecute);
@@ -69,11 +83,22 @@ END_IF
 
 fbStatus(AxisGroup := AxisGroup);
 fbPower(AxisGroup := AxisGroup, Enable := xEnable, bRegulatorOn := xEnable, bDriveStart := xEnable);
-fbEnable(AxisGroup := AxisGroup, Execute := fbPower.Status AND NOT xResetRequest);
+fbEnable(AxisGroup := AxisGroup,
+         Execute := fbPower.Status AND NOT xResetRequest
+                    AND (fbStatus.GroupDisabled OR fbEnable.Busy OR fbEnable.Done));
+xEnabled := fbPower.Status AND fbStatus.Valid AND NOT fbStatus.GroupDisabled
+            AND NOT fbStatus.GroupErrorStop;
+fbPathTol.MaxAxisLag.a0 := MAX_AXIS_LAG;
+fbPathTol.MaxAxisLag.a1 := MAX_AXIS_LAG;
+fbPathTol.MaxAxisLag.a2 := MAX_AXIS_LAG;
+fbPathTol.MaxAxisLag.a3 := MAX_AXIS_LAG;
+fbPathTol.MaxAxisLag.a4 := MAX_AXIS_LAG;
+fbPathTol.MaxAxisLag.a5 := MAX_AXIS_LAG;
+fbPathTol(AxisGroup := AxisGroup, Execute := xEnabled);   // again after every enable
 
 lrOverrideLimited := LIMIT(MIN_OVERRIDE, lrOverride, 1.0);
 fbOverride(AxisGroup := AxisGroup,
-           Enable := fbEnable.Done AND NOT fbStatus.GroupStopping AND NOT fbStatus.GroupErrorStop,
+           Enable := xEnabled AND NOT fbStatus.GroupStopping,
            VelFactor := lrOverrideLimited,
            PathVelFactor := lrOverrideLimited);
 
@@ -102,13 +127,14 @@ fbStop(AxisGroup := AxisGroup, Execute := eActive = E_RobotCmd.Stop);
 fbReset(AxisGroup := AxisGroup, Execute := xResetRequest);
 IF xResetRequest AND (fbReset.Done OR fbReset.Error) THEN
     xResetRequest := FALSE;
-    IF fbReset.Done THEN
+    IF fbReset.Done OR NOT fbStatus.GroupErrorStop THEN
         IF xFault AND itfAlarms <> 0 THEN
             itfAlarms.Clear(E_AlarmId.AxisGroupError);
         END_IF
         xFault := FALSE;
         eSmcError := SMC_ERROR.SMC_NO_ERROR;
     END_IF
+    fbStatus(AxisGroup := AxisGroup);   // the fault check below must see the state after the reset
 END_IF
 
 fbReadAcs(AxisGroup := AxisGroup);
@@ -134,7 +160,8 @@ CASE eActive OF
         xBusy := fbStop.Busy; xDone := fbStop.Done; xError := fbStop.Error;
         IF fbStop.Error THEN eSmcError := fbStop.ErrorID; END_IF
     E_RobotCmd.Reset:
-        xBusy := xResetRequest; xDone := NOT xResetRequest AND NOT xFault; xError := fbReset.Error;
+        xBusy := xResetRequest; xDone := NOT xResetRequest AND NOT xFault;
+        xError := fbReset.Error AND fbStatus.GroupErrorStop;
 ELSE
     xBusy := FALSE; xDone := FALSE; xError := FALSE;
 END_CASE
@@ -151,4 +178,4 @@ IF (fbPower.Error OR fbEnable.Error OR fbStatus.GroupErrorStop OR xError) AND NO
 END_IF
 
 xMoving := fbStatus.GroupMoving OR fbStatus.GroupStopping;
-xReady := fbEnable.Done AND NOT xFault AND NOT fbStatus.GroupErrorStop;
+xReady := xEnabled AND NOT xFault;

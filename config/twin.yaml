@@ -1,0 +1,47 @@
+# MuJoCo digital twin (spec §8). Cell geometry (robot kinematics, belt frame, photo-eyes, bins)
+# comes from the PLC sources (plc/src/Config/GVL_CellGeometry.st); this file holds what only the
+# twin needs. Units: mm, kg, seconds, N·m.
+physics_timestep_s: 0.002
+bridge_period_s: 0.02
+# a stalled OPC UA request ends (and the bridge reconnects) before the PLC's 500 ms watchdog
+bridge_timeout_s: 0.4
+
+belt:
+  length_mm: 2100
+  width_mm: 300
+  thickness_mm: 20
+
+photo_eye_height_mm: 20          # beam height above the belt
+
+# Simulated servo drives: PD position control with velocity feed-forward (as a drive does),
+# torque limit, rotor inertia (armature) and a little viscous friction.
+servo:
+  kp: [5000, 5000, 5000, 400, 400, 400]            # N·m/rad
+  # kv for a damping ratio of about 0.9 with the joint inertia at HOME (3.65, 7.62, 1.17, 0.033,
+  # 0.025, 0.020 kg·m², measured in the model)
+  kv: [245, 350, 140, 7, 6, 5]                     # N·m·s/rad (velocity gain)
+  friction: [2, 2, 2, 0.5, 0.5, 0.5]               # N·m·s/rad (joint viscous friction)
+  torque_limit: [300, 300, 300, 60, 60, 60]        # N·m
+  armature: [0.1, 0.1, 0.1, 0.02, 0.02, 0.02]      # kg·m²
+  # Joint limits [deg], as the PLC drives (Phase 1 plan, Task 1)
+  range_deg: [[-170, 170], [-90, 150], [-120, 150], [-180, 180], [-120, 120], [-360, 360]]
+
+# P2 placeholder parts (scanned objects come in Phase 3). Class index = PLC usiClass.
+parts:
+  mass_kg: 0.15
+  friction: 0.8
+  pool_per_class: 8
+  classes:
+    - {name: type_a, shape: box, size_mm: [60, 60, 40], rgba: [0.80, 0.15, 0.15, 1]}
+    - {name: type_b, shape: cylinder, size_mm: [60, 40], rgba: [0.15, 0.30, 0.85, 1]}
+    - {name: type_c, shape: box, size_mm: [80, 40, 40], rgba: [0.15, 0.65, 0.25, 1]}
+
+suction:
+  max_gap_mm: 5                  # weld when the cup is this close to the part top
+  cup_radius_mm: 20
+
+bins:
+  # inner width (X, limited by the 200 mm spacing of the PLC drop poses), depth (Y), height
+  size_mm: [160, 300, 160]       # rim 160: a held part clears it by 50 mm at the drop pose (Z 250)
+  wall_mm: 5
+  capacity: 10

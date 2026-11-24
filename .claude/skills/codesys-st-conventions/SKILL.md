@@ -46,10 +46,13 @@ Authoritative rules: `docs/conventions.md` §1. This skill is the working checkl
 ## Verify, then export
 
 1. `compile` with `check_all: true, deep: true`: must report **0 errors, 0 warnings**.
-2. Unit-test in simulation: `codesys_sim_start` → `codesys_sim_force`/`codesys_sim_write` →
+2. Before simulation tests run `python tools/uv_run.py airc plc unthrottle-ide`: Windows 11
+   throttles the windowless IDE, and its simulation then runs at ~25 % of real time, which breaks
+   the specs' real-time waits.
+3. Unit-test in simulation: `codesys_sim_start` → `codesys_sim_force`/`codesys_sim_write` →
    `codesys_sim_cycle` → `codesys_sim_read` → `codesys_sim_stop`. Constants are inlined and cannot
    be read online; read a variable initialised from them instead.
-3. `export_sources dir=<repo>/plc/src`; commit the `.project` and the export together. A second
+4. `export_sources dir=<repo>/plc/src`; commit the `.project` and the export together. A second
    export without changes must write 0 files.
 
 ## Gotchas found in Phase 1

@@ -1,0 +1,58 @@
+# Single source of OPC UA tag names between the PLC (GVL_Bridge) and the Python bridge.
+# Keys are the bridge's logical names; `path` is the variable in the CODESYS application;
+# `variant` is the OPC UA variant type used to write it (asyncua VariantType name).
+# Structs are mapped member by member: a message's `seq` member is written last.
+namespace_prefix: "ns=4;s=|var|CODESYS Control Win V3 x64.Application."
+
+tags:
+  # --- PLC -> bridge ---------------------------------------------------------------------------
+  joint_sp_deg: {path: GVL_Bridge.aJointPosSp, variant: Double}
+  setpoint_seq: {path: GVL_Bridge.udiSetpointSeq, variant: UInt32}
+  belt_pos_mm: {path: GVL_Bridge.lrBeltPos, variant: Double}
+  belt_vel_mm_s: {path: GVL_Bridge.lrBeltVel, variant: Double}
+  vacuum_on: {path: GVL_Bridge.xVacuumOn, variant: Boolean}
+  state: {path: GVL_Bridge.eState, variant: Int32}
+  mode: {path: GVL_Bridge.eMode, variant: Int32}
+  capture.seq: {path: GVL_Bridge.stCapture.udiSeq, variant: UInt32}
+  capture.part_id: {path: GVL_Bridge.stCapture.udiPartId, variant: UInt32}
+  capture.belt_pos_mm: {path: GVL_Bridge.stCapture.lrBeltPos, variant: Double}
+
+  # --- bridge -> PLC ---------------------------------------------------------------------------
+  heartbeat: {path: GVL_Bridge.xHeartbeat, variant: Boolean}
+  twin_active: {path: GVL_Bridge.xTwinActive, variant: Boolean}
+  joint_fb_deg: {path: GVL_Bridge.aJointPosFb, variant: Double}
+  joint_torque_nm: {path: GVL_Bridge.aJointTorqueFb, variant: Double}
+  feedback_seq: {path: GVL_Bridge.udiFeedbackSeq, variant: UInt32}
+  feedback_for_seq: {path: GVL_Bridge.udiFeedbackForSeq, variant: UInt32}
+  pe1: {path: GVL_Bridge.xPE1, variant: Boolean}
+  pe2: {path: GVL_Bridge.xPE2, variant: Boolean}
+  vacuum_ok: {path: GVL_Bridge.xVacuumOk, variant: Boolean}
+  bin_full: {path: GVL_Bridge.axBinFull, variant: Boolean}
+  door_closed: {path: GVL_Bridge.xDoorClosed, variant: Boolean}
+  estop_ok: {path: GVL_Bridge.xEStopOk, variant: Boolean}
+  vision.part_id: {path: GVL_Bridge.stVision.udiPartId, variant: UInt32}
+  vision.valid: {path: GVL_Bridge.stVision.xValid, variant: Boolean}
+  vision.cls: {path: GVL_Bridge.stVision.usiClass, variant: Byte}
+  vision.confidence: {path: GVL_Bridge.stVision.rConfidence, variant: Float}
+  vision.x_mm: {path: GVL_Bridge.stVision.lrX, variant: Double}
+  vision.y_mm: {path: GVL_Bridge.stVision.lrY, variant: Double}
+  vision.theta_deg: {path: GVL_Bridge.stVision.lrTheta, variant: Double}
+  vision.seq: {path: GVL_Bridge.stVision.udiSeq, variant: UInt32}
+  decision.part_id: {path: GVL_Bridge.stDecision.udiPartId, variant: UInt32}
+  decision.quality: {path: GVL_Bridge.stDecision.eQuality, variant: Int32}
+  decision.quality_prob: {path: GVL_Bridge.stDecision.rQualityProb, variant: Float}
+  decision.ident_reliable: {path: GVL_Bridge.stDecision.xIdentReliable, variant: Boolean}
+  decision.seq: {path: GVL_Bridge.stDecision.udiSeq, variant: UInt32}
+
+  # --- operator (GVL_Hmi): tests and the later HMI ----------------------------------------------
+  hmi.command: {path: GVL_Hmi.eCommand, variant: Int32}
+  hmi.mode_request: {path: GVL_Hmi.eModeRequest, variant: Int32}
+  hmi.alarm_ack: {path: GVL_Hmi.xAlarmAck, variant: Boolean}
+
+  # --- diagnostics (PLC -> bridge, HMI) -------------------------------------------------------
+  diag.newest_alarm: {path: GVL_Bridge.eNewestAlarm, variant: Int32}
+  diag.error_active: {path: GVL_Bridge.xAlarmError, variant: Boolean}
+  diag.critical_active: {path: GVL_Bridge.xAlarmCritical, variant: Boolean}
+  diag.pick_step: {path: GVL_Bridge.ePickStep, variant: Int32}
+  diag.worst_joint: {path: GVL_Bridge.iWorstJoint, variant: Int16}
+  diag.following_error_deg: {path: GVL_Bridge.aFollowingError, variant: Double}

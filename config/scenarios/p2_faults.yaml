@@ -1,0 +1,18 @@
+# Phase 2 fault scenario: the p2_demo supply plus injected faults (spec §8, §12 fault injection).
+# Times are seconds from the start of `airc run`. Recovery (Clear, Reset, Start) is the operator's
+# job; the end-to-end test does it through OPC UA.
+name: p2_faults
+seed: 43
+duration_s: 300
+bin_capacity: 30          # as p2_demo: only the injected block_bin fault fills a bin
+spawn:
+  pitch_mm: 1000
+  jitter_mm: 100
+  mix: [1, 1, 1]
+  y_offset_mm: 50
+  theta_deg: 30
+faults:
+  - {at_s: 60, kind: estop, duration_s: 2}          # Critical: Aborting -> Aborted, vacuum kept
+  - {at_s: 120, kind: block_bin, duration_s: 15, target: 0}   # Type A bin full: Suspend
+  - {at_s: 180, kind: lose_bridge, duration_s: 1}   # heartbeat lost: BridgeLost -> Abort
+  - {at_s: 240, kind: door_open, duration_s: 2}     # door opened in Production: Abort

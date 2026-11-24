@@ -1,0 +1,115 @@
+"""Values exchanged with the PLC each bridge cycle (units as in the PLC: mm, degrees)."""
+
+from dataclasses import dataclass, field
+from enum import IntEnum
+
+Six = tuple[float, float, float, float, float, float]
+
+
+class PackMLCommand(IntEnum):
+    """``E_PackMLCommand`` of the PLC."""
+
+    NONE = 0
+    RESET = 1
+    START = 2
+    STOP = 3
+    HOLD = 4
+    UNHOLD = 5
+    SUSPEND = 6
+    UNSUSPEND = 7
+    ABORT = 8
+    CLEAR = 9
+    COMPLETE = 10
+
+
+class PackMLState(IntEnum):
+    """``E_PackMLState`` of the PLC (ISA-TR88 numbering)."""
+
+    UNDEFINED = 0
+    CLEARING = 1
+    STOPPED = 2
+    STARTING = 3
+    IDLE = 4
+    SUSPENDED = 5
+    EXECUTE = 6
+    STOPPING = 7
+    ABORTING = 8
+    ABORTED = 9
+    HOLDING = 10
+    HELD = 11
+    UNHOLDING = 12
+    SUSPENDING = 13
+    UNSUSPENDING = 14
+    RESETTING = 15
+    COMPLETING = 16
+    COMPLETE = 17
+
+
+ZERO6: Six = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+
+@dataclass(frozen=True)
+class CaptureMsg:
+    """Capture request (``GVL_Bridge.stCapture``): a new request has a new ``seq``."""
+
+    seq: int = 0
+    part_id: int = 0
+    belt_pos_mm: float = 0.0
+
+
+@dataclass(frozen=True)
+class VisionMsg:
+    """Vision result (``GVL_Bridge.stVision``); class index as in ``GVL_Params.aClassToBin``."""
+
+    seq: int
+    part_id: int
+    valid: bool
+    cls: int
+    confidence: float
+    x_mm: float
+    y_mm: float
+    theta_deg: float
+
+
+@dataclass(frozen=True)
+class PlcOutputs:
+    """What the bridge reads from the PLC every cycle."""
+
+    joint_sp_deg: Six = ZERO6
+    setpoint_seq: int = 0
+    belt_pos_mm: float = 0.0
+    belt_vel_mm_s: float = 0.0
+    vacuum_on: bool = False
+    capture: CaptureMsg = field(default_factory=CaptureMsg)
+    state: int = 0
+    mode: int = 0
+
+
+@dataclass(frozen=True)
+class PlcInputs:
+    """What the bridge writes to the PLC every cycle (messages are written separately)."""
+
+    heartbeat: bool
+    twin_active: bool
+    joint_fb_deg: Six
+    joint_torque_nm: Six
+    feedback_seq: int
+    feedback_for_seq: int
+    pe1: bool
+    pe2: bool
+    vacuum_ok: bool
+    bin_full: tuple[bool, bool, bool, bool, bool, bool]
+    door_closed: bool
+    estop_ok: bool
+
+
+@dataclass(frozen=True)
+class PlcDiagnostics:
+    """Alarm and sequence state of the cell (``PRG_Main.fbCell``), read on demand."""
+
+    newest_alarm: int
+    error_active: bool
+    critical_active: bool
+    pick_step: int
+    worst_joint: int
+    following_error_deg: Six

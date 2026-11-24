@@ -68,7 +68,13 @@ cases = [
                     CELL + "fbAlarms.xCriticalActive": False,
                 }
             },
-            state("Execute"),
+            {
+                "expect": {
+                    "GVL_Bridge.eState": "E_PackMLState.Execute",
+                    # one setpoint sample per 4 ms cycle for the bridge's latency compensation
+                    "GVL_Bridge.udiSetpointSeq": {"op": ">", "value": 1000},
+                }
+            },
         ],
     },
     {
@@ -151,7 +157,7 @@ cases = [
             *start_from_stopped(),
             {"write": {T + "xVacLostOnTransfer": True}},
             *inject(0, "Ok"),
-            {"waitMs": 16000},
+            {"waitMs": 24000},  # pick, transfer, loss, stop: margin for a slow simulator
             state("Stopped"),
             {"expect": {CELL + "fbRobot.xMoving": False, CELL + "fbConv.lrActVelocity": 0}},
             {"write": {T + "xVacLostOnTransfer": False}},
@@ -160,6 +166,43 @@ cases = [
             {"expect": {CELL + "ePickStep": "E_PickStep.WaitPart"}},
             *cmd("Stop", 12000),
             state("Stopped"),
+        ],
+    },
+    {
+        # the twin's bridge dies while a part is carried to its bin: BridgeLost (Critical) within
+        # the 500 ms watchdog -> Aborted, robot stopped, vacuum kept; restart puts the part in
+        # Quarantine
+        "name": "bridge_loss_aborts_cell",
+        "steps": [
+            {"write": {T + "xBridgeSim": True}},
+            {"waitMs": 500},
+            *start_from_stopped(),
+            {"expect": {CELL + "fbAlarms.xCriticalActive": False}},
+            {"write": {T + "xBridgeStallOnTransfer": True}},
+            *inject(1, "Ok"),
+            {"waitMs": 16000},
+            state("Aborted"),
+            {
+                "expect": {
+                    "GVL_Bridge.eNewestAlarm": "E_AlarmId.BridgeLost",
+                    "GVL_Bridge.xAlarmCritical": True,
+                    "GVL_Bridge.xVacuumOn": True,
+                    CELL + "fbRobot.xMoving": False,
+                    # stall -> Aborted: watchdog 500 ms + aborting
+                    T + "lrAbortDelayMs": {"op": "<", "value": 1000},
+                }
+            },
+            {"write": {T + "xBridgeStallOnTransfer": False, T + "xBridgeStall": False}},
+            {"waitMs": 300},
+            *recover_to_stopped(),
+            *start_from_stopped(),
+            {"waitMs": 8000},
+            # bins count across cases: the E-stop case already put one part in Quarantine
+            {"expect": {CELL + "aBins[5].uiCount": 2, "GVL_Bridge.xVacuumOn": False}},
+            *cmd("Stop", 12000),
+            state("Stopped"),
+            {"write": {T + "xBridgeSim": False, "GVL_Bridge.xTwinActive": False}},
+            {"waitMs": 300},
         ],
     },
     {

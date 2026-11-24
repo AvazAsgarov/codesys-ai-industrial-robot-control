@@ -231,6 +231,117 @@
           }
         }
       ]
+    },
+    {
+      "name": "robot_tcp_lag_tolerance_set_on_enable",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestMotion.xActive": true,
+            "PRG_TestMotion.fbRobot.xEnable": true
+          }
+        },
+        {
+          "waitMs": 2000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbRobot.xReady": true,
+            "PRG_TestMotion.fbRobot.fbPathTol.Done": true,
+            "PRG_TestMotion.fbRobot.fbPathTol.MaxPositionLag": {
+              "op": "=",
+              "value": 10,
+              "tolerance": 0.001
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "robot_reset_without_group_error_clears_fault",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestMotion.fbRobot.xFault": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbRobot.xReady": false
+          }
+        },
+        {
+          "write": {
+            "PRG_TestMotion.eCmd": 5,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 1500
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbRobot.xFault": false,
+            "PRG_TestMotion.fbRobot.xReady": true,
+            "PRG_TestMotion.xLastDone": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "robot_reset_after_group_error_clears_fault",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestMotion.stProbe.c.X": 743.6,
+            "PRG_TestMotion.stProbe.c.Y": 0,
+            "PRG_TestMotion.stProbe.c.Z": -900,
+            "PRG_TestMotion.stProbe.c.A": 0,
+            "PRG_TestMotion.stProbe.c.B": 120,
+            "PRG_TestMotion.stProbe.c.C": 180,
+            "PRG_TestMotion.iTargetSel": 4,
+            "PRG_TestMotion.eCmd": 6,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 2000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.xLastError": true,
+            "PRG_TestMotion.fbRobot.xFault": true,
+            "PRG_TestMotion.fbRobot.fbStatus.GroupErrorStop": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestMotion.eCmd": 5,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 2000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbRobot.xFault": false,
+            "PRG_TestMotion.fbRobot.xReady": true,
+            "PRG_TestMotion.xLastDone": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestMotion.xActive": false
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
     }
   ]
 }

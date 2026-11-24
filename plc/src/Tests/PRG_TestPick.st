@@ -6,6 +6,7 @@
     Inputs  : xActive, xBeltRun, xInject (+ usiInjClass, eInjQuality, lrInjX: one part with
               vision and decision), xDropOnTransfer (vacuum lost during MoveToBin),
               xAbortOnLift (abort when the sequence reaches Lift), xResetSeq
+    Outputs : xSawRecoverLift (latched: the recovery after an abort lifted first)
     Note    : SoftMotion FB instances are never re-initialised by assignment.
 *)
 PROGRAM PRG_TestPick
@@ -31,6 +32,7 @@ VAR
     xResetSeq : BOOL;
     xVacLost : BOOL;
     tonVac : TON;
+    xSawRecoverLift : BOOL;
 END_VAR
 
 IF NOT xActive THEN
@@ -98,3 +100,6 @@ fbVac();
 fbRobot(AxisGroup := AxisGroup_Robot);
 fbConv(Axis := Axis_Conveyor);
 fbAlarms();
+IF fbSeq.eStep = E_PickStep.RecoverLift THEN
+    xSawRecoverLift := TRUE;
+END_IF
