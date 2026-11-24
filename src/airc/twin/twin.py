@@ -23,6 +23,8 @@ BELT_JUMP_M = 0.2  # a larger belt position change in one cycle is a PLC restart
 SETTLED_SPEED = 0.05  # m/s: a part slower than this counts as resting
 STACK_ALLOWANCE_M = 0.08  # a part resting this far above a bin's rim lies on other parts in it
 RESTING_TOL_M = 0.005  # a part this close to the belt surface lies on it
+DOWN = np.array([0.0, 0.0, -1.0])
+RAY_BACKOFF_M = 0.01  # the suction ray starts this far behind the cup tip
 MAX_STEP_S = 0.1  # one step never simulates more than this (after a stall)
 CUP_PENETRATION_M = 0.002  # the cup may press this far into the part top and still grip
 
@@ -107,6 +109,8 @@ class Twin:
         self._weld_eq = [m.equality(s.weld).id for s in self._slots]
         self._tool = m.body("link6").id
         self._tcp = m.site("tcp").id
+        self._part_group = np.zeros(6, dtype=np.uint8)
+        self._part_group[PART_GROUP] = 1
         self._kv_over_kp = np.array(self.cfg.servo.kv) / np.array(self.cfg.servo.kp)
         self._nsub = max(1, round(self.cfg.bridge_period_s / self.cfg.physics_timestep_s))
         self._active: dict[int, _Active] = {}
@@ -211,6 +215,16 @@ class Twin:
         )
         self._place(a.slot, pos, 0.0)
 
+    def remove_part(self, pid: int) -> None:
+        """Park a part off the cell and forget it (its body returns to the pool)."""
+        if self._held == pid:
+            self._release()
+        self._park(self._active.pop(pid).slot)
+
+    def part_body_id(self, pid: int) -> int:
+        """MuJoCo body id of an active part (to find it in a rendered segmentation)."""
+        return self._body[self._active[pid].slot]
+
     def part(self, pid: int) -> PartTruth:
         """Ground truth of a spawned part."""
         a = self._active[pid]
@@ -270,24 +284,36 @@ class Twin:
         return self.data.site_xpos[self._tcp].copy()
 
     def place_part_under_cup(self, pid: int, gap_mm: float) -> None:
-        """Test helper: move a part (upright) so its top is ``gap_mm`` below the cup tip."""
+        """Test helper: move a part (upright) so its grip surface is ``gap_mm`` below the cup."""
         a = self._active[pid]
+        part = self.cfg.parts.classes[self._slots[a.slot].cls]
         tcp = self.tcp_position_m()
-        pos = np.array([tcp[0], tcp[1], tcp[2] - gap_mm * MM - self._height(a.slot) / 2])
+        top_above_origin = (part.grip_height_mm - part.height_mm / 2) * MM
+        pos = np.array([tcp[0], tcp[1], tcp[2] - gap_mm * MM - top_above_origin])
         self._place(a.slot, pos, 0.0)
 
     # --- suction --------------------------------------------------------------------------------
     def _grip_candidate(self) -> int | None:
-        tcp = self.tcp_position_m()
+        """The part whose surface lies within the suction gap below the cup, if any.
+
+        A ray straight down from the cup (the cell always picks with the tool vertical), against
+        part geometry only: works for any shape, and the cup grips the surface it actually
+        faces, not the part's bounding box.
+        """
+        approach = DOWN
+        start = self.tcp_position_m() - approach * RAY_BACKOFF_M
+        geomid = np.array([-1], dtype=np.int32)
+        dist = mujoco.mj_ray(
+            self.model, self.data, start, approach, self._part_group, 1, -1, geomid
+        )
+        if geomid[0] < 0:
+            return None
+        gap = dist - RAY_BACKOFF_M
+        if not -CUP_PENETRATION_M <= gap <= self.cfg.suction.max_gap_mm * MM:
+            return None
+        body = int(self.model.geom_bodyid[geomid[0]])
         for pid, a in self._active.items():
-            part = self.cfg.parts.classes[self._slots[a.slot].cls]
-            pos = self._part_pos(a.slot)
-            gap = tcp[2] - (pos[2] + self._height(a.slot) / 2)
-            reach = min(part.size_mm[:2] if part.shape == "box" else part.size_mm[:1]) * MM / 2
-            if (
-                -CUP_PENETRATION_M <= gap <= self.cfg.suction.max_gap_mm * MM
-                and np.hypot(tcp[0] - pos[0], tcp[1] - pos[1]) <= reach
-            ):
+            if self._body[a.slot] == body:
                 return pid
         return None
 

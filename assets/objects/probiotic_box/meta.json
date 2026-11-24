@@ -1,0 +1,19 @@
+{
+  "slug": "probiotic_box",
+  "source": "https://fuel.gazebosim.org/1.0/GoogleResearch/models/Phillips_Colon_Health_Probiotic_Capsule/1/Phillips_Colon_Health_Probiotic_Capsule.zip",
+  "sha256": "e00e9eb96f3fd3c2c4a891994d439b9fe7e6bdf60b98153c8d93d7138fe08936",
+  "licence": "CC BY 4.0",
+  "rotate_deg": [
+    90,
+    0,
+    0
+  ],
+  "scale": 1.0,
+  "size_mm": [
+    103.94,
+    118.16,
+    57.12
+  ],
+  "grip_height_mm": 56.39,
+  "faces": 3166
+}

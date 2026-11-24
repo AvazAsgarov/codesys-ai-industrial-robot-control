@@ -14,6 +14,7 @@ dependencies = [
     "asyncua>=2.1,<3",
     "numpy>=2",
     "mujoco>=4.0,<5",
+    "opencv-python>=4.10",
 ]
 
 [project.scripts]
@@ -36,11 +37,36 @@ dev = [
     "types-PyYAML",
 ]
 
+# Asset preparation only (tools/fetch_objects.py): uv sync --group assets
+assets = [
+    "trimesh>=4.4",
+    "pillow>=10",
+]
+
+# Detectors (Phase 3): uv sync --group vision. CPU builds of torch (no NVIDIA GPU here).
+vision = [
+    "ultralytics>=8.4,<9",
+    "openvino>=2026.4",
+    "torch>=2.9",
+    "torchvision>=0.24",
+]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers -m 'not codesys'"
 markers = [
     "codesys: needs CODESYS Control Win on this machine (local only: pytest -m codesys)",
+    "render: needs an OpenGL context (MuJoCo offscreen rendering)",
+    "vision: needs the exported detectors (uv sync --group vision; airc vision export)",
 ]
 
 [tool.ruff]

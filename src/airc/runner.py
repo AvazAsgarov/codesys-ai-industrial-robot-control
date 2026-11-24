@@ -29,6 +29,7 @@ from airc.bridge.oracle import GroundTruthOracle
 from airc.plc.runtime import disable_timer_throttling
 from airc.twin.scenario import FaultEvent, FaultTimeline, Scenario, SpawnSchedule
 from airc.twin.twin import MAX_STEP_S, Twin, TwinState
+from airc.vision.service import CaptureJob, VisionResult, VisionWorker
 
 MM = 0.001
 BLOCKED_DAMPING = 1e7  # N·m·s/rad: a blocked joint
@@ -111,6 +112,7 @@ class RunReport:
     cycle_ms: list[float] = field(default_factory=list[float])
     max_gap_ms: float = 0.0  # longest time between two cycle starts
     faults: int = 0
+    vision: list[VisionResult] = field(default_factory=list[VisionResult])  # answers, in order
 
     @property
     def cycle_ms_mean(self) -> float:
@@ -140,6 +142,7 @@ class Runner:
         twin: Twin,
         scenario: Scenario,
         period_s: float | None = None,
+        vision: VisionWorker | None = None,
     ) -> None:
         """Create a runner.
 
@@ -148,6 +151,8 @@ class Runner:
             twin: The digital twin.
             scenario: Part supply (and later faults).
             period_s: Cycle period; default from the twin configuration (20 ms).
+            vision: Answers captures from camera frames (in its own thread); default: the
+                ground-truth stand-in (Phase 2).
         """
         self.client = client
         self.twin = twin
@@ -155,6 +160,8 @@ class Runner:
         self.period_s = period_s if period_s is not None else twin.cfg.bridge_period_s
         self.schedule = SpawnSchedule(scenario)
         self.oracle = GroundTruthOracle(twin.geo.pe1_x)
+        self.vision = vision
+        self._unwritten: list[VisionResult] = []  # vision answers not yet written to the PLC
         self.faults = FaultTimeline(scenario)
         self.door_closed = True
         self.estop_ok = True
@@ -218,7 +225,16 @@ class Runner:
             except RuntimeError:
                 self._report.spawn_skipped += 1
         t2 = time.perf_counter()
-        if out.capture.seq not in (0, self._last_capture):
+        if self.vision is not None:
+            if out.capture.seq not in (0, self._last_capture):
+                self.vision.submit(CaptureJob.snapshot(self.twin, out.capture, out.belt_pos_mm))
+                self._last_capture = out.capture.seq
+                self._report.captures += 1
+            self._unwritten += self.vision.poll()
+            while self._unwritten:  # a failed write stays here and is re-sent after reconnect
+                await self.client.write_vision(self._unwritten[0].msg)
+                self._report.vision.append(self._unwritten.pop(0))
+        elif out.capture.seq not in (0, self._last_capture):
             vision = self.oracle.on_capture(out.capture, self.twin.parts(), out.belt_pos_mm)
             await self.client.write_vision(vision)
             self._last_capture = out.capture.seq  # only once written: a lost write is re-sent

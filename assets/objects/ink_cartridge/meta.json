@@ -1,0 +1,19 @@
+{
+  "slug": "ink_cartridge",
+  "source": "https://fuel.gazebosim.org/1.0/GoogleResearch/models/Office_Depot_HP_71_Remanufactured_Ink_Cartridge_Black/1/Office_Depot_HP_71_Remanufactured_Ink_Cartridge_Black.zip",
+  "sha256": "4d55dd7dc78f3adb1f132542d67a9dec246cbb6d69f6d4c68f6652d38fc8e073",
+  "licence": "CC BY 4.0",
+  "rotate_deg": [
+    90,
+    0,
+    0
+  ],
+  "scale": 1.0,
+  "size_mm": [
+    86.01,
+    117.46,
+    50.44
+  ],
+  "grip_height_mm": 49.32,
+  "faces": 5972
+}

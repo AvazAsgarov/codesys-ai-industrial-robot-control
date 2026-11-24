@@ -1,0 +1,4 @@
+Office_Depot_HP_71_Remanufactured_Ink_Cartridge_Black from Google Scanned Objects (Google Research), CC BY 4.0
+https://creativecommons.org/licenses/by/4.0/ - source: https://fuel.gazebosim.org/1.0/GoogleResearch/models/Office_Depot_HP_71_Remanufactured_Ink_Cartridge_Black/1/Office_Depot_HP_71_Remanufactured_Ink_Cartridge_Black.zip
+Changes: placed in its resting pose (rotation [90, 0, 0] deg), scaled by 1.0, re-centred,
+texture resized to at most 1024 px.

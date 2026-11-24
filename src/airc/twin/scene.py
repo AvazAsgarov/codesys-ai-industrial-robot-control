@@ -11,6 +11,8 @@ are visual only; parts collide with the environment, each other and the cup.
 
 from dataclasses import dataclass
 
+import numpy as np
+
 from airc.twin.cell import CellGeometry
 from airc.twin.config import PartClass, TwinConfig
 from airc.twin.kinematics import JOINT_AXES
@@ -109,6 +111,43 @@ def _belt(geo: CellGeometry, cfg: TwinConfig) -> str:
     )
 
 
+CALIB_SQUARES = (10, 7)  # checkerboard squares: 9 x 6 inner corners
+CALIB_SQUARE_M = 0.025
+CALIB_TEXREPEAT = (CALIB_SQUARES[0] / 2, CALIB_SQUARES[1] / 2)  # the built-in checker is 2 x 2
+CALIB_TOP_M = 0.003  # board surface above the body origin
+CALIB_PARK = (0.0, 0.0, -5.0)  # out of every camera's view
+
+
+def _calibration_board() -> str:
+    """Checkerboard on a white backing, moved by a mocap body; no collisions (geom group 4)."""
+    sx, sy = (n * CALIB_SQUARE_M / 2 for n in CALIB_SQUARES)
+    return (
+        f'<body name="calib_board" mocap="true" pos="{_f(*CALIB_PARK)}">'
+        f'<geom type="box" size="{_f(sx + 0.025, sy + 0.025, 0.001)}" rgba="1 1 1 1" '
+        f'contype="0" conaffinity="0" group="4"/>'
+        f'<geom type="box" size="{_f(sx, sy, 0.0015)}" pos="0 0 0.0015" '
+        f'material="calib_checker" contype="0" conaffinity="0" group="4"/></body>'
+    )
+
+
+def _cameras(geo: CellGeometry, cfg: TwinConfig) -> str:
+    """``cam_inspect`` over photo-eye PE1 (tilted to look down the belt) and ``cam_showcase``."""
+    c = cfg.camera
+    tilt = np.radians(c.tilt_deg)
+    target = np.array([geo.belt_origin_x + geo.pe1_x, geo.belt_origin_y, geo.belt_surface_z]) * MM
+    view = np.array([np.sin(tilt), 0.0, -np.cos(tilt)])  # down the belt and down
+    pos = target - view * c.distance_mm * MM
+    right = np.array([np.cos(tilt), 0.0, np.sin(tilt)])  # image right: belt +X
+    up = np.array([0.0, 1.0, 0.0])  # image up: belt +Y
+    showcase = target + np.array([0.9, -1.6, 1.1])
+    return (
+        f'<camera name="cam_inspect" pos="{_f(*pos)}" xyaxes="{_f(*right, *up)}" '
+        f'fovy="{c.fovy_deg:g}"/>\n    '
+        f'<camera name="cam_showcase" pos="{_f(*showcase)}" mode="targetbody" '
+        f'target="link1" fovy="50"/>'
+    )
+
+
 def _bins(geo: CellGeometry, cfg: TwinConfig) -> str:
     w, d, h = (v * MM for v in cfg.bins.size_mm)
     t = cfg.bins.wall_mm * MM
@@ -130,12 +169,24 @@ def _bins(geo: CellGeometry, cfg: TwinConfig) -> str:
     return "\n    ".join(out)
 
 
-def _part_geom(part: PartClass, friction: float) -> str:
-    rgba = _f(*part.rgba)
+def _part_assets(cfg: TwinConfig) -> str:
+    """Meshes, textures and materials of the scanned part classes."""
+    out: list[str] = []
+    for cls, part in enumerate(cfg.parts.classes):
+        if part.shape == "mesh":
+            out.append(f'<mesh name="part_mesh_{cls}" file="{part.mesh_file}"/>')
+            out.append(f'<texture name="part_tex_{cls}" type="2d" file="{part.texture_file}"/>')
+            out.append(f'<material name="part_mat_{cls}" texture="part_tex_{cls}"/>')
+    return "\n    ".join(out)
+
+
+def _part_geom(cls: int, part: PartClass, friction: float) -> str:
     common = (
-        f'contype="2" conaffinity="7" group="{PART_GROUP}" friction="{friction:g} 0.005 0.0001" '
-        f'rgba="{rgba}"'
+        f'contype="2" conaffinity="7" group="{PART_GROUP}" friction="{friction:g} 0.005 0.0001"'
     )
+    if part.shape == "mesh":  # collides as the convex hull of the scan
+        return f'<geom type="mesh" mesh="part_mesh_{cls}" material="part_mat_{cls}" {common}/>'
+    common += f' rgba="{_f(*part.rgba)}"'
     if part.shape == "box":
         sx, sy, sz = (v * MM / 2 for v in part.size_mm)
         return f'<geom type="box" size="{_f(sx, sy, sz)}" {common}/>'
@@ -150,7 +201,7 @@ def _parts(cfg: TwinConfig) -> tuple[str, str]:
         part = cfg.parts.classes[slot.cls]
         bodies.append(
             f'<body name="{slot.body}" pos="{_f(*slot.park_xyz)}"><freejoint/>'
-            f"{_part_geom(part, cfg.parts.friction)}"
+            f"{_part_geom(slot.cls, part, cfg.parts.friction)}"
             f'<inertial pos="0 0 0" mass="{cfg.parts.mass_kg:g}" '
             f'diaginertia="{_f(1e-4, 1e-4, 1e-4)}"/></body>'
         )
@@ -171,7 +222,16 @@ def build_mjcf(geo: CellGeometry, cfg: TwinConfig) -> str:
     part_bodies, welds = _parts(cfg)
     return f"""<mujoco model="sorting_cell">
   <compiler angle="degree" autolimits="true"/>
+  <asset>
+    {_part_assets(cfg)}
+    <texture name="calib_checker" type="2d" builtin="checker" rgb1="0 0 0" rgb2="1 1 1"
+             width="512" height="512"/>
+    <material name="calib_checker" texture="calib_checker" texrepeat="{_f(*CALIB_TEXREPEAT)}"/>
+  </asset>
   <option timestep="{cfg.physics_timestep_s:g}" gravity="0 0 -9.81" integrator="implicitfast"/>
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+  </visual>
   <default>
     <default class="link">
       <geom contype="0" conaffinity="0" rgba="0.92 0.55 0.1 1" density="2700"/>
@@ -185,6 +245,8 @@ def build_mjcf(geo: CellGeometry, cfg: TwinConfig) -> str:
     <geom name="floor" type="plane" size="6 6 0.1" pos="{_f(0, 0, FLOOR_Z)}" class="env"
           rgba="0.75 0.75 0.75 1"/>
     {_belt(geo, cfg)}
+    {_cameras(geo, cfg)}
+    {_calibration_board()}
     {_bins(geo, cfg)}
     {_robot(geo, cfg)}
     {part_bodies}

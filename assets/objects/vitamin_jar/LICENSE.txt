@@ -1,0 +1,4 @@
+AllergenFree_JarroDophilus from Google Scanned Objects (Google Research), CC BY 4.0
+https://creativecommons.org/licenses/by/4.0/ - source: https://fuel.gazebosim.org/1.0/GoogleResearch/models/AllergenFree_JarroDophilus/1/AllergenFree_JarroDophilus.zip
+Changes: placed in its resting pose (rotation [0, 0, 0] deg), scaled by 0.85, re-centred,
+texture resized to at most 1024 px.

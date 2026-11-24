@@ -4,9 +4,11 @@
               conveyor, gripper, tracker and alarms like the cell does, and simulates the vacuum
               switch (OK 100 ms after the valve opens).
     Inputs  : xActive, xBeltRun, xInject (+ usiInjClass, eInjQuality, lrInjX: one part with
-              vision and decision), xDropOnTransfer (vacuum lost during MoveToBin),
+              vision and decision; xInjInvalid: the vision message says "not seen"),
+              xDropOnTransfer (vacuum lost during MoveToBin),
               xAbortOnLift (abort when the sequence reaches Lift), xResetSeq
-    Outputs : xSawRecoverLift (latched: the recovery after an abort lifted first)
+    Outputs : xSawRecoverLift (latched: the recovery after an abort lifted first),
+              lrGripZ (TCP height when the last grip started) [mm]
     Note    : SoftMotion FB instances are never re-initialised by assignment.
 *)
 PROGRAM PRG_TestPick
@@ -20,6 +22,7 @@ VAR
     xActive : BOOL;
     xBeltRun : BOOL;
     xInject : BOOL;
+    xInjInvalid : BOOL;
     usiInjClass : USINT;
     eInjQuality : E_Quality := E_Quality.Ok;
     lrInjX : LREAL := 1000;
@@ -33,6 +36,8 @@ VAR
     xVacLost : BOOL;
     tonVac : TON;
     xSawRecoverLift : BOOL;
+    lrGripZ : LREAL;
+    eLastStep : E_PickStep;
 END_VAR
 
 IF NOT xActive THEN
@@ -61,7 +66,7 @@ CASE iInject OF
     2:
         stVis.udiSeq := stVis.udiSeq + 1;
         stVis.udiPartId := fbTracker.stCapture.udiPartId;
-        stVis.xValid := TRUE;
+        stVis.xValid := NOT xInjInvalid;
         stVis.usiClass := usiInjClass;
         stVis.rConfidence := 0.9;
         stVis.lrX := lrInjX;
@@ -103,3 +108,7 @@ fbAlarms();
 IF fbSeq.eStep = E_PickStep.RecoverLift THEN
     xSawRecoverLift := TRUE;
 END_IF
+IF fbSeq.eStep = E_PickStep.Grip AND eLastStep <> E_PickStep.Grip THEN
+    lrGripZ := fbRobot.stActMcs.c.Z;
+END_IF
+eLastStep := fbSeq.eStep;

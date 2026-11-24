@@ -1,0 +1,25 @@
+{
+  "yolo26s-seg-fp32_openvino_model": {
+    "prompts": null,
+    "weights": "yolo26s-seg.pt",
+    "weights_sha256": "3da1d83e31caec96f9300eb4064f4f62882c133c7c264d63dfe61a7c197837a4"
+  },
+  "yoloe-26s-seg-classes-fp32_openvino_model": {
+    "prompts": [
+      "box",
+      "bottle",
+      "can"
+    ],
+    "weights": "yoloe-26s-seg.pt",
+    "weights_sha256": "48f24206bc8680d60cbbfa296b0140da849669b9515058b72f5a945142df0654"
+  },
+  "yoloe-26s-seg-visual-fp32_openvino_model": {
+    "prompts": [
+      "visual:probiotic_box (seed 7, 6 views)",
+      "visual:vitamin_jar (seed 7, 6 views)",
+      "visual:coffee_can (seed 7, 6 views)"
+    ],
+    "weights": "yoloe-26s-seg.pt",
+    "weights_sha256": "48f24206bc8680d60cbbfa296b0140da849669b9515058b72f5a945142df0654"
+  }
+}

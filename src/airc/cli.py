@@ -1,7 +1,8 @@
 """Command-line interface: ``airc``."""
 
+import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 import yaml
@@ -13,8 +14,10 @@ from airc.common.config import ConfigError, load_config
 from airc.plc import runtime
 from airc.plc.runtime import RuntimeSettings, load_runtime_settings
 from airc.runner import Runner, raise_priority, run_precise
+from airc.twin.config import TwinConfig
 from airc.twin.scenario import Scenario
 from airc.twin.twin import Twin
+from airc.vision.service import VisionWorker
 
 app = typer.Typer(
     name="airc",
@@ -152,6 +155,14 @@ def run_cell(
         float | None, typer.Option("--duration", "-d", help="Seconds (default: the scenario's).")
     ] = None,
     viewer: Annotated[bool, typer.Option("--viewer", help="Open the MuJoCo viewer.")] = False,
+    vision: Annotated[
+        str,
+        typer.Option(
+            "--vision",
+            help="Who answers captures: 'yoloe' (camera + YOLOE visual prompts, needs "
+            "`airc vision export`) or 'oracle' (simulator ground truth).",
+        ),
+    ] = "oracle",
 ) -> None:
     """Run the digital twin against the soft-PLC through the OPC UA bridge."""
     try:
@@ -160,11 +171,15 @@ def run_cell(
     except (ConfigError, OSError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_CONFIG_ERROR) from None
-    twin = Twin(bin_capacity=scen.bin_capacity)
+    if vision not in ("oracle", "yoloe"):
+        typer.echo("error: --vision oracle|yoloe", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR)
+    twin = Twin(cfg=TwinConfig.load(parts=scen.parts), bin_capacity=scen.bin_capacity)
     client = BridgeClient(
         cfg.plc.opcua_endpoint, TagMap.load(), timeout_s=twin.cfg.bridge_timeout_s
     )
-    runner = Runner(client, twin, scen)
+    worker = _vision_worker(twin) if vision == "yoloe" else None
+    runner = Runner(client, twin, scen, vision=worker)
     handle = None
     if viewer:
         import mujoco.viewer  # noqa: PLC0415 - GUI libraries only when asked for
@@ -180,6 +195,8 @@ def run_cell(
     finally:
         if handle is not None:
             handle.close()
+        if worker is not None:
+            worker.close()
     typer.echo(
         f"cycles {report.cycles}, overruns {report.overruns}, reconnects {report.reconnects}, "
         f"cycle {report.cycle_ms_mean:.1f} ms mean / {report.cycle_ms_p95:.1f} ms p95, "
@@ -189,4 +206,180 @@ def run_cell(
         f"parts spawned {report.spawned} (skipped {report.spawn_skipped}), captures "
         f"{report.captures}, bins {report.bin_counts}, wrong bin {report.wrong_bin}, "
         f"missed {report.missed}, lost {report.lost}"
+    )
+
+
+def _vision_worker(twin: Twin) -> "VisionWorker":
+    """Camera + YOLOE (visual prompts) on OpenVINO, in its own thread."""
+    from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415
+    from airc.vision import models  # noqa: PLC0415
+    from airc.vision.detector import LabelMap, OpenVinoDetector  # noqa: PLC0415
+
+    labels = LabelMap.for_slugs(PartCatalogue.load())
+    return VisionWorker(twin, lambda: OpenVinoDetector(models.yoloe_dir("visual"), labels))
+
+
+@app.command("calibrate")
+def calibrate_camera(
+    poses: Annotated[int, typer.Option(help="Checkerboard views.")] = 15,
+    seed: Annotated[int, typer.Option(help="Seed of the board poses.")] = 7,
+    out: Annotated[Path, typer.Option(help="Calibration study (JSON).")] = Path(
+        "experiments/results/calibration.json"
+    ),
+    model: Annotated[Path, typer.Option(help="Calibrated camera for the vision service.")] = Path(
+        "config/calibration/cam_inspect.json"
+    ),
+) -> None:
+    """Calibrate the inspection camera with a checkerboard and compare with the exact camera."""
+    from airc.vision.calibration import compare, run_calibration  # noqa: PLC0415 - OpenCV
+    from airc.vision.camera import CameraModel  # noqa: PLC0415
+
+    twin = Twin()
+    truth = CameraModel.from_mujoco(twin.model, twin.data, "cam_inspect")
+    try:
+        cal = run_calibration(twin, poses=poses, seed=seed)
+    except RuntimeError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from None
+    report = compare(cal.camera, truth)
+    study = {
+        "command": f"airc calibrate --poses {poses} --seed {seed}",
+        "seed": seed,
+        "poses": poses,
+        "views": cal.views,
+        "rms_px": round(cal.rms_px, 4),
+        "distortion": [round(float(d), 6) for d in cal.dist],
+        "focal_error_pct": round(report.focal_error_pct, 4),
+        "principal_point_error_px": round(report.principal_point_error_px, 3),
+        "position_error_mm": round(report.position_error_mm, 3),
+        "rotation_error_deg": round(report.rotation_error_deg, 4),
+        "k_calibrated": cal.camera.k.round(3).tolist(),
+        "k_true": truth.k.round(3).tolist(),
+    }
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(study, indent=2) + "\n", encoding="utf-8")
+    cal.camera.save(model, note=f"airc calibrate --poses {poses} --seed {seed}")
+    typer.echo(
+        f"{cal.views} views, RMS {cal.rms_px:.3f} px, focal error {report.focal_error_pct:+.3f} %, "
+        f"position error {report.position_error_mm:.2f} mm, rotation error "
+        f"{report.rotation_error_deg:.3f} deg -> {out}, {model}"
+    )
+
+
+vision_app = typer.Typer(help="Detectors: export to OpenVINO.", no_args_is_help=True)
+app.add_typer(vision_app, name="vision")
+
+
+@vision_app.command("export")
+def vision_export(
+    prompts: Annotated[
+        str,
+        typer.Option(
+            help="YOLOE prompts: 'visual' (example renders, default), 'classes' (text, the 3 "
+            "parts) or 'candidates' (text, all)."
+        ),
+    ] = "visual",
+    precision: Annotated[str, typer.Option(help="fp32 or fp16.")] = "fp32",
+) -> None:
+    """Download the weights and export YOLOE-26 (with prompts) and YOLO26 to OpenVINO."""
+    from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415
+    from airc.vision import models  # noqa: PLC0415
+
+    if prompts not in ("visual", "classes", "candidates") or precision not in ("fp32", "fp16"):
+        typer.echo("error: --prompts visual|classes|candidates, --precision fp32|fp16", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR)
+    cat = PartCatalogue.load()
+    parts = cat.classes if prompts == "classes" else cat.candidates
+    prec: models.Precision = "fp16" if precision == "fp16" else "fp32"
+    if prompts == "visual":
+        yoloe = models.export_yoloe_visual([p.slug for p in cat.classes], prec)
+    else:
+        yoloe = models.export_yoloe([p.prompt for p in parts], prompts, prec)
+    coco = models.export_coco(prec)
+    typer.echo(f"exported {yoloe} and {coco}")
+
+
+eval_app = typer.Typer(help="Benchmarks against simulator ground truth.", no_args_is_help=True)
+app.add_typer(eval_app, name="eval")
+
+
+@eval_app.command("vision")
+def eval_vision(  # noqa: PLR0913, PLR0917 - one parameter per CLI option
+    detector: Annotated[
+        str,
+        typer.Option(
+            help="yoloe-visual (the cell's), yoloe (text prompts), yolo26 (COCO) or oracle "
+            "(true masks)."
+        ),
+    ] = "yoloe-visual",
+    prompts: Annotated[
+        str, typer.Option(help="Text prompt set of --detector yoloe: 'classes' or 'candidates'.")
+    ] = "classes",
+    seed: Annotated[int, typer.Option(help="Dataset seed (tuning 300, test 301).")] = 300,
+    frames: Annotated[int, typer.Option(help="Rendered frames.")] = 200,
+    tilt: Annotated[
+        float | None, typer.Option(help="Camera tilt in degrees (default: config/twin.yaml).")
+    ] = None,
+    classes: Annotated[
+        str | None,
+        typer.Option(help="Candidate slugs as the classes, comma-separated (default: parts.yaml)."),
+    ] = None,
+    device: Annotated[str, typer.Option(help="OpenVINO device.")] = "intel:cpu",
+    quarter_turns: Annotated[
+        int,
+        typer.Option(help="Turn the window counter-clockwise (1: far end of the belt at the top)."),
+    ] = 0,
+    out: Annotated[
+        Path | None,
+        typer.Option(help="Result JSON (default: experiments/results/vision_<detector>_<seed>)."),
+    ] = None,
+) -> None:
+    """Benchmark a zero-shot detector on rendered frames of the window around PE1."""
+    from airc.evaluation.dataset import render_dataset  # noqa: PLC0415 - rendering, models
+    from airc.evaluation.vision_eval import (  # noqa: PLC0415
+        DETECTORS,
+        OracleDetector,
+        evaluate,
+        make_detector,
+    )
+    from airc.twin.config import TwinConfig  # noqa: PLC0415
+    from airc.vision.detector import ModelsMissingError  # noqa: PLC0415
+
+    if detector not in DETECTORS or prompts not in ("classes", "candidates") or frames < 1:
+        typer.echo(
+            f"error: --detector {'|'.join(DETECTORS)}, --prompts classes|candidates, --frames >= 1",
+            err=True,
+        )
+        raise typer.Exit(EXIT_CONFIG_ERROR)
+    slugs = [s.strip() for s in classes.split(",")] if classes else None
+    try:
+        cfg = TwinConfig.load(parts="catalogue", classes=slugs)
+        if tilt is not None:
+            cfg = cfg.with_camera_tilt(tilt)
+        det = make_detector(detector, prompts, cfg, device=device, quarter_turns=quarter_turns)
+    except (KeyError, ValueError, ModelsMissingError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR) from None
+    hook = det.see if isinstance(det, OracleDetector) else None
+    result = evaluate(det, render_dataset(seed, frames, cfg), frame_hook=hook)
+    command = f"airc eval vision --detector {detector} --prompts {prompts} --seed {seed} " + (
+        f"--frames {frames}"
+        + (f" --tilt {tilt:g}" if tilt is not None else "")
+        + (f" --classes {classes}" if classes else "")
+        + (f" --quarter-turns {quarter_turns}" if quarter_turns else "")
+    )
+    record: dict[str, Any] = {
+        "command": command,
+        "seed": seed,
+        "device": device,
+        "camera": "exact",
+        "quarter_turns": quarter_turns,
+        **result,
+    }
+    path = out if out is not None else Path(f"experiments/results/vision_{detector}_{seed}.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    typer.echo(
+        f"{detector}: mAP@0.5 {record['mAP50']}, pose {record['pose_mm']['mean']} mm mean, "
+        f"latency {record['latency_ms']['p50']} ms p50 -> {path}"
     )

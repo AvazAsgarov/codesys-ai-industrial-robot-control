@@ -6,6 +6,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-25
+
+Phase 3 — Vision.
+
+### Added
+
+- Three scanned products as part types (Google Scanned Objects, CC BY 4.0): probiotic box,
+  vitamin jar, coffee can; meshes and textures in the twin, pick height per class in the PLC.
+- Inspection camera `cam_inspect` and a showcase camera in the twin; offscreen renderer with
+  segmentation ground truth and seeded lighting randomisation.
+- Camera calibration in the twin (`airc calibrate`): checkerboard, OpenCV, 0.06 px RMS.
+- Vision service: a worker thread renders the camera at each capture, YOLOE-26s-seg on OpenVINO
+  detects the parts in a window around PE1, the mask gives the belt pose; the bridge cycle never
+  waits for it (`airc run --vision yoloe`).
+- YOLOE visual prompts from rendered reference views, no training (ADR 0009); text prompts and
+  YOLO26 COCO as baselines.
+- Rendered benchmark `airc eval vision`: mAP@0.5 0.997 with visual prompts (text prompts 0.138,
+  COCO 0.058), position error 2.0 mm mean, box orientation 1.0° p95; text-prompt tuning study
+  (`tools/tune_vision.py`).
+
+### Changed
+
+- The PLC picks only parts with a valid vision result; others run to the end of the belt.
+- The bin drop height is 300 mm, so the tallest part clears the bin wall.
+
 ## [0.3.0] - 2026-11-24
 
 Phase 2 — Digital twin and OPC UA bridge.

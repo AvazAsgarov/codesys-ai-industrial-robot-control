@@ -1,0 +1,66 @@
+# Part catalogue (spec §6.3): scanned objects from Google Scanned Objects (CC BY 4.0), fetched
+# from Gazebo Fuel and prepared by tools/fetch_objects.py into assets/objects/<slug>/.
+# Owner decision (2026-11-25): simple, boxy real products - a box, a jar/bottle and a can - and
+# no fine-tuning.
+#
+# candidates: the shortlist. rotate_deg turns the scan into its resting pose on the belt (XYZ
+# order, degrees; boxes lie on their largest face, as on a real conveyor); scale is uniform
+# (1.0 = real size; tall jars and cans are scaled to the cell's 90 mm part height). prompt is
+# the YOLOE-26 text prompt; coco is the matching COCO class for the YOLO26 baseline (null if
+# none); symmetry is the rotational symmetry about the vertical (1 none, 2 = 180 deg, 0 round).
+# classes: the three sorted part types, in PLC class order (usiClass 0, 1, 2); chosen by the
+# zero-shot benchmark (plan Task 7).
+fuel_url: https://fuel.gazebosim.org/1.0/GoogleResearch/models/{name}/1/{name}.zip
+
+candidates:
+  - slug: probiotic_box
+    fuel_name: Phillips_Colon_Health_Probiotic_Capsule
+    sha256: e00e9eb96f3fd3c2c4a891994d439b9fe7e6bdf60b98153c8d93d7138fe08936
+    rotate_deg: [90, 0, 0]
+    scale: 1.0
+    prompt: box
+    coco: null
+    symmetry: 2
+  - slug: candy_box
+    fuel_name: Nips_Hard_Candy_Rich_Creamy_Butter_Rum_4_oz_1133_g
+    sha256: dc207d595ea20f522cec11574d1cf0b74e52ae5e8e249f329151f3403680f850
+    rotate_deg: [90, 0, 0]
+    scale: 0.75
+    prompt: box
+    coco: null
+    symmetry: 2
+  - slug: ink_cartridge
+    fuel_name: Office_Depot_HP_71_Remanufactured_Ink_Cartridge_Black
+    sha256: 4d55dd7dc78f3adb1f132542d67a9dec246cbb6d69f6d4c68f6652d38fc8e073
+    rotate_deg: [90, 0, 0]
+    scale: 1.0
+    prompt: box
+    coco: null
+    symmetry: 2
+  - slug: vitamin_jar
+    fuel_name: AllergenFree_JarroDophilus
+    sha256: 7284b0f731babfc954fc97eaa91fe1866b910eb016d7a507f0f123f7b99dad3c
+    rotate_deg: [0, 0, 0]
+    scale: 0.85
+    prompt: bottle
+    coco: bottle
+    symmetry: 0
+  - slug: glucosamine_jar
+    fuel_name: Jarrow_Glucosamine_Chondroitin_Combination_120_Caps
+    sha256: c17b7b289a2e52882ab793f2cd1496e2d701891b33888aedecd43144bdb3c4ac
+    rotate_deg: [0, 0, 0]
+    scale: 0.75
+    prompt: bottle
+    coco: bottle
+    symmetry: 0
+  - slug: coffee_can
+    fuel_name: Don_Franciscos_Gourmet_Coffee_Medium_Decaf_100_Colombian_12_oz_340_g
+    sha256: e02665602999d871a4cad33b2d9c3d1b1d579d190c336093460088d78e5a4142
+    rotate_deg: [0, 0, 0]
+    scale: 0.6
+    prompt: can
+    coco: null
+    symmetry: 0
+
+# Until the benchmark (Task 7) chooses: one box, one jar, one can.
+classes: [probiotic_box, vitamin_jar, coffee_can]

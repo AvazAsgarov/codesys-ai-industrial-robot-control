@@ -1,0 +1,4 @@
+Don_Franciscos_Gourmet_Coffee_Medium_Decaf_100_Colombian_12_oz_340_g from Google Scanned Objects (Google Research), CC BY 4.0
+https://creativecommons.org/licenses/by/4.0/ - source: https://fuel.gazebosim.org/1.0/GoogleResearch/models/Don_Franciscos_Gourmet_Coffee_Medium_Decaf_100_Colombian_12_oz_340_g/1/Don_Franciscos_Gourmet_Coffee_Medium_Decaf_100_Colombian_12_oz_340_g.zip
+Changes: placed in its resting pose (rotation [0, 0, 0] deg), scaled by 0.6, re-centred,
+texture resized to at most 1024 px.
