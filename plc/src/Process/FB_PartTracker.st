@@ -4,7 +4,7 @@
               Applies vision and decision messages (only for known part ids, each message once),
               falls back to the rule-based decision at GVL_Params.tDecisionDeadline and marks
               parts that leave the pick window as missed.
-    Inputs  : lrBeltPos [mm], xPE1Rising, stVision, stDecision, itfAlarms
+    Inputs  : lrBeltPos [mm], xPE1Rising, stVision, stDecision, itfAlarms, xDecisionActive
     Outputs : stCapture (capture request to the vision service), udiPlaced/udiMissed/udiDropped,
               udiVisionMsgs (vision results applied)
     Methods : NextPickable, FindPart, GetRecord, SetState, CurrentX; property Count
@@ -19,6 +19,9 @@ VAR_INPUT
     stVision : ST_VisionMsg;
     stDecision : ST_DecisionMsg;
     itfAlarms : I_AlarmSink;
+    // TRUE: an AI decision service answers (bridge); FALSE: the rule decides a part as soon as
+    // vision has identified it, without waiting for the deadline and without DecisionFallback
+    xDecisionActive : BOOL := TRUE;
 END_VAR
 VAR_OUTPUT
     stCapture : ST_CaptureMsg;
@@ -70,6 +73,11 @@ IF fbIntake.xVisionNew THEN
             stRec.eState := E_PartState.Identified;
             fbQueue.PutRecord(uiIdx, stRec);
             udiVisionMsgs := udiVisionMsgs + 1;
+            IF NOT xDecisionActive AND stRec.xVisionValid THEN
+                stRec.eDecisionSource := E_DecisionSource.Fallback;
+                stRec.eQuality := E_Quality.Unknown;
+                Decide(uiIdx, stRec);
+            END_IF
         END_IF
     END_IF
 END_IF
@@ -97,7 +105,9 @@ FOR i := 1 TO GVL_Config.MAX_PARTS DO
         IF NOT stRec.xVisionValid THEN
             RaiseEventAlarm(E_AlarmId.VisionMissing);
         END_IF
-        RaiseEventAlarm(E_AlarmId.DecisionFallback);
+        IF xDecisionActive THEN
+            RaiseEventAlarm(E_AlarmId.DecisionFallback);
+        END_IF
         Decide(i, stRec);
         stRec := fbQueue.GetRecord(i);
     END_IF

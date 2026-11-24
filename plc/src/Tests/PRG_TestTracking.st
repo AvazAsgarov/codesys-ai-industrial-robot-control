@@ -3,7 +3,8 @@
     Purpose : Simulation test harness for FB_PartTracker and F_SelectBin (tests/plc/tracking.json).
     Inputs  : lrBeltPos; xTriggerPE1 (one capture); uiFillCount (that many captures, one per cycle);
               stVisIn + xSendVision / xResendVision (same sequence number again);
-              stDecIn + xSendDecision; udiQueryId - part to show in stRec; xAck; xClear
+              stDecIn + xSendDecision; udiQueryId - part to show in stRec; xAck; xClear;
+              xNoDecisionLayer (no AI decision service)
     Outputs : uiCount, uiNext (next pickable index), stRec, xQueryFound
 *)
 PROGRAM PRG_TestTracking
@@ -32,6 +33,7 @@ VAR
     uiCount : UINT;
     uiNext : UINT;
     xPE1Rising : BOOL;
+    xNoDecisionLayer : BOOL;
 END_VAR
 
 IF xReinit THEN
@@ -72,7 +74,8 @@ IF xClear THEN
 END_IF
 
 fbTracker.itfAlarms := fbAlarms;
-fbTracker(lrBeltPos := lrBeltPos, xPE1Rising := xPE1Rising, stVision := stVisIn, stDecision := stDecIn);
+fbTracker(lrBeltPos := lrBeltPos, xPE1Rising := xPE1Rising, stVision := stVisIn, stDecision := stDecIn,
+          xDecisionActive := NOT xNoDecisionLayer);
 fbAlarms();
 
 uiCount := fbTracker.Count;

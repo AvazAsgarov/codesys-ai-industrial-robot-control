@@ -1,0 +1,479 @@
+{
+ "name": "Overview",
+ "title": "Sorting cell",
+ "subtitle": "Robot pick-and-place line",
+ "icon": "home",
+ "size": "1920x1080",
+ "accent": "#2F5D8A",
+ "info": [
+  {
+   "label": "State",
+   "value": "GVL_HmiView.sState"
+  },
+  {
+   "label": "Mode",
+   "value": "GVL_HmiView.sMode"
+  },
+  {
+   "label": "Placed",
+   "value": "GVL_HmiView.uiPlaced",
+   "unit": "parts"
+  },
+  {
+   "label": "Newest alarm",
+   "value": "GVL_HmiView.sNewestAlarm"
+  }
+ ],
+ "machine": {
+  "states": [
+   {
+    "on": "GVL_HmiView.xAborted",
+    "text": "Aborted",
+    "tone": "alarm",
+    "icon": "fault"
+   },
+   {
+    "on": "GVL_HmiView.xHeld",
+    "text": "Suspended",
+    "tone": "warn",
+    "icon": "pause"
+   },
+   {
+    "on": "GVL_HmiView.xActing",
+    "text": "Changing state",
+    "tone": "warn"
+   },
+   {
+    "on": "GVL_HmiView.xManual",
+    "text": "Manual",
+    "tone": "accent",
+    "icon": "manual"
+   },
+   {
+    "on": "GVL_HmiView.xExecute",
+    "text": "Execute",
+    "tone": "neutral",
+    "icon": "play"
+   },
+   {
+    "on": "GVL_HmiView.xIdle",
+    "text": "Idle",
+    "tone": "neutral"
+   }
+  ],
+  "idle": {
+   "text": "Stopped",
+   "tone": "neutral",
+   "icon": "stop"
+  },
+  "detail": "GVL_HmiView.sPickStep",
+  "start": "GVL_HmiPanel.xStart",
+  "stop": "GVL_HmiPanel.xStop",
+  "reset": "GVL_HmiPanel.xReset",
+  "mode": {
+   "variable": "GVL_HmiPanel.iModeSelect",
+   "options": [
+    "Production",
+    "Maintenance",
+    "Manual"
+   ],
+   "values": [
+    "1",
+    "2",
+    "3"
+   ]
+  }
+ },
+ "widgets": [
+  {
+   "type": "line",
+   "title": "Line",
+   "at": [
+    1,
+    1,
+    12,
+    2
+   ],
+   "stations": [
+    {
+     "name": "Conveyor",
+     "tag": "CV-101",
+     "symbol": "conveyor",
+     "on": "GVL_HmiView.xBeltRunning",
+     "fault": "GVL_HmiView.axAlarmActive[5]",
+     "value": "GVL_Bridge.lrBeltVel",
+     "unit": "mm/s",
+     "screen": "Robot"
+    },
+    {
+     "name": "Camera",
+     "tag": "PE-1",
+     "symbol": "camera",
+     "on": "GVL_Bridge.xPE1",
+     "warning": "GVL_HmiView.axAlarm[13]",
+     "screen": "Alarms"
+    },
+    {
+     "name": "Robot",
+     "tag": "R-1",
+     "symbol": "robot6",
+     "on": "GVL_HmiView.xRobotMoving",
+     "fault": "GVL_HmiView.axAlarmActive[4]",
+     "warning": "GVL_HmiView.axAlarmActive[6]",
+     "manual": "GVL_HmiView.xManual",
+     "screen": "Robot"
+    },
+    {
+     "name": "Gripper",
+     "tag": "VG-1",
+     "symbol": "gripper",
+     "on": "GVL_Bridge.xVacuumOn",
+     "fault": "GVL_HmiView.axAlarm[10]",
+     "warning": "GVL_HmiView.axAlarm[9]",
+     "screen": "Robot"
+    },
+    {
+     "name": "Bins",
+     "tag": "BN-1..6",
+     "symbol": "bin",
+     "on": "GVL_HmiView.xExecute",
+     "warning": "GVL_HmiView.xAnyBinFull",
+     "value": "GVL_HmiView.uiPlaced",
+     "unit": "parts",
+     "screen": "Alarms"
+    }
+   ]
+  },
+  {
+   "type": "value",
+   "title": "Belt speed",
+   "icon": "speed",
+   "at": [
+    1,
+    3,
+    3,
+    3
+   ],
+   "value": "GVL_Bridge.lrBeltVel",
+   "unit": "mm/s",
+   "decimals": 0,
+   "min": 0,
+   "max": 150,
+   "trend": true
+  },
+  {
+   "type": "value",
+   "title": "Parts placed",
+   "icon": "count",
+   "at": [
+    4,
+    3,
+    3,
+    3
+   ],
+   "value": "GVL_HmiView.uiPlaced",
+   "unit": "parts",
+   "decimals": 0,
+   "trend": true
+  },
+  {
+   "type": "bar",
+   "title": "Type A",
+   "at": [
+    7,
+    3,
+    1,
+    3
+   ],
+   "value": "PRG_Main.fbCell.aBins[0].uiCount",
+   "min": 0,
+   "max": 30,
+   "unit": "parts",
+   "decimals": 0,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 27,
+     "tone": "warn"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "Type B",
+   "at": [
+    8,
+    3,
+    1,
+    3
+   ],
+   "value": "PRG_Main.fbCell.aBins[1].uiCount",
+   "min": 0,
+   "max": 30,
+   "unit": "parts",
+   "decimals": 0,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 27,
+     "tone": "warn"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "Type C",
+   "at": [
+    9,
+    3,
+    1,
+    3
+   ],
+   "value": "PRG_Main.fbCell.aBins[2].uiCount",
+   "min": 0,
+   "max": 30,
+   "unit": "parts",
+   "decimals": 0,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 27,
+     "tone": "warn"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "Rework",
+   "at": [
+    10,
+    3,
+    1,
+    3
+   ],
+   "value": "PRG_Main.fbCell.aBins[3].uiCount",
+   "min": 0,
+   "max": 30,
+   "unit": "parts",
+   "decimals": 0,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 27,
+     "tone": "warn"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "Scrap",
+   "at": [
+    11,
+    3,
+    1,
+    3
+   ],
+   "value": "PRG_Main.fbCell.aBins[4].uiCount",
+   "min": 0,
+   "max": 30,
+   "unit": "parts",
+   "decimals": 0,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 27,
+     "tone": "warn"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "Quarantine",
+   "at": [
+    12,
+    3,
+    1,
+    3
+   ],
+   "value": "PRG_Main.fbCell.aBins[5].uiCount",
+   "min": 0,
+   "max": 30,
+   "unit": "parts",
+   "decimals": 0,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 27,
+     "tone": "warn"
+    }
+   ]
+  },
+  {
+   "type": "status",
+   "title": "Safety and links",
+   "icon": "info",
+   "at": [
+    1,
+    6,
+    3,
+    3
+   ],
+   "items": [
+    {
+     "label": "E-stop released",
+     "off": "E-STOP PRESSED",
+     "on": "GVL_Bridge.xEStopOk"
+    },
+    {
+     "label": "Door closed",
+     "off": "DOOR OPEN",
+     "on": "GVL_Bridge.xDoorClosed"
+    },
+    {
+     "label": "Twin bridge active",
+     "off": "Twin bridge off",
+     "on": "GVL_Bridge.xTwinActive"
+    },
+    {
+     "label": "Vacuum OK",
+     "off": "No vacuum",
+     "on": "GVL_Bridge.xVacuumOk"
+    },
+    {
+     "label": "Part at PE-1",
+     "off": "PE-1 free",
+     "on": "GVL_Bridge.xPE1"
+    }
+   ]
+  },
+  {
+   "type": "status",
+   "title": "Safety alarms",
+   "icon": "alarm",
+   "at": [
+    4,
+    6,
+    3,
+    3
+   ],
+   "items": [
+    {
+     "label": "P1 Emergency stop pressed",
+     "on": "GVL_HmiView.axAlarm[1]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Safety door opened in automatic mode",
+     "on": "GVL_HmiView.axAlarm[2]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Connection to the digital twin bridge lost",
+     "on": "GVL_HmiView.axAlarm[3]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Robot axis group error",
+     "on": "GVL_HmiView.axAlarm[4]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P2 Conveyor axis error",
+     "on": "GVL_HmiView.axAlarm[5]",
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "status",
+   "title": "Process alarms",
+   "icon": "alarm",
+   "at": [
+    7,
+    6,
+    3,
+    3
+   ],
+   "items": [
+    {
+     "label": "P1 Joint following error above fault limit",
+     "on": "GVL_HmiView.axAlarm[7]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Joint feedback not updated",
+     "on": "GVL_HmiView.axAlarm[8]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P2 Vacuum not reached - part not gripped",
+     "on": "GVL_HmiView.axAlarm[9]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P2 Vacuum lost while carrying a part",
+     "on": "GVL_HmiView.axAlarm[10]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P3 A bin is full - cell suspended until it is emptied",
+     "on": "GVL_HmiView.axAlarm[12]",
+     "tone": "warn"
+    }
+   ]
+  },
+  {
+   "type": "buttons",
+   "title": "Commands",
+   "at": [
+    10,
+    6,
+    3,
+    3
+   ],
+   "items": [
+    {
+     "label": "Acknowledge",
+     "variable": "GVL_HmiPanel.xAckAll",
+     "icon": "check"
+    },
+    {
+     "label": "Suspend",
+     "variable": "GVL_HmiPanel.xSuspend",
+     "icon": "pause"
+    },
+    {
+     "label": "Unsuspend",
+     "variable": "GVL_HmiPanel.xUnsuspend",
+     "icon": "play"
+    },
+    {
+     "label": "Clear",
+     "variable": "GVL_HmiPanel.xClear",
+     "icon": "reset",
+     "access": {
+      "min": "Maintenance"
+     }
+    }
+   ]
+  }
+ ]
+}

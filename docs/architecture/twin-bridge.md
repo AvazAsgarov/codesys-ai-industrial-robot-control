@@ -28,6 +28,20 @@ python tools/uv_run.py airc run --viewer   # twin + bridge, scenario config/scen
 Start production from the HMI (Phase 5) or over OPC UA (`GVL_Hmi.eCommand`: Reset, then Start);
 the end-to-end test does that: `python tools/uv_run.py pytest -m codesys -s`.
 
+## Recording a demo video
+
+```powershell
+python tools/uv_run.py --group vision airc run --vision yoloe --duration 300 --record experiments/demo/demo.mp4
+```
+
+`--record` writes an mp4 (1280×720, mp4v) of `cam_showcase` (`--record-camera cam_inspect` for the
+inspection camera) at `--record-fps` frames per second (default 10). A banner on each frame shows
+the elapsed time, the PLC's PackML state and the parts placed in the bins so far. The bridge cycle
+only copies the twin's state every 1/fps s onto a bounded queue; a worker thread with its own
+`MjData` and OpenGL context renders and encodes (`airc.video.VideoRecorder`). If the renderer falls
+behind, frames are dropped rather than delaying the cycle. The file is finished when the run ends,
+also on Ctrl+C.
+
 ## One bridge cycle (20 ms)
 
 1. Read the PLC outputs: joint setpoints and their sample number (`udiSetpointSeq`), conveyor

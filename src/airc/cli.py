@@ -1,8 +1,9 @@
 """Command-line interface: ``airc``."""
 
 import json
+import threading
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Protocol
 
 import typer
 import yaml
@@ -34,6 +35,7 @@ app.add_typer(plc_app, name="plc")
 
 EXIT_CONFIG_ERROR = 2
 EXIT_PLC_ERROR = 3
+VISION_WARMUP_S = 120.0  # loading and compiling the detector on the CPU
 
 
 def _version_callback(value: bool) -> None:
@@ -147,7 +149,7 @@ def plc_deploy(
 
 
 @app.command("run")
-def run_cell(
+def run_cell(  # noqa: PLR0913, PLR0917 - one parameter per command-line option
     scenario: Annotated[
         Path, typer.Option("--scenario", "-s", help="Scenario YAML (config/scenarios/...).")
     ] = Path("config/scenarios/p2_demo.yaml"),
@@ -163,6 +165,18 @@ def run_cell(
             "`airc vision export`) or 'oracle' (simulator ground truth).",
         ),
     ] = "oracle",
+    record: Annotated[
+        Path | None,
+        typer.Option(
+            "--record", help="Record a video of the run to this .mp4 file (rendered off-cycle)."
+        ),
+    ] = None,
+    record_fps: Annotated[
+        float, typer.Option("--record-fps", help="Frames per second of the video.")
+    ] = 10.0,
+    record_camera: Annotated[
+        str, typer.Option("--record-camera", help="Scene camera to record.")
+    ] = "cam_showcase",
 ) -> None:
     """Run the digital twin against the soft-PLC through the OPC UA bridge."""
     try:
@@ -178,8 +192,17 @@ def run_cell(
     client = BridgeClient(
         cfg.plc.opcua_endpoint, TagMap.load(), timeout_s=twin.cfg.bridge_timeout_s
     )
+    recorder = None
+    if record is not None:
+        from airc.video import VideoRecorder  # noqa: PLC0415 - OpenCV only when recording
+
+        try:
+            recorder = VideoRecorder(twin, record, fps=record_fps, camera=record_camera)
+        except (ValueError, OSError, RuntimeError) as exc:
+            typer.echo(f"error: {exc}", err=True)
+            raise typer.Exit(EXIT_CONFIG_ERROR) from None
     worker = _vision_worker(twin) if vision == "yoloe" else None
-    runner = Runner(client, twin, scen, vision=worker)
+    runner = Runner(client, twin, scen, vision=worker, recorder=recorder)
     handle = None
     if viewer:
         import mujoco.viewer  # noqa: PLC0415 - GUI libraries only when asked for
@@ -197,6 +220,9 @@ def run_cell(
             handle.close()
         if worker is not None:
             worker.close()
+        if recorder is not None:  # closed by the runner already, unless it never started
+            recorder.close()
+            typer.echo(f"video: {recorder.frames_written} frames -> {record}")
     typer.echo(
         f"cycles {report.cycles}, overruns {report.overruns}, reconnects {report.reconnects}, "
         f"cycle {report.cycle_ms_mean:.1f} ms mean / {report.cycle_ms_p95:.1f} ms p95, "
@@ -209,6 +235,19 @@ def run_cell(
     )
 
 
+class _Ready(Protocol):
+    ready: threading.Event
+
+
+def _wait_for_vision(worker: _Ready, timeout_s: float = VISION_WARMUP_S) -> bool:
+    """Wait until the detector is loaded, so the first part is answered before its deadline."""
+    typer.echo("loading the detector ...")
+    if worker.ready.wait(timeout_s):
+        return True
+    typer.echo(f"vision not ready after {timeout_s:.0f} s: the first captures may go unanswered")
+    return False
+
+
 def _vision_worker(twin: Twin) -> "VisionWorker":
     """Camera + YOLOE (visual prompts) on OpenVINO, in its own thread."""
     from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415
@@ -216,7 +255,9 @@ def _vision_worker(twin: Twin) -> "VisionWorker":
     from airc.vision.detector import LabelMap, OpenVinoDetector  # noqa: PLC0415
 
     labels = LabelMap.for_slugs(PartCatalogue.load())
-    return VisionWorker(twin, lambda: OpenVinoDetector(models.yoloe_dir("visual"), labels))
+    worker = VisionWorker(twin, lambda: OpenVinoDetector(models.yoloe_dir("visual"), labels))
+    _wait_for_vision(worker)  # the first part must not wait for the model to load
+    return worker
 
 
 @app.command("calibrate")

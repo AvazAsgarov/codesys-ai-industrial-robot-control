@@ -20,6 +20,7 @@ tags:
   # --- bridge -> PLC ---------------------------------------------------------------------------
   heartbeat: {path: GVL_Bridge.xHeartbeat, variant: Boolean}
   twin_active: {path: GVL_Bridge.xTwinActive, variant: Boolean}
+  decision_active: {path: GVL_Bridge.xDecisionActive, variant: Boolean}  # THX-02 configured
   joint_fb_deg: {path: GVL_Bridge.aJointPosFb, variant: Double}
   joint_torque_nm: {path: GVL_Bridge.aJointTorqueFb, variant: Double}
   feedback_seq: {path: GVL_Bridge.udiFeedbackSeq, variant: UInt32}

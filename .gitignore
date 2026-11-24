@@ -63,5 +63,8 @@ plc/*.log
 plc/scripts/*.log
 !.env.example
 
+# demo videos (airc run --record): large binaries, not versioned
+experiments/demo/
+
 # YOLOE text encoder, downloaded by Ultralytics when prompts are set
 mobileclip2_b.ts

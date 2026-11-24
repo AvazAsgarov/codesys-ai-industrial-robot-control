@@ -42,6 +42,7 @@ VAR_INPUT
     xEStopOk : BOOL := TRUE;
     stVision : ST_VisionMsg;
     stDecision : ST_DecisionMsg;
+    xDecisionActive : BOOL;                  // an AI decision service answers (bridge)
     xLoopback : BOOL;
 END_VAR
 VAR_OUTPUT
@@ -196,7 +197,7 @@ END_IF
 
 fbPe1(xRaw := xPE1);
 fbTracker(lrBeltPos := fbConv.lrPosition, xPE1Rising := fbPe1.xRising,
-          stVision := stVision, stDecision := stDecision);
+          stVision := stVision, stDecision := stDecision, xDecisionActive := xDecisionActive);
 fbSeq(AxisGroup := AxisGroup, ConveyorAxis := ConveyorAxis,
       Robot := fbRobot, Gripper := fbVac, Tracker := fbTracker);
 fbVac(xVacuumOk := xVacuumOk, tGripTimeout := GVL_Params.tVacuumTimeout);
