@@ -60,3 +60,4 @@ plc/*.log
 # Local soft-PLC state (pid, logs) and deploy logs
 .airc/
 plc/scripts/*.log
+!.env.example
