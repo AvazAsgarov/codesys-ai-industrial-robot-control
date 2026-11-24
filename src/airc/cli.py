@@ -279,9 +279,15 @@ app.add_typer(eval_app, name="eval")
 
 @eval_app.command("vision")
 def eval_vision(  # noqa: PLR0913, PLR0917 - one parameter per CLI option
-    detector: Annotated[str, typer.Option(help="yoloe, yolo26 or oracle (true masks).")] = "yoloe",
+    detector: Annotated[
+        str,
+        typer.Option(
+            help="yoloe-visual (the cell's), yoloe (text prompts), yolo26 (COCO) or oracle "
+            "(true masks)."
+        ),
+    ] = "yoloe-visual",
     prompts: Annotated[
-        str, typer.Option(help="Exported YOLOE prompt set: 'classes' or 'candidates'.")
+        str, typer.Option(help="Text prompt set of --detector yoloe: 'classes' or 'candidates'.")
     ] = "classes",
     seed: Annotated[int, typer.Option(help="Dataset seed (tuning 300, test 301).")] = 300,
     frames: Annotated[int, typer.Option(help="Rendered frames.")] = 200,

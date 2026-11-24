@@ -34,7 +34,7 @@ from airc.vision.service import belt_pose
 
 CONF = 0.25  # precision, recall and pose are counted at this confidence
 IOU = 0.5
-DETECTORS = ("yoloe", "yolo26", "oracle")
+DETECTORS = ("yoloe-visual", "yoloe", "yolo26", "oracle")
 
 
 def _fbox(box: tuple[int, int, int, int]) -> tuple[float, float, float, float]:
@@ -79,8 +79,11 @@ def make_detector(  # noqa: PLR0913 - keyword options
     """A detector for the classes of ``cfg`` (catalogue parts).
 
     Args:
-        kind: ``yoloe`` (text prompts), ``yolo26`` (COCO names) or ``oracle`` (true masks).
-        tag: Prompt set of the exported YOLOE model (``classes``, ``candidates``, or a tuning tag).
+        kind: ``yoloe-visual`` (visual prompts made from reference renders, the cell's
+            detector), ``yoloe`` (text prompts), ``yolo26`` (COCO names) or ``oracle``
+            (true masks).
+        tag: Text prompt set of the exported YOLOE model (``classes``, ``candidates``, or a
+            tuning tag); ignored by the other detectors.
         cfg: Twin configuration whose classes are catalogue parts.
         prompts: YOLOE prompt per class (default: the catalogue's).
         device: OpenVINO device.
@@ -100,10 +103,13 @@ def make_detector(  # noqa: PLR0913 - keyword options
     if kind == "yolo26":
         labels = LabelMap({p.coco: i for i, p in enumerate(catalogue.classes) if p.coco})
         return Rotated(OpenVinoDetector(models.coco_dir(), labels, device=device), quarter_turns)
-    if kind != "yoloe":
+    if kind == "yoloe-visual":  # the cell's detector: classes named by their slug
+        tag, texts = "visual", [p.slug for p in catalogue.classes]
+    elif kind == "yoloe":
+        texts = list(prompts) if prompts is not None else [p.prompt for p in catalogue.classes]
+    else:
         msg = f"unknown detector {kind!r} (one of {', '.join(DETECTORS)})"
         raise ValueError(msg)
-    texts = list(prompts) if prompts is not None else [p.prompt for p in catalogue.classes]
     if len(set(texts)) != len(texts):
         msg = f"two classes share a prompt ({texts}): YOLOE cannot tell them apart"
         raise ValueError(msg)
