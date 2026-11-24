@@ -35,7 +35,7 @@ class CellGeometry:
     pe1_x: float
     pe2_x: float
     pick_window_end_x: float
-    part_height: float
+    part_heights: tuple[float, ...]  # grip height per part class [mm]
     bin_drop_xy: tuple[tuple[float, float], ...]
 
     @classmethod
@@ -47,8 +47,9 @@ class CellGeometry:
         scalars = {name: float(value) for name, value in _SCALAR.findall(text)}
         origin_match = re.search(r"BELT_ORIGIN\s*:\s*MC_COORD_REF\s*:=\s*\(([^)]*)\)", text)
         bins_match = re.search(r"BIN_DROP\s*:.*?:=\s*\[(.*?)\];", text, re.DOTALL)
-        if origin_match is None or bins_match is None:
-            msg = f"BELT_ORIGIN or BIN_DROP not found in {file}"
+        heights_match = re.search(r"PART_HEIGHTS\s*:[^=]*:=\s*\[([^\]]*)\]", text)
+        if origin_match is None or bins_match is None or heights_match is None:
+            msg = f"BELT_ORIGIN, BIN_DROP or PART_HEIGHTS not found in {file}"
             raise ValueError(msg)
         origin = _coords(origin_match.group(1))
         bins = tuple(
@@ -69,6 +70,6 @@ class CellGeometry:
             pe1_x=scalars["PE1_X"],
             pe2_x=scalars["PE2_X"],
             pick_window_end_x=scalars["PICK_WINDOW_END_X"],
-            part_height=scalars["PART_HEIGHT"],
+            part_heights=tuple(float(v) for v in heights_match.group(1).split(",")),
             bin_drop_xy=bins,
         )

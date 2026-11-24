@@ -34,18 +34,21 @@ def test_exported_yoloe_keeps_the_prompts(detector: OpenVinoDetector) -> None:
 
 
 def test_detection_mask_lies_on_the_part(detector: OpenVinoDetector) -> None:
-    cls = 1  # the class zero-shot finds from this view; per-class accuracy: Task 7 benchmark
-    twin = Twin(cfg=TwinConfig.load(parts="catalogue"))
-    renderer = FrameRenderer(twin.model, "cam_inspect", twin.cfg)
-    pid = twin.spawn(PartSpec(cls=cls, y_mm=0.0, theta_deg=10.0, x_mm=twin.geo.pe1_x))
-    twin.step(twin.joint_positions_rad(), 0.0, 0.0, False)
-    frame = renderer.render(twin.data)
-    renderer.close()
+    """Pipeline check (BGR input, ROI, image-sized masks): the detector's mask of a part it
+    finds lies on that part. Which classes zero-shot finds is the Task 7 benchmark's job."""
     roi = (slice(40, 680), slice(320, 960))  # 640 x 640 around PE1 (the image centre)
-    found = detector.detect(np.ascontiguousarray(frame.rgb[roi]))
-    assert found, "nothing detected"
-    truth = frame.body_mask(twin.part_body_id(pid))[roi]
-    best = max(found, key=lambda d: (d.mask & truth).sum())
-    assert best.mask.shape == truth.shape
-    iou = (best.mask & truth).sum() / (best.mask | truth).sum()
-    assert iou > 0.5
+    ious: list[float] = []
+    for cls in range(3):
+        twin = Twin(cfg=TwinConfig.load(parts="catalogue"))
+        renderer = FrameRenderer(twin.model, "cam_inspect", twin.cfg)
+        pid = twin.spawn(PartSpec(cls=cls, y_mm=0.0, theta_deg=10.0, x_mm=twin.geo.pe1_x))
+        twin.step(twin.joint_positions_rad(), 0.0, 0.0, False)
+        frame = renderer.render(twin.data)
+        renderer.close()
+        found = detector.detect(np.ascontiguousarray(frame.rgb[roi]))
+        truth = frame.body_mask(twin.part_body_id(pid))[roi]
+        for det in found:
+            assert det.mask.shape == truth.shape
+            ious.append(float((det.mask & truth).sum() / (det.mask | truth).sum()))
+    assert ious, "no class detected at all"
+    assert max(ious) > 0.5

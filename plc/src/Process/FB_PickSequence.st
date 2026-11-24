@@ -16,6 +16,8 @@
               it is gripped.
     Moves   : linear only for the short tracked moves (PCS_1); PTP for long transfers, which
               avoids wrist/base singularities on Cartesian paths across the cell.
+    Heights : approach, grip and lift heights follow the scheduled part's class
+              (GVL_CellGeometry.PART_HEIGHTS).
 *)
 FUNCTION_BLOCK FB_PickSequence
 VAR_IN_OUT
@@ -58,6 +60,7 @@ VAR
     stReqTarget : SMC_POS_REF;
     xCmdDone : BOOL;
     xCmdError : BOOL;
+    lrPartHeight : LREAL;               // grip height of the scheduled part's class [mm]
 END_VAR
 VAR CONSTANT
     RELEASE_TIME : TIME := T#200MS;      // vacuum off before retracting
@@ -177,6 +180,7 @@ CASE eStep OF
                                           GVL_CellGeometry.PICK_WINDOW_END_X - GVL_CellGeometry.PICK_MARGIN);
             IF uiIdx > 0 THEN
                 stPart := Tracker.GetRecord(uiIdx);
+                lrPartHeight := GVL_CellGeometry.PART_HEIGHTS[MIN(stPart.usiClass, 2)];
                 stObject.X := Tracker.CurrentX(uiIdx);
                 stObject.Y := stPart.lrY;
                 stObject.Z := GVL_CellGeometry.BELT_SURFACE_Z;
@@ -198,13 +202,13 @@ CASE eStep OF
         END_IF
 
     E_PickStep.Approach:
-        Request(E_RobotCmd.MoveLinPcs1, TrackedPose(GVL_CellGeometry.PART_HEIGHT + GVL_Params.lrApproachHeight));
+        Request(E_RobotCmd.MoveLinPcs1, TrackedPose(lrPartHeight + GVL_Params.lrApproachHeight));
         IF xCmdDone THEN
             NextStep(E_PickStep.Descend);
         END_IF
 
     E_PickStep.Descend:
-        Request(E_RobotCmd.MoveLinPcs1, TrackedPose(GVL_CellGeometry.PART_HEIGHT - GVL_Params.lrPickDepth));
+        Request(E_RobotCmd.MoveLinPcs1, TrackedPose(lrPartHeight - GVL_Params.lrPickDepth));
         IF xCmdDone THEN
             NextStep(E_PickStep.Grip);
         END_IF
@@ -223,7 +227,7 @@ CASE eStep OF
         END_IF
 
     E_PickStep.Lift:
-        Request(E_RobotCmd.MoveLinPcs1, TrackedPose(GVL_CellGeometry.PART_HEIGHT + GVL_Params.lrApproachHeight));
+        Request(E_RobotCmd.MoveLinPcs1, TrackedPose(lrPartHeight + GVL_Params.lrApproachHeight));
         IF xCmdDone THEN
             xTrackExec := FALSE;
             NextStep(E_PickStep.MoveToBin);
