@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 import yaml
@@ -297,3 +297,89 @@ def vision_export(
         yoloe = models.export_yoloe([p.prompt for p in parts], prompts, prec)
     coco = models.export_coco(prec)
     typer.echo(f"exported {yoloe} and {coco}")
+
+
+eval_app = typer.Typer(help="Benchmarks against simulator ground truth.", no_args_is_help=True)
+app.add_typer(eval_app, name="eval")
+
+
+@eval_app.command("vision")
+def eval_vision(  # noqa: PLR0913, PLR0917 - one parameter per CLI option
+    detector: Annotated[
+        str,
+        typer.Option(
+            help="yoloe-visual (the cell's), yoloe (text prompts), yolo26 (COCO) or oracle "
+            "(true masks)."
+        ),
+    ] = "yoloe-visual",
+    prompts: Annotated[
+        str, typer.Option(help="Text prompt set of --detector yoloe: 'classes' or 'candidates'.")
+    ] = "classes",
+    seed: Annotated[int, typer.Option(help="Dataset seed (tuning 300, test 301).")] = 300,
+    frames: Annotated[int, typer.Option(help="Rendered frames.")] = 200,
+    tilt: Annotated[
+        float | None, typer.Option(help="Camera tilt in degrees (default: config/twin.yaml).")
+    ] = None,
+    classes: Annotated[
+        str | None,
+        typer.Option(help="Candidate slugs as the classes, comma-separated (default: parts.yaml)."),
+    ] = None,
+    device: Annotated[str, typer.Option(help="OpenVINO device.")] = "intel:cpu",
+    quarter_turns: Annotated[
+        int,
+        typer.Option(help="Turn the window counter-clockwise (1: far end of the belt at the top)."),
+    ] = 0,
+    out: Annotated[
+        Path | None,
+        typer.Option(help="Result JSON (default: experiments/results/vision_<detector>_<seed>)."),
+    ] = None,
+) -> None:
+    """Benchmark a zero-shot detector on rendered frames of the window around PE1."""
+    from airc.evaluation.dataset import render_dataset  # noqa: PLC0415 - rendering, models
+    from airc.evaluation.vision_eval import (  # noqa: PLC0415
+        DETECTORS,
+        OracleDetector,
+        evaluate,
+        make_detector,
+    )
+    from airc.twin.config import TwinConfig  # noqa: PLC0415
+    from airc.vision.detector import ModelsMissingError  # noqa: PLC0415
+
+    if detector not in DETECTORS or prompts not in ("classes", "candidates") or frames < 1:
+        typer.echo(
+            f"error: --detector {'|'.join(DETECTORS)}, --prompts classes|candidates, --frames >= 1",
+            err=True,
+        )
+        raise typer.Exit(EXIT_CONFIG_ERROR)
+    slugs = [s.strip() for s in classes.split(",")] if classes else None
+    try:
+        cfg = TwinConfig.load(parts="catalogue", classes=slugs)
+        if tilt is not None:
+            cfg = cfg.with_camera_tilt(tilt)
+        det = make_detector(detector, prompts, cfg, device=device, quarter_turns=quarter_turns)
+    except (KeyError, ValueError, ModelsMissingError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR) from None
+    hook = det.see if isinstance(det, OracleDetector) else None
+    result = evaluate(det, render_dataset(seed, frames, cfg), frame_hook=hook)
+    command = f"airc eval vision --detector {detector} --prompts {prompts} --seed {seed} " + (
+        f"--frames {frames}"
+        + (f" --tilt {tilt:g}" if tilt is not None else "")
+        + (f" --classes {classes}" if classes else "")
+        + (f" --quarter-turns {quarter_turns}" if quarter_turns else "")
+    )
+    record: dict[str, Any] = {
+        "command": command,
+        "seed": seed,
+        "device": device,
+        "camera": "exact",
+        "quarter_turns": quarter_turns,
+        **result,
+    }
+    path = out if out is not None else Path(f"experiments/results/vision_{detector}_{seed}.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    typer.echo(
+        f"{detector}: mAP@0.5 {record['mAP50']}, pose {record['pose_mm']['mean']} mm mean, "
+        f"latency {record['latency_ms']['p50']} ms p50 -> {path}"
+    )

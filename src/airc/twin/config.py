@@ -1,5 +1,6 @@
 """Twin configuration (``config/twin.yaml``)."""
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal
 
@@ -115,7 +116,10 @@ class TwinConfig(_Frozen):
 
     @classmethod
     def load(
-        cls, path: Path | None = None, parts: Literal["placeholder", "catalogue"] = "placeholder"
+        cls,
+        path: Path | None = None,
+        parts: Literal["placeholder", "catalogue"] = "placeholder",
+        classes: Sequence[str] | None = None,
     ) -> "TwinConfig":
         """Load ``config/twin.yaml`` (default: the repository's).
 
@@ -123,6 +127,8 @@ class TwinConfig(_Frozen):
             path: The twin configuration file.
             parts: ``placeholder`` - the geometric parts of ``twin.yaml``; ``catalogue`` - the
                 three scanned parts of ``config/parts.yaml`` (Phase 3).
+            classes: With ``catalogue``: these candidate slugs as the classes instead of the
+                ``classes`` of ``parts.yaml`` (the benchmark compares candidates).
         """
         file = path if path is not None else default_config_path().parent / "twin.yaml"
         raw: Any = yaml.safe_load(file.read_text(encoding="utf-8"))
@@ -130,7 +136,10 @@ class TwinConfig(_Frozen):
         if parts == "catalogue":
             from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415 - avoids a cycle
 
-            classes = tuple(
+            catalogue = PartCatalogue.load(file.parent / "parts.yaml")
+            if classes is not None:
+                catalogue = catalogue.with_classes(classes)
+            part_classes = tuple(
                 PartClass(
                     name=p.slug,
                     shape="mesh",
@@ -139,9 +148,15 @@ class TwinConfig(_Frozen):
                     texture_file=p.texture_path.as_posix(),
                     grip_mm=p.grip_height_mm,
                 )
-                for p in PartCatalogue.load(file.parent / "parts.yaml").classes
+                for p in catalogue.classes
             )
             cfg = cfg.model_copy(
-                update={"parts": cfg.parts.model_copy(update={"classes": classes})}
+                update={"parts": cfg.parts.model_copy(update={"classes": part_classes})}
             )
         return cfg
+
+    def with_camera_tilt(self, tilt_deg: float) -> "TwinConfig":
+        """The same configuration with another inspection camera tilt (benchmark studies)."""
+        return self.model_copy(
+            update={"camera": self.camera.model_copy(update={"tilt_deg": tilt_deg})}
+        )

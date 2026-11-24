@@ -6,6 +6,7 @@ in PLC class order. Sizes and grip heights come from each part's ``meta.json``, 
 """
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -73,3 +74,16 @@ class PartCatalogue(BaseModel):
             candidates=tuple(parts.values()),
             classes=tuple(parts[slug] for slug in chosen),
         )
+
+    def with_classes(self, slugs: Sequence[str]) -> "PartCatalogue":
+        """The same shortlist with other candidates as the sorted classes (in this order).
+
+        Raises:
+            KeyError: If a slug is not a prepared candidate.
+        """
+        by_slug = {p.slug: p for p in self.candidates}
+        missing = [s for s in slugs if s not in by_slug]
+        if missing:
+            msg = f"not prepared candidates: {', '.join(missing)}"
+            raise KeyError(msg)
+        return self.model_copy(update={"classes": tuple(by_slug[s] for s in slugs)})
