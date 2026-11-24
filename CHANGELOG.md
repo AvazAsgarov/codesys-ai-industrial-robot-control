@@ -22,8 +22,9 @@ Phase 3 — Vision.
   waits for it (`airc run --vision yoloe`).
 - YOLOE visual prompts from rendered reference views, no training (ADR 0009); text prompts and
   YOLO26 COCO as baselines.
-- Rendered benchmark `airc eval vision`: mAP@0.5 0.993 with visual prompts (text prompts 0.138,
-  COCO 0.074), position error 2.0 mm mean.
+- Rendered benchmark `airc eval vision`: mAP@0.5 0.997 with visual prompts (text prompts 0.138,
+  COCO 0.058), position error 2.0 mm mean, box orientation 1.0° p95; text-prompt tuning study
+  (`tools/tune_vision.py`).
 
 ### Changed
 

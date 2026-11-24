@@ -13,12 +13,14 @@ On the rendered benchmark (seed 301, 500 frames, 951 parts, the inspection camer
 
 | Detector | Prompts | mAP@0.5 |
 |---|---|---|
-| YOLO26s-seg (COCO classes) | box / bottle / can mapped to COCO | 0.074 |
+| YOLO26s-seg (COCO classes) | box / bottle / can mapped to COCO | 0.058 |
 | YOLOE-26s-seg | text: box, bottle, can | 0.138 |
-| YOLOE-26s-seg | text, image rotated 90° | 0.589 |
-| YOLOE-26s-seg | **visual prompts** | **0.993** |
+| YOLOE-26s-seg | text, image rotated 90° | 0.566 |
+| YOLOE-26s-seg | **visual prompts** | **0.997** |
 
-Text prompts fail on these renders: the products seen from above do not look like the average
+Text prompts are weak on these renders (best tuned text setup on the tuning seed: 0.9998 at 40°
+tilt with the image turned and the prompts carton / bottle / coffee can, but that needs a
+different camera and part set): the products seen from above do not look like the average
 "bottle" or "can" in the text embedding space. The owner ruled out fine-tuning.
 
 ## Decision
@@ -33,10 +35,13 @@ Text prompts and YOLO26 COCO stay as baselines in the benchmark (`airc eval visi
 
 ## Consequences
 
-- The fallback of ADR 0005 is not needed: mAP@0.5 0.993 against the 0.80 threshold.
+- The fallback of ADR 0005 is not needed: mAP@0.5 0.997 against the 0.80 threshold
+  (AP box 1.000, jar 0.997, can 0.993).
 - Position error 2.0 mm mean (p95 3.1 mm) on the belt plane, from the mask centroid and the
   calibrated camera; well inside the suction cup's tolerance.
-- Detection runs at about 150 ms per frame on the laptop CPU, off the bridge cycle (vision
+- Box orientation 1.0° p95 from a rectangle fit on the belt plane; about 3 % of the nearly square
+  boxes come out 90° off (the suction cup does not need the orientation to pick).
+- Detection runs at about 170 ms per frame on the laptop CPU, off the bridge cycle (vision
   worker thread), so the 20 ms bridge loop is not affected.
 - The reference views come from the same renderer as the test frames: the result shows that the
   pipeline works without training, not that it transfers to real camera images. The paper states
