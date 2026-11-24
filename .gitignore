@@ -45,6 +45,7 @@ paper/build/
 # Data, models and media (downloaded or generated, never committed)
 experiments/runs/
 assets/models/*.pt
+/models/
 *.onnx
 *.bin
 *.safetensors

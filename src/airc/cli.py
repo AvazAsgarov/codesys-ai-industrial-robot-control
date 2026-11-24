@@ -238,3 +238,29 @@ def calibrate_camera(
         f"position error {report.position_error_mm:.2f} mm, rotation error "
         f"{report.rotation_error_deg:.3f} deg -> {out}, {model}"
     )
+
+
+vision_app = typer.Typer(help="Detectors: export to OpenVINO.", no_args_is_help=True)
+app.add_typer(vision_app, name="vision")
+
+
+@vision_app.command("export")
+def vision_export(
+    prompts: Annotated[
+        str, typer.Option(help="YOLOE prompt set: 'classes' (the 3 parts) or 'candidates' (all).")
+    ] = "classes",
+    precision: Annotated[str, typer.Option(help="fp32 or fp16.")] = "fp32",
+) -> None:
+    """Download the weights and export YOLOE-26 (with prompts) and YOLO26 to OpenVINO."""
+    from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415
+    from airc.vision import models  # noqa: PLC0415
+
+    if prompts not in ("classes", "candidates") or precision not in ("fp32", "fp16"):
+        typer.echo("error: --prompts classes|candidates, --precision fp32|fp16", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR)
+    cat = PartCatalogue.load()
+    parts = cat.classes if prompts == "classes" else cat.candidates
+    prec: models.Precision = "fp16" if precision == "fp16" else "fp32"
+    yoloe = models.export_yoloe([p.prompt for p in parts], prompts, prec)
+    coco = models.export_coco(prec)
+    typer.echo(f"exported {yoloe} and {coco}")
