@@ -76,8 +76,12 @@ def test_cli_eval_vision_rejects_unknown_detector() -> None:
 
 @pytest.mark.render
 def test_oracle_theta_is_the_part_yaw_for_a_box_long_along_its_y() -> None:
-    slugs = ["candy_box", "vitamin_jar", "coffee_can"]  # candy box: 67 x 115 mm footprint
-    cfg = TwinConfig.load(parts="catalogue", classes=slugs)
+    # candy box: 67 x 115 mm footprint; its mesh is fetched locally (tools/fetch_objects.py)
+    slugs = ["candy_box", "vitamin_jar", "coffee_can"]
+    try:
+        cfg = TwinConfig.load(parts="catalogue", classes=slugs)
+    except KeyError:
+        pytest.skip("candy_box mesh not prepared (python tools/fetch_objects.py)")
     oracle = OracleDetector()
     result = evaluate(oracle, render_dataset(41, 12, cfg), frame_hook=oracle.see)
     assert result["theta_deg"]["n"] >= 3

@@ -34,6 +34,9 @@ jobs:
       - name: Type check
         run: uv run pyright
       - name: Tests
+        # hosted runners have no OpenGL context: rendering tests run locally (pytest -m render)
+        env:
+          AIRC_SKIP_RENDER: "1"
         run: uv run pytest --cov=airc --cov-report=term-missing
 
   paper:
