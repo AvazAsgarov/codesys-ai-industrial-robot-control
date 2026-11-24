@@ -3,7 +3,8 @@
     Purpose : Simulation test harness for FB_JointMonitor (tests/plc/joint_monitor.json).
     Inputs  : xReinit; xAutoSeq - increment the feedback and setpoint sequences every cycle
               xRamp - J1 setpoint ramps by RAMP_STEP per cycle; iLag - feedback is the setpoint of
-              iLag cycles earlier (and says so in udiFeedbackForSeq); xFreeze - feedback stands still
+              iLag cycles earlier (and says so in udiFeedbackForSeq); xFreeze - feedback stands still;
+              iTornSamples - that many cycles claim a sample TORN_AGE older (a torn OPC UA write)
     Outputs : lrRampSpeed - measured J1 setpoint speed [deg/s]
 *)
 PROGRAM PRG_TestJointMonitor
@@ -23,9 +24,11 @@ VAR
     tRampStart : TIME;
     lrRampStart : LREAL;
     lrRampSpeed : LREAL;
+    iTornSamples : INT;             // next cycles: feedback says it answers an older sample
 END_VAR
 VAR CONSTANT
     RAMP_STEP : LREAL := 1.0;       // [deg per cycle]
+    TORN_AGE : UDINT := 25;         // [samples]
 END_VAR
 
 IF xReinit THEN
@@ -34,6 +37,7 @@ IF xReinit THEN
     xRamp := FALSE;
     xFreeze := FALSE;
     iLag := 0;
+    iTornSamples := 0;
     udiSpSeq := 0;
     fbMon := fbMonInitial;
     fbAlarms := fbAlarmsInitial;
@@ -59,6 +63,10 @@ IF udiSpSeq >= INT_TO_UDINT(iLag) THEN
     fbMon.udiFeedbackForSeq := udiSpSeq - INT_TO_UDINT(iLag);
     IF NOT xFreeze THEN
         fbMon.aFeedback[1] := aSpHist[fbMon.udiFeedbackForSeq MOD 128];
+    END_IF
+    IF iTornSamples > 0 AND fbMon.udiFeedbackForSeq >= TORN_AGE THEN
+        fbMon.udiFeedbackForSeq := fbMon.udiFeedbackForSeq - TORN_AGE;
+        iTornSamples := iTornSamples - 1;
     END_IF
 END_IF
 fbMon.itfAlarms := fbAlarms;

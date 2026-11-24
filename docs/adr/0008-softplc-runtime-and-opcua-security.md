@@ -39,8 +39,12 @@ Findings (spike, 2026-11-23/24):
   `CODESYSControlService.exe` are **disabled** (owner, 2026-11-24, admin PowerShell:
   `Disable-NetFirewallRule -DisplayName "CODESYS Control Service"`), so nothing of the runtime is
   reachable from the network; loopback traffic is never filtered by the Windows firewall.
-- Programming access (11740) stays behind the runtime's user management. The initial user's
-  credentials are test values in `.env` (never committed, template `.env.example`).
+- `SECURITY.UserMgmtAllowAnonymous` is a runtime-wide setting, so we assume that it also admits
+  anonymous *programming* logins on 11740 (worst case; not separately verified). The firewall is
+  therefore the only barrier for 11740, and `airc plc start` **refuses to start** the runtime while
+  an enabled inbound allow rule exists for it (rule paths with environment variables are expanded;
+  `--allow-network` overrides, for a deliberate lab network). The deploy logs in with the initial
+  user, whose credentials are test values in `.env` (never committed, template `.env.example`).
 
 Rejected: option B, signed and encrypted OPC UA with a user (closer to industrial practice, but
 needs a manual certificate step in the IDE per machine and does not change the exposure of the
@@ -52,5 +56,6 @@ programming port); the Windows service (needs administrator rights at every star
 - The demo licence stops the runtime after about 2 hours; `airc plc start` and `deploy` restart it.
 - The OPC UA link is unauthenticated and unencrypted. That is acceptable for a single-host lab cell
   and is stated as such in the paper; a plant would use option B with certificates.
-- If the firewall rule is re-enabled, the programming port is reachable from the network while
-  anonymous login is allowed. `airc plc start` checks the firewall rules and warns about that.
+- If a CODESYS update or reinstall re-enables the installer's firewall rule, the programming port
+  would be reachable from the network with anonymous login; `airc plc start` checks the rules
+  before it launches the runtime and stops with the command that disables them.

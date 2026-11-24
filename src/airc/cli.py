@@ -101,6 +101,13 @@ def plc_start(
     typer.echo(f"soft-PLC running (pid {pid})")
 
 
+@plc_app.command("unthrottle-ide")
+def plc_unthrottle_ide() -> None:
+    """Exempt the CODESYS IDE (and its simulation) from Windows timer throttling."""
+    pids = runtime.unthrottle_ide()
+    typer.echo(f"exempted: {', '.join(map(str, pids))}" if pids else "no CODESYS IDE running")
+
+
 @plc_app.command("stop")
 def plc_stop() -> None:
     """Stop the soft-PLC started by `airc plc start`."""

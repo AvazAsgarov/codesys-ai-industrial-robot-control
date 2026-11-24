@@ -51,6 +51,21 @@ async def _wait_state(control: BridgeClient, wanted: PackMLState, timeout_s: flo
     pytest.fail(f"PLC did not reach {wanted.name} within {timeout_s} s (state {state.name})")
 
 
+async def _start_cell(control: BridgeClient) -> None:
+    """Bring the cell from any state to Execute, as an operator would (Clear/Stop, Reset, Start)."""
+    state = PackMLState((await control.read_outputs()).state)
+    if state == PackMLState.ABORTED:
+        await control.send_command(PackMLCommand.CLEAR)
+        await _wait_state(control, PackMLState.STOPPED, 15)
+    elif state != PackMLState.STOPPED:
+        await control.send_command(PackMLCommand.STOP)
+        await _wait_state(control, PackMLState.STOPPED, 30)
+    await control.send_command(PackMLCommand.RESET)
+    await _wait_state(control, PackMLState.IDLE, 15)
+    await control.send_command(PackMLCommand.START)
+    await _wait_state(control, PackMLState.EXECUTE, 60)
+
+
 async def _production_run(endpoint: str, scenario: Scenario) -> tuple[RunReport, list[int]]:
     """Twin running, Reset + Start, run, return the report and the PLC states seen once a second."""
     tags = TagMap.load()
@@ -65,17 +80,7 @@ async def _production_run(endpoint: str, scenario: Scenario) -> tuple[RunReport,
     states: list[int] = []
     try:
         await asyncio.sleep(1.0)  # twin feedback flowing before the cell powers the robot
-        state = PackMLState((await control.read_outputs()).state)
-        if state == PackMLState.ABORTED:
-            await control.send_command(PackMLCommand.CLEAR)
-            await _wait_state(control, PackMLState.STOPPED, 15)
-        elif state != PackMLState.STOPPED:
-            await control.send_command(PackMLCommand.STOP)
-            await _wait_state(control, PackMLState.STOPPED, 30)
-        await control.send_command(PackMLCommand.RESET)
-        await _wait_state(control, PackMLState.IDLE, 15)
-        await control.send_command(PackMLCommand.START)
-        await _wait_state(control, PackMLState.EXECUTE, 60)
+        await _start_cell(control)
         for k in range(int(RUN_S)):
             await asyncio.sleep(1.0)
             state = (await control.read_outputs()).state
@@ -129,3 +134,61 @@ def test_e2e_sorts_by_class(plc: str) -> None:
     # parts still on the belt when the run ends are neither placed nor lost
     assert placed >= 0.95 * (report.spawned - 3)
     assert report.max_gap_ms < 200.0  # far below the PLC's 500 ms bridge watchdog
+
+
+async def _faults_run(endpoint: str, scenario: Scenario) -> tuple[RunReport, list[str]]:
+    """Run the fault scenario; recover from every abort as the operator would.
+
+    Returns the report and one line per non-Execute episode: ``<state> <alarm> <recovery s>``.
+    """
+    tags = TagMap.load()
+    twin = Twin(bin_capacity=scenario.bin_capacity)
+    runner = Runner(
+        BridgeClient(endpoint, tags, timeout_s=twin.cfg.bridge_timeout_s), twin, scenario
+    )
+    control = BridgeClient(endpoint, tags)
+    await control.connect()
+    stop = asyncio.Event()
+    task = asyncio.create_task(runner.run(stop=stop))
+    episodes: list[str] = []
+    loop = asyncio.get_running_loop()
+    try:
+        await asyncio.sleep(1.0)
+        await _start_cell(control)
+        end = loop.time() + (scenario.duration_s or 300.0) - 5.0
+        while loop.time() < end:
+            await asyncio.sleep(0.25)
+            state = PackMLState((await control.read_outputs()).state)
+            if state == PackMLState.EXECUTE:
+                continue
+            alarm = ALARMS.get((await control.read_diag()).newest_alarm)
+            t0 = loop.time()
+            if state == PackMLState.ABORTED:
+                await asyncio.sleep(3.0)  # the fault clears (E-stop released, door closed, ...)
+                await _start_cell(control)
+            else:  # Suspended (bin full) and its transitions resume by themselves
+                await _wait_state(control, PackMLState.EXECUTE, 60)
+            episodes.append(f"{state.name} {alarm} {loop.time() - t0:.0f}")
+        await control.send_command(PackMLCommand.STOP)
+        await _wait_state(control, PackMLState.STOPPED, 60)
+    finally:
+        stop.set()
+        report = await task
+        await control.close()
+    return report, episodes
+
+
+def test_e2e_faults_abort_and_recover(plc: str) -> None:
+    scenario = Scenario.load(REPO / "config/scenarios/p2_faults.yaml")
+    report, episodes = run_precise(_faults_run(plc, scenario))
+    print(  # visible with -s
+        "\n" + "\n".join(episodes) + f"\nbins {report.bin_counts} wrong {report.wrong_bin} "
+        f"missed {report.missed} lost {report.lost} reconnects {report.reconnects}"
+    )
+    seen = " ".join(episodes)
+    for fault in ("EStop", "BridgeLost", "DoorOpen"):  # each Critical fault aborted the cell
+        assert f"ABORTED {fault}" in seen, seen
+    assert "SUSPENDED" in seen or "SUSPENDING" in seen, seen  # the full bin suspended it
+    assert report.lost == 0
+    # a part held during an abort goes to Quarantine on restart; no other part is misplaced
+    assert report.wrong_bin <= report.bin_counts[5]

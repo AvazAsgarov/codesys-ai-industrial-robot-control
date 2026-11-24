@@ -11,6 +11,9 @@
               HISTORY_SIZE setpoints are kept, and the feedback is compared with the setpoint it
               answers, so transport delay does not count as following error; a feedback older
               than the history is compared with the current setpoint.
+    Debounce: a following error counts after CONFIRM_CYCLES cycles in a row. OPC UA does not
+              hand a write to the task atomically: for one cycle the new positions may meet the
+              old sequence number (a torn sample), which must not abort the cell.
     Limits  : GVL_Params.lrFollowErrWarn / lrFollowErrFault / tFeedbackTimeout
     Alarms  : FollowingErrorWarn, FollowingErrorFault, FeedbackStale
 *)
@@ -41,9 +44,12 @@ VAR
     aHistory : ARRAY[0..HISTORY_SIZE - 1, 1..6] OF LREAL;
     udiSlot : UDINT;
     xFromHistory : BOOL;
+    uiWarnCycles : UINT;
+    uiFaultCycles : UINT;
 END_VAR
 VAR CONSTANT
     HISTORY_SIZE : UDINT := 128;            // setpoint samples kept (512 ms at 4 ms)
+    CONFIRM_CYCLES : UINT := 3;             // following error must persist this long (12 ms)
 END_VAR
 
 udiSlot := udiSetpointSeq MOD HISTORY_SIZE;
@@ -70,8 +76,18 @@ FOR i := 1 TO 6 DO
     END_IF
 END_FOR
 
-xWarn := xActive AND lrWorst > GVL_Params.lrFollowErrWarn;
-xFault := xActive AND lrWorst > GVL_Params.lrFollowErrFault;
+IF xActive AND lrWorst > GVL_Params.lrFollowErrWarn THEN
+    uiWarnCycles := MIN(uiWarnCycles + 1, CONFIRM_CYCLES);
+ELSE
+    uiWarnCycles := 0;
+END_IF
+IF xActive AND lrWorst > GVL_Params.lrFollowErrFault THEN
+    uiFaultCycles := MIN(uiFaultCycles + 1, CONFIRM_CYCLES);
+ELSE
+    uiFaultCycles := 0;
+END_IF
+xWarn := uiWarnCycles >= CONFIRM_CYCLES;
+xFault := uiFaultCycles >= CONFIRM_CYCLES;
 
 // Feedback must keep arriving while supervised (not in loopback).
 tonStale(IN := xActive AND NOT xLoopback AND udiFeedbackSeq = udiLastSeq, PT := GVL_Params.tFeedbackTimeout);

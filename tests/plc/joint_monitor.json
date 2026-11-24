@@ -237,6 +237,55 @@
           "waitMs": 200
         }
       ]
+    },
+    {
+      "name": "torn_sample_no_fault",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.iLag": 10,
+            "PRG_TestJointMonitor.xFreeze": false,
+            "PRG_TestJointMonitor.xRamp": true,
+            "PRG_TestJointMonitor.xAutoSeq": true,
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.iTornSamples": 1
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.iTornSamples": 0,
+            "PRG_TestJointMonitor.fbMon.xFault": false,
+            "PRG_TestJointMonitor.fbAlarms.xCriticalActive": false
+          }
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.xRamp": false
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
     }
   ]
 }

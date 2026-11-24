@@ -23,17 +23,24 @@ Phase 2 — Digital twin and OPC UA bridge.
   SoftMotion on 11 reference poses (0.5 mm / 0.1°).
 - `airc run`: 20 ms twin-bridge cycle with a ground-truth stand-in for vision, seeded part supply
   and fault injection (E-stop, door, dropped part, full bin, lost bridge, blocked joint).
-- End-to-end test on the real soft-PLC (`pytest -m codesys`).
+- End-to-end tests on the real soft-PLC (`pytest -m codesys`): sorting by class, and recovery
+  from an E-stop, a full bin, a lost bridge and an opened door.
 
 ### Changed
 
 - `FB_JointMonitor` compares joint feedback with the setpoint sample it answers (128-sample
-  history), so transport delay is not counted as following error.
+  history), so transport delay is not counted as following error; an error must persist for
+  3 cycles (12 ms), so a torn OPC UA write cannot abort the cell.
+- `airc plc start` refuses to start while a firewall rule exposes the runtime (`--allow-network`).
 
 ### Fixed
 
 - HMI commands written during a PLC cycle could be lost (`PRG_Main` now clears only the command it
   has read).
+- `airc plc stop` could kill an unrelated process that reused the runtime's process id.
+- `airc plc deploy` could report success from the previous run's log.
+- Parts stopped spawning for minutes after a PLC restart (the supply now follows belt travel).
+- A capture whose vision write failed was never answered.
 
 ## [0.2.0] - 2026-11-23
 

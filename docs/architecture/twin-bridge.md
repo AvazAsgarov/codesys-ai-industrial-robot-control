@@ -66,4 +66,9 @@ of the tool frame (Z = approach). Eleven reference poses captured from CODESYS
 
 `config/scenarios/p2_faults.yaml` injects an E-stop, a full bin, a lost bridge and an opened door;
 a scenario can also drop the gripped part or block a joint. Each fault has a start time and a
-duration; recovery (Clear, Reset, Start) is the operator's.
+duration; recovery (Clear, Reset, Start) is the operator's. `test_e2e_faults_abort_and_recover`
+runs this scenario on the soft-PLC and plays the operator through OPC UA.
+
+Resetting forgets the tracked parts: in Stopped the PLC does not supervise the belt (the bridge
+watchdog is off and parts may be removed by hand), so production restarts from an empty, known
+belt. Parts left on the belt run off its end; the operator clears the belt before Reset.

@@ -625,11 +625,21 @@
         },
         {
           "write": {
-            "PRG_TestCell.xBridgeStall": true
+            "PRG_TestCell.xBridgeStallOnTransfer": true
           }
         },
         {
-          "waitMs": 3000
+          "write": {
+            "PRG_TestCell.usiInjClass": 1,
+            "PRG_TestCell.eInjQuality": 1,
+            "PRG_TestCell.xInject": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "waitMs": 16000
         },
         {
           "expect": {
@@ -640,11 +650,17 @@
           "expect": {
             "GVL_Bridge.eNewestAlarm": "E_AlarmId.BridgeLost",
             "GVL_Bridge.xAlarmCritical": true,
-            "PRG_Main.fbCell.fbRobot.xMoving": false
+            "GVL_Bridge.xVacuumOn": true,
+            "PRG_Main.fbCell.fbRobot.xMoving": false,
+            "PRG_TestCell.lrAbortDelayMs": {
+              "op": "<",
+              "value": 1000
+            }
           }
         },
         {
           "write": {
+            "PRG_TestCell.xBridgeStallOnTransfer": false,
             "PRG_TestCell.xBridgeStall": false
           }
         },
@@ -688,6 +704,15 @@
         {
           "expect": {
             "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "waitMs": 8000
+        },
+        {
+          "expect": {
+            "PRG_Main.fbCell.aBins[5].uiCount": 2,
+            "GVL_Bridge.xVacuumOn": false
           }
         },
         {

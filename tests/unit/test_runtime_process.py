@@ -97,3 +97,18 @@ def test_start_refuses_when_the_firewall_allows_inbound(
 def test_firewall_check_expands_environment_variables() -> None:
     script = runtime.firewall_script(Path(r"C:\Program Files\CODESYS\x.exe"))
     assert "ExpandEnvironmentVariables" in script
+
+
+def test_ide_processes_found_and_exempted(monkeypatch: pytest.MonkeyPatch) -> None:
+    # CODESYS's own simulation runs inside the (windowless) IDE: throttled, it ran at ~27 % speed
+    calls = _Calls(
+        '"CODESYS.exe","18164","Console","1","1,000,000 K"\n'
+        '"CODESYS.exe","2280","Console","1","300,000 K"\n'
+    )
+    monkeypatch.setattr(runtime.subprocess, "run", calls)
+    exempted: list[int] = []
+    monkeypatch.setattr(
+        runtime, "disable_timer_throttling", lambda pid: exempted.append(pid) or True
+    )
+    assert runtime.unthrottle_ide() == [18164, 2280]
+    assert exempted == [18164, 2280]

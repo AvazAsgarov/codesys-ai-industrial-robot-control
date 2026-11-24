@@ -246,6 +246,32 @@ def disable_timer_throttling(pid: int) -> bool:
         kernel32.CloseHandle(wintypes.HANDLE(handle))
 
 
+IDE_IMAGE = "CODESYS.exe"
+
+
+def unthrottle_ide() -> list[int]:
+    """Exempt every running CODESYS IDE from timer throttling; return the process ids.
+
+    CODESYS's own simulation (the ``tests/plc`` specs) runs inside the IDE, which runs without a
+    window when scripted; throttled, its 4 ms task ran at about a quarter of real time and the
+    specs' real-time waits failed.
+    """
+    out = subprocess.run(
+        ["tasklist", "/FI", f"IMAGENAME eq {IDE_IMAGE}", "/NH", "/FO", "CSV"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout
+    pids: list[int] = []
+    for line in out.splitlines():
+        fields = [f.strip('"') for f in line.split('","')]
+        if len(fields) > 1 and fields[0].lower() == IDE_IMAGE.lower() and fields[1].isdigit():
+            pid = int(fields[1])
+            if disable_timer_throttling(pid):
+                pids.append(pid)
+    return pids
+
+
 def _launch(settings: RuntimeSettings) -> int:
     with (_state_dir() / "runtime.log").open("wb") as log:  # the child keeps its own handle
         proc = subprocess.Popen(

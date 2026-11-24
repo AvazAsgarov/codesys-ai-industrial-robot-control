@@ -165,6 +165,33 @@ jm_cases = [
             wait(200),
         ],
     },
+    {
+        # OPC UA may hand the task new positions before their sequence number (a torn write):
+        # one bad sample must not abort the cell; a persisting error still does (blocked joint)
+        "name": "torn_sample_no_fault",
+        "steps": [
+            w(JM, xReinit=True),
+            wait(200),
+            w(
+                JM,
+                iLag=10,
+                xFreeze=False,
+                xRamp=True,
+                xAutoSeq=True,
+                **{"fbMon.xLoopback": False, "fbMon.xActive": True},
+            ),
+            wait(500),
+            w(JM, iTornSamples=1),
+            wait(300),
+            e(
+                JM,
+                iTornSamples=0,
+                **{"fbMon.xFault": False, "fbAlarms.xCriticalActive": False},
+            ),
+            w(JM, xRamp=False),
+            wait(200),
+        ],
+    },
 ]
 
 
