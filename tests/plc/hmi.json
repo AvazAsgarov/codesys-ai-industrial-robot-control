@@ -350,6 +350,116 @@
           "waitMs": 200
         }
       ]
+    },
+    {
+      "name": "mode_change_refused_in_execute_and_selector_follows_request",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestCell.xActive": true,
+            "GVL_Config.xCellEnabled": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xReset": true
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xStart": true
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.iModeSelect": 3
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "expect": {
+            "GVL_Hmi.eModeRequest": "E_PackMLMode.Production",
+            "GVL_Bridge.eMode": "E_PackMLMode.Production",
+            "GVL_HmiPanel.iModeSelect": 1
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xStop": true
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped",
+            "GVL_Bridge.eMode": "E_PackMLMode.Production"
+          }
+        },
+        {
+          "write": {
+            "GVL_Hmi.eModeRequest": 2
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "GVL_HmiPanel.iModeSelect": 2,
+            "GVL_Bridge.eMode": "E_PackMLMode.Maintenance"
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.iModeSelect": 1
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "GVL_Hmi.eModeRequest": "E_PackMLMode.Production",
+            "GVL_Bridge.eMode": "E_PackMLMode.Production"
+          }
+        },
+        {
+          "expect": {
+            "GVL_Bridge.xDecisionActive": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.xActive": false
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "expect": {
+            "GVL_Bridge.xDecisionActive": false
+          }
+        }
+      ]
     }
   ]
 }
