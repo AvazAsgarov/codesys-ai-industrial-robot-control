@@ -1,5 +1,52 @@
 \section{AI Decision Layer}\label{sec:decision}
-% TODO(P4): THX-02 role, questions, deadline and fallback policy, bin selection logic.
-% TODO(P4): record/replay for reproducibility.
 
-Placeholder: this section will be written in a later phase.
+\subsection{Role}
+
+The optional decision layer adds a quality judgement to the detector's class label. It uses
+THX-02~\cite{HALX2026thx02}, a decision model that answers typed questions over text and images
+with probabilities, through its hosted API. The layer never commands motion: it only fills
+decision fields of a part record, and the PLC acts on them inside its own interlocks and
+bin-selection rule (Section~\ref{sec:plc}). The PLC does not depend on it: with
+the layer switched off, \texttt{GVL\_Bridge.xDecisionActive} is FALSE and the PLC decides each
+part by its rule as soon as vision has identified it.
+
+\subsection{Questions and Bin Selection}
+
+One request per part carries the part's image crop, the detected class and confidence, and two
+questions: a \emph{choice} between \texttt{ok}, \texttt{rework} and \texttt{scrap} (each defined by a
+short criterion), and a yes/no question whether the identification is reliable. The client maps
+the answers to \texttt{ST\_DecisionMsg}: the chosen quality with its probability, and
+\emph{unreliable} when the probability of ``no'' is at least 0.8. In \texttt{F\_SelectBin} an
+unreliable identification sends the part to Quarantine, Scrap and Rework go to their bins, and
+only parts judged \texttt{ok} reach their type bin. The detector's class and the decision both
+change where the robot places the part.
+
+\subsection{Timing, Rate Limit and Fallback}
+
+The decision for a part must arrive within the PLC's deadline of 2.5\,s after the capture; the
+client's time budget is that deadline minus the time already spent. Requests run in a worker
+thread with its own event loop, and the bridge polls the answers once per 20\,ms cycle, so a slow
+or stalled API cannot delay the cycle. The free tier of the API counts every question, so a part
+costs two decisions; a client-side token bucket allows 50 decisions per minute (burst~2), i.e.\
+25 parts per minute, below the 60 per minute per address that the API allows. A request that
+would exceed the deadline, a rate-limit answer (HTTP~429) that asks for more than 1\,s of waiting,
+or any other error ends in the fallback. Fallback decisions are never written to the PLC: the
+part keeps waiting until the PLC's own deadline passes and is then decided by the rule, with a
+\emph{DecisionFallback} warning on the HMI. A decision that arrives after its part has reached
+the pick window is dropped.
+
+\subsection{Record and Replay}
+
+Every exchange is written to a JSON-lines file (run id, seed, part id, time stamp, latency,
+request hash, response or fallback reason). A replay mode feeds a recording back into a run, so
+results can be recomputed without the API, whose hosted model is not version-pinned.
+
+\subsection{Status}
+
+The decision layer, its rate limiter, deadline handling and record/replay are implemented and
+covered by unit tests with a mocked HTTP API, and the request format was checked with one call
+using a synthetic image. The layer was \emph{not} used in any of the cell runs reported in
+Section~\ref{sec:evaluation}; in those runs the PLC decided every part by its rule. The twin
+also does not yet generate defective parts, so the quality decision has no ground truth, and the
+planned comparison of the rule baseline with the decision layer is future work. The alarm-triage
+advice in the original design was not implemented.

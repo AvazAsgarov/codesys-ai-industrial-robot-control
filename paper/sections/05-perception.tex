@@ -1,5 +1,43 @@
 \section{Perception}\label{sec:perception}
-% TODO(P3): camera model and calibration, zero-shot detection with YOLO26 \cite{Ultralytics2026yolo26}.
-% TODO(P3): pose estimation from masks, OpenVINO deployment.
 
-Placeholder: this section will be written in a later phase~\cite{Ultralytics2026yolo26}.
+\subsection{Parts and Camera}
+
+The part types are three scanned products from the Google Scanned Objects collection (CC~BY~4.0),
+chosen so that they can be told apart from above: a probiotic box (class~0), a vitamin jar
+(class~1) and a coffee can (class~2). Their meshes and textures are placed in the twin, and the
+PLC holds the grip height of each class.
+
+The inspection camera looks at the belt at photo-eye PE1 from a distance of 750\,mm, tilted
+25\,° from the vertical (1280$\times$720 pixels, 45\,° vertical field of view), and is rendered
+offscreen by MuJoCo. Pixels are mapped to the belt plane with a pinhole model whose intrinsics
+and pose come from a checkerboard calibration in the twin (OpenCV \texttt{calibrateCamera} and
+\texttt{solvePnP}, 15 seeded board poses). Because the twin knows the true camera, the calibration
+can be scored: the reprojection error is 0.06\,px RMS, the focal length is within 0.02\,\%, and
+the camera position and rotation are within 1.2\,mm and 0.09\,°.
+
+\subsection{Detection Without Training}
+
+The detector is YOLOE-26s-seg~\cite{Wang2025yoloe,Sapkota2026yoloe26}, an open-vocabulary
+instance-segmentation model, run on the laptop CPU through OpenVINO (FP32). The project's design
+rule was not to train or fine-tune a detector. Text prompts were tried first, but on the rendered
+products they reached only 0.138 mAP@0.5 (Section~\ref{sec:evaluation}). The cell therefore uses
+\emph{visual prompts}: six seeded reference scenes are rendered from the twin, the box of each
+example is given to YOLOE, the prompt embeddings are averaged per class and folded into the
+network, and the network is exported to OpenVINO. No weights are trained, and a new part type
+needs only its mesh. Text prompts and the COCO-trained YOLO26~\cite{Ultralytics2026yolo26} are
+kept as baselines.
+
+The detector sees a 640$\times$640 window around PE1 at native resolution, in which a part is
+about 150\,px wide. From the mask of the chosen detection, the centroid gives the belt position
+at the part's top height, and a minimum-area rectangle of the mask outline on the belt plane gives
+the orientation. When two labels overlap with an IoU of at least 0.7, only the more confident
+one is kept. The belt travel between the capture and the rendered snapshot is subtracted, so
+the pose refers to the belt position latched by the PLC at the capture.
+
+\subsection{Integration with the Control Cycle}
+
+Inference takes about 170\,ms on the CPU, far longer than the 20\,ms bridge cycle. At each
+capture request the bridge therefore passes only a snapshot of the twin state (a few hundred
+numbers) to a vision worker thread, which renders the frame and runs the detector; the bridge
+writes the result to \texttt{GVL\_Bridge.stVision} in the first cycle after it is ready and never
+waits for it.

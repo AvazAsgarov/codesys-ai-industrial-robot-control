@@ -1,5 +1,57 @@
 \section{Digital Twin}\label{sec:twin}
-% TODO(P2): MuJoCo scene \cite{Todorov2012mujoco}, simulated servo joints, suction gripper, sensors.
-% TODO(P2): scenario configuration and fault injection.
 
-Placeholder: this section will be written in a later phase~\cite{Todorov2012mujoco}.
+\subsection{Scene and Plant Models}
+
+The plant is simulated in MuJoCo~\cite{Todorov2012mujoco} with a 2\,ms physics step
+(Fig.~\ref{fig:twin}). The scene contains the 6-axis arm with a suction tool, a 2100\,mm belt,
+the three part types, six bins, two photo-eyes, the inspection camera and a second camera for
+demonstration videos. The cell geometry has a single source: the arm, belt frame, photo-eyes and
+bin positions are generated from the PLC's constant list \texttt{GVL\_CellGeometry}, so the twin
+and the PLC kinematics cannot drift apart.
+
+Each robot joint is a simulated servo drive: PD position control with velocity feed-forward,
+torque limits (300\,N\,m on the main axes, 60\,N\,m on the wrist), rotor inertia and viscous
+friction. The setpoint received from the PLC is interpolated over the bridge cycle, and the twin
+returns measured joint positions and torques. Parts lying on the belt are moved by the change of
+the PLC's conveyor position, so the twin's parts and the PLC's part tracking use the same belt.
+Suction is modelled as a weld constraint that is activated when the vacuum valve is on and a
+downward ray from the cup finds a part within 5\,mm; the vacuum switch reports the weld back to
+the PLC. Photo-eyes are ray casts across the belt, and each bin counts its parts and reports
+\emph{full} at a configured capacity.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\columnwidth]{twin_demo_frame}
+\caption{Frame of the showcase camera from a recorded run: the arm, the belt with parts and the
+six bins. The banner shows elapsed time, the PLC's PackML state and the parts
+placed so far.}
+\label{fig:twin}
+\end{figure}
+
+\subsection{Kinematic Consistency}
+
+The joint directions and the orientation convention of the twin were measured against CODESYS
+SoftMotion (Z-Y-Z Euler angles of the tool frame in machine coordinates). Eleven reference poses
+captured from SoftMotion are compared with the twin's forward kinematics in a unit test; they
+agree within 0.5\,mm and 0.1\,°.
+
+\subsection{Bridge Cycle}
+
+The bridge and the twin run in one Python process with a 20\,ms cycle. In each cycle the bridge
+reads the PLC outputs (joint setpoints with their sample number, conveyor, vacuum valve, capture
+request, state) and writes the previous cycle's inputs in the same round trip, steps the twin ten
+times 2\,ms, spawns the parts due by belt travel, passes captures to the vision worker, and
+prepares the next inputs: measured joints with the setpoint sample they answer, photo-eyes, vacuum
+switch, bin-full signals, door, E-stop and heartbeat. Windows timing needed care on both
+sides: the runner paces its cycle on a high-resolution counter, and the soft-PLC process is
+exempted from the timer throttling of Windows~11, under which its 4\,ms task ran only every
+15.6\,ms.
+
+\subsection{Scenarios and Fault Injection}
+
+A scenario file sets the random seed, the run duration, the bin capacity and the part supply:
+one part per 1000\,mm of belt travel ($\pm$100\,mm), an equal class mix, a lateral offset of up
+to $\pm$50\,mm and a yaw of up to $\pm$30\,°. Faults are injected at given times with a given
+duration: E-stop, open door, full bin, lost bridge, dropped part and blocked joint. Recovery is
+left to the operator, through the HMI or, in automated tests, through OPC UA. When the cell
+leaves Execute because of a fault, a flight recorder logs the last 50 bridge cycles.
