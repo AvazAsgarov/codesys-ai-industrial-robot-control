@@ -91,3 +91,30 @@ def test_unprepared_candidate_is_skipped_but_a_class_is_required(tmp_path: Path)
     (assets / chosen[0].slug / "meta.json").unlink()
     with pytest.raises(FileNotFoundError, match="fetch_objects"):
         PartCatalogue.load(cfg / "parts.yaml", assets)
+
+
+def test_catalogue_with_other_classes(catalogue: PartCatalogue) -> None:
+    chosen = catalogue.with_classes(["ink_cartridge", "vitamin_jar", "coffee_can"])
+    assert [p.slug for p in chosen.classes] == ["ink_cartridge", "vitamin_jar", "coffee_can"]
+    assert chosen.candidates == catalogue.candidates
+    with pytest.raises(KeyError, match="no_such_part"):
+        catalogue.with_classes(["no_such_part"])
+
+
+def test_twin_config_with_chosen_classes_and_tilt() -> None:
+    cfg = TwinConfig.load(parts="catalogue", classes=["ink_cartridge", "vitamin_jar", "coffee_can"])
+    assert [c.name for c in cfg.parts.classes] == ["ink_cartridge", "vitamin_jar", "coffee_can"]
+    tilted = cfg.with_camera_tilt(40.0)
+    assert tilted.camera.tilt_deg == 40.0
+    assert tilted.parts == cfg.parts
+
+
+def test_removed_part_leaves_the_cell_and_frees_its_body() -> None:
+    twin = Twin()
+    pids = [twin.spawn(PartSpec(cls=0, y_mm=0.0, theta_deg=0.0, x_mm=300.0)) for _ in range(3)]
+    body = twin.part_body_id(pids[1])
+    twin.remove_part(pids[1])
+    assert [p.pid for p in twin.parts()] == [pids[0], pids[2]]
+    assert twin.data.xpos[body][2] < 0.0 or abs(twin.data.xpos[body][0]) > 2.0  # parked
+    again = twin.spawn(PartSpec(cls=0, y_mm=0.0, theta_deg=0.0, x_mm=500.0))
+    assert twin.part_body_id(again) == body

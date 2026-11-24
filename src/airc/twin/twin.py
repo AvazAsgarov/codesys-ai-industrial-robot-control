@@ -215,6 +215,12 @@ class Twin:
         )
         self._place(a.slot, pos, 0.0)
 
+    def remove_part(self, pid: int) -> None:
+        """Park a part off the cell and forget it (its body returns to the pool)."""
+        if self._held == pid:
+            self._release()
+        self._park(self._active.pop(pid).slot)
+
     def part_body_id(self, pid: int) -> int:
         """MuJoCo body id of an active part (to find it in a rendered segmentation)."""
         return self._body[self._active[pid].slot]

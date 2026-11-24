@@ -61,3 +61,13 @@ def test_point_behind_the_camera_is_rejected(camera: CameraModel) -> None:
     behind = camera.position_m + camera.forward * -1.0
     with pytest.raises(ValueError, match="behind"):
         camera.project(behind)
+
+
+def test_pixels_to_belt_matches_the_single_pixel_version(camera: CameraModel, twin: Twin) -> None:
+    cam, geo = camera, twin.geo
+    us = np.array([100.0, 640.0, 1100.5])
+    vs = np.array([50.0, 360.0, 700.25])
+    xy = cam.pixels_to_belt(us, vs, 30.0, geo)
+    assert xy.shape == (3, 2)
+    for (u, v), (x, y) in zip(zip(us, vs, strict=True), xy, strict=True):
+        assert (x, y) == pytest.approx(cam.pixel_to_belt(u, v, 30.0, geo), abs=1e-6)
