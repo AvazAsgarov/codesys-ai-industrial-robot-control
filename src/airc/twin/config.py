@@ -82,6 +82,7 @@ class TwinConfig(_Frozen):
 
     physics_timestep_s: float
     bridge_period_s: float
+    bridge_timeout_s: float  # OPC UA request timeout of the bridge cycle
     belt: BeltConfig
     photo_eye_height_mm: float
     servo: ServoConfig

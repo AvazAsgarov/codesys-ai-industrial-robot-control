@@ -11,6 +11,8 @@ a late cycle is counted as an overrun and the schedule restarts from now (no bur
 import asyncio
 import contextlib
 import ctypes
+import logging
+import os
 import statistics
 import sys
 import time
@@ -23,11 +25,15 @@ import numpy as np
 from airc.bridge.client import BridgeClient, BridgeDisconnectedError
 from airc.bridge.messages import PlcInputs, PlcOutputs, Six
 from airc.bridge.oracle import GroundTruthOracle
+from airc.plc.runtime import disable_timer_throttling
 from airc.twin.scenario import FaultEvent, FaultTimeline, Scenario, SpawnSchedule
 from airc.twin.twin import Twin, TwinState
 
 MM = 0.001
 BLOCKED_DAMPING = 1e7  # N·m·s/rad: a blocked joint
+GAP_LOG_MS = 200.0  # log a cycle longer than this (the PLC's bridge watchdog is 500 ms)
+
+_log = logging.getLogger(__name__)
 
 
 _BaseLoop: type[asyncio.AbstractEventLoop] = (
@@ -68,10 +74,15 @@ ABOVE_NORMAL_PRIORITY_CLASS = 0x00008000
 
 
 def raise_priority() -> None:
-    """Run this process above normal priority on Windows (the soft-PLC itself runs realtime)."""
+    """Run this process above normal priority on Windows, exempt from timer throttling.
+
+    Windows 11 slows timers of processes it considers background work (power throttling);
+    the bridge cycle must keep its 20 ms pace, as the soft-PLC's task does (ADR 0008).
+    """
     if sys.platform == "win32":
         kernel32 = ctypes.WinDLL("kernel32")
         kernel32.SetPriorityClass(kernel32.GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS)
+        disable_timer_throttling(os.getpid())
 
 
 def run_precise[T](coro: Coroutine[Any, Any, T]) -> T:
@@ -177,6 +188,7 @@ class Runner:
 
     async def cycle(self) -> None:
         """One exchange with the PLC (raises BridgeDisconnectedError if the link is lost)."""
+        t0 = time.perf_counter()
         if self._pending is None:
             out = await self.client.read_outputs()
         else:  # last cycle's inputs go out together with this cycle's read: one round trip
@@ -184,6 +196,7 @@ class Runner:
                 self.client.read_outputs(), self.client.write_inputs(self._pending)
             )
             self._pending = None
+        t1 = time.perf_counter()
         state = self.twin.step(
             np.radians(np.array(out.joint_sp_deg)),
             out.belt_pos_mm * MM,
@@ -196,12 +209,22 @@ class Runner:
                 self._report.spawned += 1
             except RuntimeError:
                 self._report.spawn_skipped += 1
+        t2 = time.perf_counter()
         if out.capture.seq not in (0, self._last_capture):
-            self._last_capture = out.capture.seq
             vision = self.oracle.on_capture(out.capture, self.twin.parts(), out.belt_pos_mm)
             await self.client.write_vision(vision)
+            self._last_capture = out.capture.seq  # only once written: a lost write is re-sent
             self._report.captures += 1
         self._pending = self._inputs(out, state)
+        t3 = time.perf_counter()
+        if (t3 - t0) * 1000.0 > GAP_LOG_MS:
+            _log.warning(
+                "cycle took %.0f ms (exchange %.0f, twin %.0f, vision %.0f ms)",
+                (t3 - t0) * 1000.0,
+                (t1 - t0) * 1000.0,
+                (t2 - t1) * 1000.0,
+                (t3 - t2) * 1000.0,
+            )
 
     def _apply(self, event: FaultEvent) -> None:
         fault, on = event.fault, event.start

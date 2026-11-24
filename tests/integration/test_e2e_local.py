@@ -54,8 +54,9 @@ async def _wait_state(control: BridgeClient, wanted: PackMLState, timeout_s: flo
 async def _production_run(endpoint: str, scenario: Scenario) -> tuple[RunReport, list[int]]:
     """Twin running, Reset + Start, run, return the report and the PLC states seen once a second."""
     tags = TagMap.load()
+    twin = Twin(bin_capacity=scenario.bin_capacity)
     runner = Runner(
-        BridgeClient(endpoint, tags), Twin(bin_capacity=scenario.bin_capacity), scenario
+        BridgeClient(endpoint, tags, timeout_s=twin.cfg.bridge_timeout_s), twin, scenario
     )
     control = BridgeClient(endpoint, tags)
     await control.connect()

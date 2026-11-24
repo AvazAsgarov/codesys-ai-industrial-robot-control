@@ -3,6 +3,8 @@
 # twin needs. Units: mm, kg, seconds, N·m.
 physics_timestep_s: 0.002
 bridge_period_s: 0.02
+# a stalled OPC UA request ends (and the bridge reconnects) before the PLC's 500 ms watchdog
+bridge_timeout_s: 0.4
 
 belt:
   length_mm: 2100

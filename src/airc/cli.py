@@ -83,22 +83,22 @@ def _runtime_settings() -> RuntimeSettings:
 
 
 @plc_app.command("start")
-def plc_start() -> None:
+def plc_start(
+    allow_network: Annotated[
+        bool,
+        typer.Option(
+            "--allow-network", help="Start even if a firewall rule exposes the runtime (unsafe)."
+        ),
+    ] = False,
+) -> None:
     """Start the soft-PLC as a console process (applies config/runtime.yaml first)."""
     settings = _runtime_settings()
     try:
-        pid = runtime.start(settings)
+        pid = runtime.start(settings, allow_network=allow_network)
     except RuntimeError as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_PLC_ERROR) from None
     typer.echo(f"soft-PLC running (pid {pid})")
-    if runtime.firewall_allows_inbound(settings.executable):
-        typer.echo(
-            "warning: a Windows firewall rule lets the network reach the soft-PLC while anonymous "
-            'login is allowed; run (admin): Disable-NetFirewallRule -DisplayName "CODESYS Control '
-            'Service" (ADR 0008)',
-            err=True,
-        )
 
 
 @plc_app.command("stop")
@@ -154,7 +154,10 @@ def run_cell(
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_CONFIG_ERROR) from None
     twin = Twin(bin_capacity=scen.bin_capacity)
-    runner = Runner(BridgeClient(cfg.plc.opcua_endpoint, TagMap.load()), twin, scen)
+    client = BridgeClient(
+        cfg.plc.opcua_endpoint, TagMap.load(), timeout_s=twin.cfg.bridge_timeout_s
+    )
+    runner = Runner(client, twin, scen)
     handle = None
     if viewer:
         import mujoco.viewer  # noqa: PLC0415 - GUI libraries only when asked for

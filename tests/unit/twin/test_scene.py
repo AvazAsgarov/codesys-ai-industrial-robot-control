@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from airc.twin.cell import CellGeometry
+from airc.twin.config import TwinConfig
 from airc.twin.twin import PartSpec, Twin
 
 HOME_RAD = np.radians([0.0, -30.0, 60.0, 0.0, 60.0, 0.0])
@@ -46,3 +47,9 @@ def test_parts_stop_with_belt() -> None:
         twin.step(HOME_RAD, belt_pos_m=0.0, belt_vel_m_s=0.0, vacuum_on=False)
     assert twin.part(pid).x_mm == pytest.approx(x0, abs=0.5)
     assert twin.part(pid).on_belt
+
+
+def test_bridge_request_timeout_below_plc_watchdog() -> None:
+    # a stalled OPC UA request must end (and reconnect) before the PLC's 500 ms bridge watchdog
+    cfg = TwinConfig.load()
+    assert cfg.bridge_period_s < cfg.bridge_timeout_s < 0.5

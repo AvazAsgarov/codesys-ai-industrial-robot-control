@@ -60,3 +60,13 @@ def test_invalid_fault_kind_rejected() -> None:
 def test_targeted_fault_needs_a_target() -> None:
     with pytest.raises(pydantic.ValidationError, match="target"):
         Scenario.model_validate({**BASE, "faults": [{"at_s": 1.0, "kind": "block_joint"}]})
+
+
+def test_spawning_resumes_after_belt_position_reset() -> None:
+    # a PLC restart or re-download sets the conveyor position back to 0
+    schedule = SpawnSchedule(Scenario.model_validate({**BASE, "spawn": {"pitch_mm": 100}}))
+    for pos in range(0, 5001, 20):
+        schedule.due(float(pos))
+    assert schedule.due(0.0) == []
+    spawned = [p for pos in range(20, 201, 20) for p in schedule.due(float(pos))]
+    assert len(spawned) >= 1  # within about one pitch, not after 5 m of travel

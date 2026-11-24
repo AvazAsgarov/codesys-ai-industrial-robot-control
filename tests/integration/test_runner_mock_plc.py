@@ -1,12 +1,14 @@
 """The twin-bridge runner against the in-process fake PLC."""
 
 import asyncio
+import logging
 import time
 from itertools import pairwise
 
 import pytest
 
-from airc.bridge.client import BridgeClient
+from airc.bridge.client import BridgeClient, BridgeDisconnectedError
+from airc.bridge.messages import VisionMsg
 from airc.bridge.tags import TagMap
 from airc.runner import Runner, run_precise
 from airc.twin.scenario import Scenario
@@ -150,6 +152,61 @@ def test_faults_drive_plc_inputs() -> None:
             await runner.run(duration_s=0.4)
             assert await plc.get("estop_ok") is True
             assert (await plc.get("bin_full"))[2] is False
+        finally:
+            await plc.stop()
+
+    asyncio.run(scenario())
+
+
+def test_capture_answered_again_after_a_failed_write() -> None:
+    async def scenario() -> None:
+        plc = FakePlc(free_port(), TagMap.load())
+        await plc.start()
+        try:
+            await plc.set("capture.part_id", 9)
+            await plc.set("capture.seq", 1)
+            runner = await _runner(plc, Twin())
+            real_write = runner.client.write_vision
+            failures = [1]
+
+            async def flaky_write(msg: VisionMsg) -> None:
+                if failures:
+                    failures.pop()
+                    await runner.client.close()
+                    raise BridgeDisconnectedError("link lost during the vision write")
+                await real_write(msg)
+
+            runner.client.write_vision = flaky_write  # type: ignore[method-assign]
+            report = await runner.run(duration_s=0.4)
+            assert report.reconnects >= 1
+            assert plc.write_log.count("vision.seq") == 1
+            assert await plc.get("vision.part_id") == 9
+        finally:
+            await plc.stop()
+
+    asyncio.run(scenario())
+
+
+def test_long_cycle_gap_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    async def scenario() -> None:
+        plc = FakePlc(free_port(), TagMap.load())
+        await plc.start()
+        try:
+            twin = Twin()
+            real_step = twin.step
+            slow = [1]
+
+            def stall_once(*args: object, **kwargs: object) -> object:
+                if slow:
+                    slow.pop()
+                    time.sleep(0.25)
+                return real_step(*args, **kwargs)  # type: ignore[arg-type]
+
+            twin.step = stall_once  # type: ignore[method-assign]
+            runner = await _runner(plc, twin)
+            with caplog.at_level(logging.WARNING, logger="airc.runner"):
+                await runner.run(duration_s=0.5)
+            assert any("cycle took" in r.message and "twin" in r.message for r in caplog.records)
         finally:
             await plc.stop()
 

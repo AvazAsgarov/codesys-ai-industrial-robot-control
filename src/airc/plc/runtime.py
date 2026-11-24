@@ -178,15 +178,21 @@ def port_open(port: int, host: str = "127.0.0.1", timeout_s: float = 0.5) -> boo
         return False
 
 
-def process_alive(pid: int) -> bool:
-    """Return True if a process with this id runs (Windows ``tasklist``; never signals it)."""
+RUNTIME_IMAGE = "CODESYSControlService.exe"
+
+
+def process_alive(pid: int, image: str = RUNTIME_IMAGE) -> bool:
+    """Return True if process ``pid`` runs *and* is ``image`` (Windows reuses process ids).
+
+    Uses ``tasklist``; never signals the process.
+    """
     out = subprocess.run(
         ["tasklist", "/FI", f"PID eq {pid}", "/NH", "/FO", "CSV"],
         capture_output=True,
         text=True,
         check=False,
     ).stdout
-    return f'"{pid}"' in out
+    return f'"{image}","{pid}"'.lower() in out.lower()
 
 
 def _read_pid() -> int | None:
@@ -241,14 +247,14 @@ def disable_timer_throttling(pid: int) -> bool:
 
 
 def _launch(settings: RuntimeSettings) -> int:
-    log = (_state_dir() / "runtime.log").open("wb")
-    proc = subprocess.Popen(
-        [str(settings.executable), "-d"],
-        stdout=log,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
-        creationflags=_CREATE_NO_WINDOW | _DETACHED_PROCESS,
-    )
+    with (_state_dir() / "runtime.log").open("wb") as log:  # the child keeps its own handle
+        proc = subprocess.Popen(
+            [str(settings.executable), "-d"],
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+            creationflags=_CREATE_NO_WINDOW | _DETACHED_PROCESS,
+        )
     _pid_file().write_text(str(proc.pid), encoding="utf-8")
     disable_timer_throttling(proc.pid)
     return proc.pid
@@ -263,18 +269,31 @@ def _wait_for_port(port: int, timeout_s: float) -> bool:
     return False
 
 
-def start(settings: RuntimeSettings) -> int:
+def start(settings: RuntimeSettings, allow_network: bool = False) -> int:
     """Start the soft-PLC (configured as in ``settings``) unless it already runs.
 
     On the very first start the runtime creates its data folder; it is then stopped once, the
-    settings are applied and it is started again.
+    settings are applied and it is started again. The runtime allows anonymous login (ADR 0008),
+    so it is not started while a firewall rule lets the network reach it.
+
+    Args:
+        settings: Runtime settings.
+        allow_network: Start even if a firewall rule lets the network reach the runtime.
 
     Returns:
         The runtime's process id.
 
     Raises:
-        RuntimeError: If the runtime does not open its programming port in time.
+        RuntimeError: If the network can reach the runtime, or it does not open its OPC UA port
+            in time.
     """
+    if not allow_network and firewall_allows_inbound(settings.executable):
+        msg = (
+            "a Windows firewall rule lets the network reach the soft-PLC, which allows anonymous "
+            'login; run (admin): Disable-NetFirewallRule -DisplayName "CODESYS Control Service" '
+            "(ADR 0008), or pass --allow-network"
+        )
+        raise RuntimeError(msg)
     pid = _read_pid()
     if pid is not None and process_alive(pid):
         return pid
@@ -308,16 +327,25 @@ def inbound_allowed_from_rules(rules: str) -> bool:
     return False
 
 
-def firewall_allows_inbound(executable: Path) -> bool:
-    """Return True if an enabled Windows firewall rule lets the network reach ``executable``."""
-    script = (
-        "Get-NetFirewallApplicationFilter | Where-Object { $_.Program -eq '"
-        + str(executable).replace("'", "''")
+def firewall_script(executable: Path) -> str:
+    """PowerShell that lists ``Enabled|Action|Direction`` of the rules for ``executable``.
+
+    Rule paths may hold environment variables (``%ProgramFiles%``); they are expanded first.
+    """
+    target = str(executable).replace("'", "''")
+    return (
+        "Get-NetFirewallApplicationFilter | Where-Object { "
+        "[Environment]::ExpandEnvironmentVariables($_.Program) -eq '"
+        + target
         + "' } | Get-NetFirewallRule | ForEach-Object { \"$($_.Enabled)|$($_.Action)|"
         '$($_.Direction)" }'
     )
+
+
+def firewall_allows_inbound(executable: Path) -> bool:
+    """Return True if an enabled Windows firewall rule lets the network reach ``executable``."""
     out = subprocess.run(
-        ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", firewall_script(executable)],
         capture_output=True,
         text=True,
         check=False,
@@ -419,6 +447,7 @@ def deploy(settings: RuntimeSettings, project: Path) -> str:
         raise RuntimeError(msg)
     script = root / "plc" / "scripts" / "deploy_runtime.py"
     log_path = root / "plc" / "scripts" / "deploy_runtime.log"
+    log_path.unlink(missing_ok=True)  # only this run's log may report success
     with tempfile.TemporaryDirectory(prefix="airc-deploy-") as tmp:
         copy = Path(tmp) / project.name
         shutil.copy2(project, copy)
@@ -435,13 +464,17 @@ def deploy(settings: RuntimeSettings, project: Path) -> str:
             f'"{settings.ide_executable}" --profile="{settings.ide_profile}" '
             f'--noUI --runscript="{script}"'
         )
-        subprocess.run(
-            command,
-            env=env,
-            timeout=settings.deploy_timeout_s,
-            check=False,
-            capture_output=True,
-        )
+        try:
+            subprocess.run(
+                command,
+                env=env,
+                timeout=settings.deploy_timeout_s,
+                check=False,
+                capture_output=True,
+            )
+        except subprocess.TimeoutExpired:
+            msg = f"the CODESYS IDE did not finish the deploy within {settings.deploy_timeout_s} s"
+            raise RuntimeError(msg) from None
     log = log_path.read_text(encoding="utf-8") if log_path.is_file() else ""
     if DEPLOY_OK not in log:
         msg = f"deploy failed, see {log_path}:\n{log[-2000:]}"

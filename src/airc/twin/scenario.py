@@ -15,7 +15,7 @@ import numpy as np
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from airc.twin.twin import PartSpec
+from airc.twin.twin import BELT_JUMP_M, PartSpec
 
 
 class _Frozen(BaseModel):
@@ -85,7 +85,9 @@ class SpawnSchedule:
         self._rng = np.random.default_rng(scenario.seed)
         weights = np.array(self._cfg.mix, dtype=np.float64)
         self._p = weights / weights.sum()
-        self._next_mm: float | None = None
+        self._next_mm: float | None = None  # belt travel at which the next part is due
+        self._travel_mm = 0.0
+        self._last_pos_mm: float | None = None
 
     def _draw_pitch(self) -> float:
         jitter = self._cfg.jitter_mm
@@ -98,11 +100,20 @@ class SpawnSchedule:
         return PartSpec(cls=cls, y_mm=y, theta_deg=theta)
 
     def due(self, belt_pos_mm: float) -> list[PartSpec]:
-        """Parts to spawn now, given the conveyor position (mm)."""
+        """Parts to spawn now, given the conveyor position (mm).
+
+        Spacing follows belt *travel*: a jump of the position (PLC restart or re-download sets it
+        back to 0) is not travel, as in :meth:`Twin.step`.
+        """
+        if self._last_pos_mm is not None:
+            delta = belt_pos_mm - self._last_pos_mm
+            if abs(delta) <= BELT_JUMP_M * 1000.0:
+                self._travel_mm += delta
+        self._last_pos_mm = belt_pos_mm
         if self._next_mm is None:  # first part as soon as the belt has moved a little
-            self._next_mm = belt_pos_mm + 1.0
+            self._next_mm = self._travel_mm + 1.0
         parts: list[PartSpec] = []
-        while belt_pos_mm >= self._next_mm:
+        while self._travel_mm >= self._next_mm:
             parts.append(self._draw_part())
             self._next_mm += self._draw_pitch()
         return parts
