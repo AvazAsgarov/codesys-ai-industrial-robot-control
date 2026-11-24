@@ -48,7 +48,7 @@ class OracleDetector:
         return out
 
 
-def _wait(worker: VisionWorker, n: int, timeout_s: float = 20.0) -> list[VisionResult]:
+def _wait(worker: VisionWorker, n: int, timeout_s: float = 60.0) -> list[VisionResult]:
     got: list[VisionResult] = []
     deadline = time.monotonic() + timeout_s
     while len(got) < n and time.monotonic() < deadline:

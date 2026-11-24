@@ -67,6 +67,7 @@ class Scenario(_Frozen):
     duration_s: float | None = None
     spawn: SpawnConfig
     bin_capacity: int | None = None
+    parts: Literal["placeholder", "catalogue"] = "catalogue"  # scanned parts since Phase 3
     faults: tuple[Fault, ...] = ()
 
     @classmethod

@@ -14,8 +14,10 @@ from airc.common.config import ConfigError, load_config
 from airc.plc import runtime
 from airc.plc.runtime import RuntimeSettings, load_runtime_settings
 from airc.runner import Runner, raise_priority, run_precise
+from airc.twin.config import TwinConfig
 from airc.twin.scenario import Scenario
 from airc.twin.twin import Twin
+from airc.vision.service import VisionWorker
 
 app = typer.Typer(
     name="airc",
@@ -153,6 +155,14 @@ def run_cell(
         float | None, typer.Option("--duration", "-d", help="Seconds (default: the scenario's).")
     ] = None,
     viewer: Annotated[bool, typer.Option("--viewer", help="Open the MuJoCo viewer.")] = False,
+    vision: Annotated[
+        str,
+        typer.Option(
+            "--vision",
+            help="Who answers captures: 'yoloe' (camera + YOLOE visual prompts, needs "
+            "`airc vision export`) or 'oracle' (simulator ground truth).",
+        ),
+    ] = "oracle",
 ) -> None:
     """Run the digital twin against the soft-PLC through the OPC UA bridge."""
     try:
@@ -161,11 +171,15 @@ def run_cell(
     except (ConfigError, OSError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_CONFIG_ERROR) from None
-    twin = Twin(bin_capacity=scen.bin_capacity)
+    if vision not in ("oracle", "yoloe"):
+        typer.echo("error: --vision oracle|yoloe", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR)
+    twin = Twin(cfg=TwinConfig.load(parts=scen.parts), bin_capacity=scen.bin_capacity)
     client = BridgeClient(
         cfg.plc.opcua_endpoint, TagMap.load(), timeout_s=twin.cfg.bridge_timeout_s
     )
-    runner = Runner(client, twin, scen)
+    worker = _vision_worker(twin) if vision == "yoloe" else None
+    runner = Runner(client, twin, scen, vision=worker)
     handle = None
     if viewer:
         import mujoco.viewer  # noqa: PLC0415 - GUI libraries only when asked for
@@ -181,6 +195,8 @@ def run_cell(
     finally:
         if handle is not None:
             handle.close()
+        if worker is not None:
+            worker.close()
     typer.echo(
         f"cycles {report.cycles}, overruns {report.overruns}, reconnects {report.reconnects}, "
         f"cycle {report.cycle_ms_mean:.1f} ms mean / {report.cycle_ms_p95:.1f} ms p95, "
@@ -191,6 +207,16 @@ def run_cell(
         f"{report.captures}, bins {report.bin_counts}, wrong bin {report.wrong_bin}, "
         f"missed {report.missed}, lost {report.lost}"
     )
+
+
+def _vision_worker(twin: Twin) -> "VisionWorker":
+    """Camera + YOLOE (visual prompts) on OpenVINO, in its own thread."""
+    from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415
+    from airc.vision import models  # noqa: PLC0415
+    from airc.vision.detector import LabelMap, OpenVinoDetector  # noqa: PLC0415
+
+    labels = LabelMap.for_slugs(PartCatalogue.load())
+    return VisionWorker(twin, lambda: OpenVinoDetector(models.yoloe_dir("visual"), labels))
 
 
 @app.command("calibrate")
