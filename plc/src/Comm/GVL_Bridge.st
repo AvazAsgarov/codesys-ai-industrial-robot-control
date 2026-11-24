@@ -18,6 +18,7 @@ VAR_GLOBAL
     xEStopOk : BOOL := TRUE;                               // emergency stop circuit (TRUE = not pressed)
     stVision : ST_VisionMsg;
     stDecision : ST_DecisionMsg;
+    xDecisionActive : BOOL;                                // an AI decision service answers stDecision
     // --- outputs (PLC -> bridge) ---
     aJointPosSp : ARRAY[1..6] OF LREAL;                    // joint setpoints [deg]
     udiSetpointSeq : UDINT;                                // increments with every setpoint sample

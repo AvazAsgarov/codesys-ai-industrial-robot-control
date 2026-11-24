@@ -48,6 +48,7 @@ fbCell(AxisGroup := AxisGroup_Robot,
        xEStopOk := GVL_Bridge.xEStopOk,
        stVision := GVL_Bridge.stVision,
        stDecision := GVL_Bridge.stDecision,
+       xDecisionActive := GVL_Bridge.xDecisionActive,
        // joint feedback from the twin once the bridge reports it active (ADR 0008)
        xLoopback := GVL_Config.xFeedbackLoopback AND NOT GVL_Bridge.xTwinActive,
        aJointPosSp => GVL_Bridge.aJointPosSp,

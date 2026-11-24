@@ -39,6 +39,7 @@ END_VAR
 IF NOT xActive THEN
     RETURN;
 END_IF
+GVL_Bridge.xDecisionActive := TRUE;  // the harness injects AI decisions (eInjQuality)
 
 IF xVacLostOnTransfer AND PRG_Main.fbCell.ePickStep = E_PickStep.MoveToBin THEN
     xVacLost := TRUE;
