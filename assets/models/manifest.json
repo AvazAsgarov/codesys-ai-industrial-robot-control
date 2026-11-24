@@ -6,9 +6,9 @@
   },
   "yoloe-26s-seg-classes-fp32_openvino_model": {
     "prompts": [
-      "cup",
-      "ink cartridge box",
-      "toy cow"
+      "box",
+      "bottle",
+      "can"
     ],
     "weights": "yoloe-26s-seg.pt",
     "weights_sha256": "48f24206bc8680d60cbbfa296b0140da849669b9515058b72f5a945142df0654"

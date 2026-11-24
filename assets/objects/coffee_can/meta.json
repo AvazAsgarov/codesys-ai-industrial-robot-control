@@ -1,0 +1,19 @@
+{
+  "slug": "coffee_can",
+  "source": "https://fuel.gazebosim.org/1.0/GoogleResearch/models/Don_Franciscos_Gourmet_Coffee_Medium_Decaf_100_Colombian_12_oz_340_g/1/Don_Franciscos_Gourmet_Coffee_Medium_Decaf_100_Colombian_12_oz_340_g.zip",
+  "sha256": "e02665602999d871a4cad33b2d9c3d1b1d579d190c336093460088d78e5a4142",
+  "licence": "CC BY 4.0",
+  "rotate_deg": [
+    0,
+    0,
+    0
+  ],
+  "scale": 0.6,
+  "size_mm": [
+    61.84,
+    61.87,
+    84.62
+  ],
+  "grip_height_mm": 83.46,
+  "faces": 9452
+}

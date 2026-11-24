@@ -1,0 +1,19 @@
+{
+  "slug": "vitamin_jar",
+  "source": "https://fuel.gazebosim.org/1.0/GoogleResearch/models/AllergenFree_JarroDophilus/1/AllergenFree_JarroDophilus.zip",
+  "sha256": "7284b0f731babfc954fc97eaa91fe1866b910eb016d7a507f0f123f7b99dad3c",
+  "licence": "CC BY 4.0",
+  "rotate_deg": [
+    0,
+    0,
+    0
+  ],
+  "scale": 0.85,
+  "size_mm": [
+    45.81,
+    45.55,
+    81.6
+  ],
+  "grip_height_mm": 81.19,
+  "faces": 8126
+}

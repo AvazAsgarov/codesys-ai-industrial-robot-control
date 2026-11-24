@@ -18,11 +18,9 @@ source. Candidates in `config/parts.yaml`:
 
 | Slug | Scanned object |
 |---|---|
-| cup | Ecoforms_Cup_B4_SAN |
-| ramekin | BIA_Porcelain_Ramekin_With_Glazed_Rim_35_45_oz_cup |
+| probiotic_box | Phillips_Colon_Health_Probiotic_Capsule |
+| candy_box | Nips_Hard_Candy_Rich_Creamy_Butter_Rum_4_oz_1133_g |
 | ink_cartridge | Office_Depot_HP_71_Remanufactured_Ink_Cartridge_Black |
-| android_figure | Android_Figure_Orange |
-| triceratops | Great_Dinos_Triceratops_Toy |
-| bull | Schleich_Hereford_Bull |
-| rhino | Schleich_African_Black_Rhino |
-| fire_truck | FIRE_TRUCK |
+| vitamin_jar | AllergenFree_JarroDophilus |
+| glucosamine_jar | Jarrow_Glucosamine_Chondroitin_Combination_120_Caps |
+| coffee_can | Don_Franciscos_Gourmet_Coffee_Medium_Decaf_100_Colombian_12_oz_340_g |
