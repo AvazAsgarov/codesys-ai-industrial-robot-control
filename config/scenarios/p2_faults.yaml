@@ -4,6 +4,7 @@
 name: p2_faults
 seed: 43
 duration_s: 300
+bin_capacity: 30          # as p2_demo: only the injected block_bin fault fills a bin
 spawn:
   pitch_mm: 1000
   jitter_mm: 100

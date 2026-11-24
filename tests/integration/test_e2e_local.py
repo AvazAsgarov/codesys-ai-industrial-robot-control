@@ -48,7 +48,12 @@ async def _wait_state(control: BridgeClient, wanted: PackMLState, timeout_s: flo
             return
         await asyncio.sleep(0.1)
     state = PackMLState((await control.read_outputs()).state)
-    pytest.fail(f"PLC did not reach {wanted.name} within {timeout_s} s (state {state.name})")
+    d = await control.read_diag()
+    pytest.fail(
+        f"PLC did not reach {wanted.name} within {timeout_s} s (state {state.name}, alarm "
+        f"{ALARMS.get(d.newest_alarm)}, step {d.pick_step}, worst joint {d.worst_joint}, "
+        f"following error {d.following_error_deg})"
+    )
 
 
 async def _start_cell(control: BridgeClient) -> None:
@@ -155,20 +160,26 @@ async def _faults_run(endpoint: str, scenario: Scenario) -> tuple[RunReport, lis
     try:
         await asyncio.sleep(1.0)
         await _start_cell(control)
-        end = loop.time() + (scenario.duration_s or 300.0) - 5.0
+        start = loop.time()
+        end = start + (scenario.duration_s or 300.0) - 5.0
         while loop.time() < end:
             await asyncio.sleep(0.25)
             state = PackMLState((await control.read_outputs()).state)
             if state == PackMLState.EXECUTE:
                 continue
-            alarm = ALARMS.get((await control.read_diag()).newest_alarm)
             t0 = loop.time()
-            if state == PackMLState.ABORTED:
+            alarm = ALARMS.get((await control.read_diag()).newest_alarm)  # the cause, read first
+            print(f"left Execute: {state.name} {alarm} at {t0 - start:.0f} s", flush=True)
+            if state == PackMLState.ABORTING:  # let it settle before the operator acts
+                await _wait_state(control, PackMLState.ABORTED, 15)
+                state = PackMLState.ABORTED
+            if state in (PackMLState.SUSPENDING, PackMLState.SUSPENDED, PackMLState.UNSUSPENDING):
+                await _wait_state(control, PackMLState.EXECUTE, 60)  # resumes by itself
+            else:  # Aborted, or an Error stop: the operator recovers
                 await asyncio.sleep(3.0)  # the fault clears (E-stop released, door closed, ...)
                 await _start_cell(control)
-            else:  # Suspended (bin full) and its transitions resume by themselves
-                await _wait_state(control, PackMLState.EXECUTE, 60)
             episodes.append(f"{state.name} {alarm} {loop.time() - t0:.0f}")
+            print(f"episode: {episodes[-1]}", flush=True)
         await control.send_command(PackMLCommand.STOP)
         await _wait_state(control, PackMLState.STOPPED, 60)
     finally:
@@ -185,10 +196,13 @@ def test_e2e_faults_abort_and_recover(plc: str) -> None:
         "\n" + "\n".join(episodes) + f"\nbins {report.bin_counts} wrong {report.wrong_bin} "
         f"missed {report.missed} lost {report.lost} reconnects {report.reconnects}"
     )
-    seen = " ".join(episodes)
-    for fault in ("EStop", "BridgeLost", "DoorOpen"):  # each Critical fault aborted the cell
-        assert f"ABORTED {fault}" in seen, seen
-    assert "SUSPENDED" in seen or "SUSPENDING" in seen, seen  # the full bin suspended it
+    # faults at 60 s E-stop, 120 s full bin, 180 s lost bridge, 240 s door; the PLC publishes only
+    # its newest alarm, and after a lost bridge that is the following error of the frozen twin
+    kinds = [e.split()[0].replace("SUSPENDING", "SUSPENDED") for e in episodes]
+    assert kinds == ["ABORTED", "SUSPENDED", "ABORTED", "ABORTED"], episodes
+    assert episodes[0].split()[1] == "EStop", episodes
+    assert episodes[1].split()[1] == "BinFull", episodes
+    assert episodes[3].split()[1] == "DoorOpen", episodes
     assert report.lost == 0
     # a part held during an abort goes to Quarantine on restart; no other part is misplaced
     assert report.wrong_bin <= report.bin_counts[5]

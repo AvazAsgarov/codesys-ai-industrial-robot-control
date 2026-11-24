@@ -41,6 +41,9 @@ Phase 2 — Digital twin and OPC UA bridge.
 - `airc plc deploy` could report success from the previous run's log.
 - Parts stopped spawning for minutes after a PLC restart (the supply now follows belt travel).
 - A capture whose vision write failed was never answered.
+- Clearing could hang after a SoftMotion lag error: a reset answered "no error to reset" kept the
+  fault latched, and re-enabling an already enabled group failed. The TCP lag tolerance is now set
+  to 10 mm (the twin's servo lag is supervised by `FB_JointMonitor`).
 
 ## [0.2.0] - 2026-11-23
 
