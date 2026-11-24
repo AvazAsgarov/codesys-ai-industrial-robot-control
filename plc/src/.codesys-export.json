@@ -1,6 +1,6 @@
 {
   "project": "C:\\dev\\airc-p5\\plc\\RobotCell.project",
-  "exported": "2026-11-24T21:04:51.983Z",
+  "exported": "2026-11-24T21:40:16.612Z",
   "files": [
     "Comm/FB_BridgeWatchdog.st",
     "Comm/FB_MessageIntake.st",
@@ -64,6 +64,9 @@
     "Interfaces/I_Equipment/ErrorId.st",
     "Interfaces/I_Equipment/HasError.st",
     "Interfaces/I_Equipment/Reset.st",
+    "PRG_HMI_Alarms.st",
+    "PRG_HMI_Overview.st",
+    "PRG_HMI_Robot.st",
     "PRG_Recipe_Cell.st",
     "Process/FB_PartTracker.st",
     "Process/FB_PartTracker/Clear.st",
@@ -84,7 +87,9 @@
     "Process/FB_PickSequence/TrackedPose.st",
     "Process/FB_SortingCell.st",
     "Process/FB_SortingCell/AlarmState.st",
+    "Process/FB_SortingCell/AnyBinFull.st",
     "Process/FB_SortingCell/PlacedCount.st",
+    "Process/FB_SortingCell/RobotMoving.st",
     "Process/F_SelectBin.st",
     "Programs/PRG_Comm.st",
     "Programs/PRG_Main.st",
@@ -117,6 +122,7 @@
     "Types/ST_DecisionMsg.st",
     "Types/ST_PartRecord.st",
     "Types/ST_VisionMsg.st",
+    "hmi.json",
     "project.txt"
   ]
 }

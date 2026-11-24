@@ -16,4 +16,8 @@ VAR_GLOBAL
     axAlarm : ARRAY[1..16] OF BOOL;                        // per E_AlarmId: active or unacknowledged
     axAlarmActive : ARRAY[1..16] OF BOOL;                  // per E_AlarmId: condition present
     uiPlaced : UINT;                                       // parts placed (all bins)
+    xBeltRunning : BOOL;                                   // conveyor faster than BELT_RUNNING_MM_S
+    xRobotMoving : BOOL;                                   // a robot motion command is active
+    xAnyBinFull : BOOL;                                    // at least one bin reports full
+    xJogPermitted : BOOL;                                  // Manual mode and Execute: jog buttons act
 END_VAR

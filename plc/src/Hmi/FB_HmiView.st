@@ -2,7 +2,7 @@
     FB_HmiView
     Purpose : Prepares the display data of the visualization (GVL_HmiView): state and mode texts,
               state groups for the machine bar, alarm rows (active or unacknowledged, and the
-              condition itself), newest alarm text and the placed-parts counter.
+              condition itself), newest alarm text, equipment signals and the placed counter.
     In/Out  : Cell - the sorting cell (read only)
     Outputs : GVL_HmiView
 *)
@@ -15,6 +15,7 @@ VAR
     stAlarm : ST_Alarm;
 END_VAR
 VAR CONSTANT
+    BELT_RUNNING_MM_S : LREAL := 1.0;  // the belt counts as running above this speed
     // HMI row i shows alarm ALARM_ROWS[i] (E_AlarmId is strict: no integer arithmetic on it)
     ALARM_ROWS : ARRAY[1..16] OF E_AlarmId := [
         E_AlarmId.EStop, E_AlarmId.DoorOpen, E_AlarmId.BridgeLost, E_AlarmId.AxisGroupError,
@@ -79,6 +80,7 @@ GVL_HmiView.xActing := Cell.eState = E_PackMLState.Resetting OR Cell.eState = E_
                        OR Cell.eState = E_PackMLState.Stopping OR Cell.eState = E_PackMLState.Clearing
                        OR Cell.eState = E_PackMLState.Unholding OR Cell.eState = E_PackMLState.Unsuspending;
 GVL_HmiView.xManual := Cell.eMode = E_PackMLMode.Manual;
+GVL_HmiView.xJogPermitted := GVL_HmiView.xManual AND GVL_HmiView.xExecute;
 
 GVL_HmiView.xAnyAlarm := FALSE;
 FOR i := 1 TO 16 DO
@@ -89,3 +91,6 @@ FOR i := 1 TO 16 DO
 END_FOR
 GVL_HmiView.sNewestAlarm := GVL_AlarmDefs.aDefs[Cell.eNewestAlarm].sText;
 GVL_HmiView.uiPlaced := Cell.PlacedCount();
+GVL_HmiView.xBeltRunning := ABS(Cell.lrBeltVel) > BELT_RUNNING_MM_S;
+GVL_HmiView.xRobotMoving := Cell.RobotMoving();
+GVL_HmiView.xAnyBinFull := Cell.AnyBinFull();

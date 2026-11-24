@@ -1,0 +1,306 @@
+{
+ "name": "Alarms",
+ "title": "Alarms",
+ "subtitle": "ISA-18.2 priorities: P1 critical, P2 error, P3 warning",
+ "icon": "alarm",
+ "size": "1920x1080",
+ "accent": "#2F5D8A",
+ "info": [
+  {
+   "label": "State",
+   "value": "GVL_HmiView.sState"
+  },
+  {
+   "label": "Mode",
+   "value": "GVL_HmiView.sMode"
+  },
+  {
+   "label": "Placed",
+   "value": "GVL_HmiView.uiPlaced",
+   "unit": "parts"
+  },
+  {
+   "label": "Newest alarm",
+   "value": "GVL_HmiView.sNewestAlarm"
+  }
+ ],
+ "machine": {
+  "states": [
+   {
+    "on": "GVL_HmiView.xAborted",
+    "text": "Aborted",
+    "tone": "alarm",
+    "icon": "fault"
+   },
+   {
+    "on": "GVL_HmiView.xHeld",
+    "text": "Suspended",
+    "tone": "warn",
+    "icon": "pause"
+   },
+   {
+    "on": "GVL_HmiView.xActing",
+    "text": "Changing state",
+    "tone": "warn"
+   },
+   {
+    "on": "GVL_HmiView.xManual",
+    "text": "Manual",
+    "tone": "accent",
+    "icon": "manual"
+   },
+   {
+    "on": "GVL_HmiView.xExecute",
+    "text": "Execute",
+    "tone": "neutral",
+    "icon": "play"
+   },
+   {
+    "on": "GVL_HmiView.xIdle",
+    "text": "Idle",
+    "tone": "neutral"
+   }
+  ],
+  "idle": {
+   "text": "Stopped",
+   "tone": "neutral",
+   "icon": "stop"
+  },
+  "detail": "GVL_HmiView.sPickStep",
+  "start": "GVL_HmiPanel.xStart",
+  "stop": "GVL_HmiPanel.xStop",
+  "reset": "GVL_HmiPanel.xReset",
+  "mode": {
+   "variable": "GVL_HmiPanel.iModeSelect",
+   "options": [
+    "Production",
+    "Maintenance",
+    "Manual"
+   ],
+   "values": [
+    "1",
+    "2",
+    "3"
+   ]
+  }
+ },
+ "widgets": [
+  {
+   "type": "status",
+   "title": "P1 critical",
+   "icon": "alarm",
+   "at": [
+    1,
+    1,
+    3,
+    5
+   ],
+   "items": [
+    {
+     "label": "P1 Emergency stop pressed",
+     "on": "GVL_HmiView.axAlarm[1]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Safety door opened in automatic mode",
+     "on": "GVL_HmiView.axAlarm[2]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Connection to the digital twin bridge lost",
+     "on": "GVL_HmiView.axAlarm[3]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Robot axis group error",
+     "on": "GVL_HmiView.axAlarm[4]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Joint following error above fault limit",
+     "on": "GVL_HmiView.axAlarm[7]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P1 Joint feedback not updated",
+     "on": "GVL_HmiView.axAlarm[8]",
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "status",
+   "title": "P2 error",
+   "icon": "alarm",
+   "at": [
+    4,
+    1,
+    3,
+    5
+   ],
+   "items": [
+    {
+     "label": "P2 Conveyor axis error",
+     "on": "GVL_HmiView.axAlarm[5]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P2 Vacuum not reached - part not gripped",
+     "on": "GVL_HmiView.axAlarm[9]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P2 Vacuum lost while carrying a part",
+     "on": "GVL_HmiView.axAlarm[10]",
+     "tone": "alarm"
+    },
+    {
+     "label": "P2 Part queue full",
+     "on": "GVL_HmiView.axAlarm[16]",
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "status",
+   "title": "P3 warning",
+   "icon": "warning",
+   "at": [
+    7,
+    1,
+    3,
+    5
+   ],
+   "items": [
+    {
+     "label": "P3 Joint following error above warning limit",
+     "on": "GVL_HmiView.axAlarm[6]",
+     "tone": "warn"
+    },
+    {
+     "label": "P3 Part left the pick window unpicked",
+     "on": "GVL_HmiView.axAlarm[11]",
+     "tone": "warn"
+    },
+    {
+     "label": "P3 A bin is full - cell suspended until it is emptied",
+     "on": "GVL_HmiView.axAlarm[12]",
+     "tone": "warn"
+    },
+    {
+     "label": "P3 No vision result for a captured part",
+     "on": "GVL_HmiView.axAlarm[13]",
+     "tone": "warn"
+    },
+    {
+     "label": "P3 AI decision late - fallback rule used",
+     "on": "GVL_HmiView.axAlarm[14]",
+     "tone": "warn"
+    },
+    {
+     "label": "P3 Low detection confidence - part quarantined",
+     "on": "GVL_HmiView.axAlarm[15]",
+     "tone": "warn"
+    }
+   ]
+  },
+  {
+   "type": "value",
+   "title": "Newest alarm",
+   "icon": "alarm",
+   "at": [
+    1,
+    6,
+    9,
+    3
+   ],
+   "value": "GVL_HmiView.sNewestAlarm"
+  },
+  {
+   "type": "buttons",
+   "title": "Alarm handling",
+   "at": [
+    10,
+    1,
+    3,
+    3
+   ],
+   "items": [
+    {
+     "label": "Acknowledge all",
+     "variable": "GVL_HmiPanel.xAckAll",
+     "icon": "check"
+    },
+    {
+     "label": "Clear",
+     "variable": "GVL_HmiPanel.xClear",
+     "icon": "reset",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "Abort",
+     "variable": "GVL_HmiPanel.xAbort",
+     "icon": "stop",
+     "access": {
+      "min": "Maintenance"
+     }
+    }
+   ]
+  },
+  {
+   "type": "status",
+   "title": "Conditions present",
+   "icon": "warning",
+   "at": [
+    10,
+    4,
+    3,
+    5
+   ],
+   "items": [
+    {
+     "label": "E-stop pressed",
+     "on": "GVL_HmiView.axAlarmActive[1]",
+     "tone": "alarm"
+    },
+    {
+     "label": "Door open",
+     "on": "GVL_HmiView.axAlarmActive[2]",
+     "tone": "alarm"
+    },
+    {
+     "label": "Bridge lost",
+     "on": "GVL_HmiView.axAlarmActive[3]",
+     "tone": "alarm"
+    },
+    {
+     "label": "Axis group error",
+     "on": "GVL_HmiView.axAlarmActive[4]",
+     "tone": "alarm"
+    },
+    {
+     "label": "Following error fault",
+     "on": "GVL_HmiView.axAlarmActive[7]",
+     "tone": "alarm"
+    },
+    {
+     "label": "Feedback stale",
+     "on": "GVL_HmiView.axAlarmActive[8]",
+     "tone": "alarm"
+    },
+    {
+     "label": "Vacuum lost",
+     "on": "GVL_HmiView.axAlarmActive[10]",
+     "tone": "alarm"
+    },
+    {
+     "label": "Bin full",
+     "on": "GVL_HmiView.axAlarmActive[12]",
+     "tone": "warn"
+    }
+   ]
+  }
+ ]
+}

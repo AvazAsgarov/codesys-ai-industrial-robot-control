@@ -1,0 +1,596 @@
+{
+ "name": "Robot",
+ "title": "Robot",
+ "subtitle": "6-axis arm R-1, joint space",
+ "icon": "machine",
+ "size": "1920x1080",
+ "accent": "#2F5D8A",
+ "info": [
+  {
+   "label": "State",
+   "value": "GVL_HmiView.sState"
+  },
+  {
+   "label": "Mode",
+   "value": "GVL_HmiView.sMode"
+  },
+  {
+   "label": "Placed",
+   "value": "GVL_HmiView.uiPlaced",
+   "unit": "parts"
+  },
+  {
+   "label": "Newest alarm",
+   "value": "GVL_HmiView.sNewestAlarm"
+  }
+ ],
+ "machine": {
+  "states": [
+   {
+    "on": "GVL_HmiView.xAborted",
+    "text": "Aborted",
+    "tone": "alarm",
+    "icon": "fault"
+   },
+   {
+    "on": "GVL_HmiView.xHeld",
+    "text": "Suspended",
+    "tone": "warn",
+    "icon": "pause"
+   },
+   {
+    "on": "GVL_HmiView.xActing",
+    "text": "Changing state",
+    "tone": "warn"
+   },
+   {
+    "on": "GVL_HmiView.xManual",
+    "text": "Manual",
+    "tone": "accent",
+    "icon": "manual"
+   },
+   {
+    "on": "GVL_HmiView.xExecute",
+    "text": "Execute",
+    "tone": "neutral",
+    "icon": "play"
+   },
+   {
+    "on": "GVL_HmiView.xIdle",
+    "text": "Idle",
+    "tone": "neutral"
+   }
+  ],
+  "idle": {
+   "text": "Stopped",
+   "tone": "neutral",
+   "icon": "stop"
+  },
+  "detail": "GVL_HmiView.sPickStep",
+  "start": "GVL_HmiPanel.xStart",
+  "stop": "GVL_HmiPanel.xStop",
+  "reset": "GVL_HmiPanel.xReset",
+  "mode": {
+   "variable": "GVL_HmiPanel.iModeSelect",
+   "options": [
+    "Production",
+    "Maintenance",
+    "Manual"
+   ],
+   "values": [
+    "1",
+    "2",
+    "3"
+   ]
+  }
+ },
+ "widgets": [
+  {
+   "type": "bar",
+   "title": "J1",
+   "at": [
+    1,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aJointPosSp[1]",
+   "min": -180,
+   "max": 180,
+   "unit": "°",
+   "decimals": 1
+  },
+  {
+   "type": "bar",
+   "title": "J2",
+   "at": [
+    2,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aJointPosSp[2]",
+   "min": -180,
+   "max": 180,
+   "unit": "°",
+   "decimals": 1
+  },
+  {
+   "type": "bar",
+   "title": "J3",
+   "at": [
+    3,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aJointPosSp[3]",
+   "min": -180,
+   "max": 180,
+   "unit": "°",
+   "decimals": 1
+  },
+  {
+   "type": "bar",
+   "title": "J4",
+   "at": [
+    4,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aJointPosSp[4]",
+   "min": -180,
+   "max": 180,
+   "unit": "°",
+   "decimals": 1
+  },
+  {
+   "type": "bar",
+   "title": "J5",
+   "at": [
+    5,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aJointPosSp[5]",
+   "min": -180,
+   "max": 180,
+   "unit": "°",
+   "decimals": 1
+  },
+  {
+   "type": "bar",
+   "title": "J6",
+   "at": [
+    6,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aJointPosSp[6]",
+   "min": -180,
+   "max": 180,
+   "unit": "°",
+   "decimals": 1
+  },
+  {
+   "type": "bar",
+   "title": "J1 error",
+   "at": [
+    7,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aFollowingError[1]",
+   "min": 0,
+   "max": 6,
+   "unit": "°",
+   "decimals": 2,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 2,
+     "tone": "warn"
+    },
+    {
+     "from": 5,
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "J2 error",
+   "at": [
+    8,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aFollowingError[2]",
+   "min": 0,
+   "max": 6,
+   "unit": "°",
+   "decimals": 2,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 2,
+     "tone": "warn"
+    },
+    {
+     "from": 5,
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "J3 error",
+   "at": [
+    9,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aFollowingError[3]",
+   "min": 0,
+   "max": 6,
+   "unit": "°",
+   "decimals": 2,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 2,
+     "tone": "warn"
+    },
+    {
+     "from": 5,
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "J4 error",
+   "at": [
+    10,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aFollowingError[4]",
+   "min": 0,
+   "max": 6,
+   "unit": "°",
+   "decimals": 2,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 2,
+     "tone": "warn"
+    },
+    {
+     "from": 5,
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "J5 error",
+   "at": [
+    11,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aFollowingError[5]",
+   "min": 0,
+   "max": 6,
+   "unit": "°",
+   "decimals": 2,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 2,
+     "tone": "warn"
+    },
+    {
+     "from": 5,
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "bar",
+   "title": "J6 error",
+   "at": [
+    12,
+    1,
+    1,
+    3
+   ],
+   "value": "GVL_Bridge.aFollowingError[6]",
+   "min": 0,
+   "max": 6,
+   "unit": "°",
+   "decimals": 2,
+   "bands": [
+    {
+     "from": 0,
+     "tone": "accent"
+    },
+    {
+     "from": 2,
+     "tone": "warn"
+    },
+    {
+     "from": 5,
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "buttons",
+   "title": "Jog J1-J3 (Manual)",
+   "icon": "manual",
+   "at": [
+    1,
+    4,
+    3,
+    3
+   ],
+   "items": [
+    {
+     "label": "J1 -",
+     "variable": "GVL_Hmi.axJogMinus[1]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J1 +",
+     "variable": "GVL_Hmi.axJogPlus[1]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J2 -",
+     "variable": "GVL_Hmi.axJogMinus[2]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J2 +",
+     "variable": "GVL_Hmi.axJogPlus[2]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J3 -",
+     "variable": "GVL_Hmi.axJogMinus[3]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J3 +",
+     "variable": "GVL_Hmi.axJogPlus[3]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    }
+   ]
+  },
+  {
+   "type": "buttons",
+   "title": "Jog J4-J6 (Manual)",
+   "icon": "manual",
+   "at": [
+    4,
+    4,
+    3,
+    3
+   ],
+   "items": [
+    {
+     "label": "J4 -",
+     "variable": "GVL_Hmi.axJogMinus[4]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J4 +",
+     "variable": "GVL_Hmi.axJogPlus[4]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J5 -",
+     "variable": "GVL_Hmi.axJogMinus[5]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J5 +",
+     "variable": "GVL_Hmi.axJogPlus[5]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J6 -",
+     "variable": "GVL_Hmi.axJogMinus[6]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    },
+    {
+     "label": "J6 +",
+     "variable": "GVL_Hmi.axJogPlus[6]",
+     "mode": "tap",
+     "access": {
+      "min": "Maintenance"
+     }
+    }
+   ]
+  },
+  {
+   "type": "status",
+   "title": "Robot",
+   "icon": "info",
+   "at": [
+    7,
+    4,
+    3,
+    3
+   ],
+   "items": [
+    {
+     "label": "Jog permitted",
+     "off": "Jog locked",
+     "on": "GVL_HmiView.xJogPermitted",
+     "tone": "accent"
+    },
+    {
+     "label": "Robot moving",
+     "off": "Robot at rest",
+     "on": "GVL_HmiView.xRobotMoving"
+    },
+    {
+     "label": "Vacuum on",
+     "off": "Vacuum off",
+     "on": "GVL_Bridge.xVacuumOn"
+    },
+    {
+     "label": "Following error warning",
+     "on": "GVL_HmiView.axAlarmActive[6]",
+     "tone": "warn"
+    },
+    {
+     "label": "Following error fault",
+     "on": "GVL_HmiView.axAlarmActive[7]",
+     "tone": "alarm"
+    }
+   ]
+  },
+  {
+   "type": "setpoint",
+   "title": "Speed override",
+   "icon": "speed",
+   "at": [
+    10,
+    4,
+    3,
+    3
+   ],
+   "variable": "GVL_Hmi.rOverride",
+   "min": 0.1,
+   "max": 1.0,
+   "step": 0.1,
+   "decimals": 1,
+   "access": {
+    "min": "Maintenance"
+   }
+  },
+  {
+   "type": "value",
+   "title": "Worst joint",
+   "icon": "machine",
+   "at": [
+    1,
+    7,
+    3,
+    2
+   ],
+   "value": "GVL_Bridge.iWorstJoint",
+   "decimals": 0
+  },
+  {
+   "type": "value",
+   "title": "Pick sequence",
+   "icon": "process",
+   "at": [
+    4,
+    7,
+    3,
+    2
+   ],
+   "value": "GVL_HmiView.sPickStep"
+  },
+  {
+   "type": "trend",
+   "title": "Following error",
+   "icon": "trend",
+   "at": [
+    7,
+    7,
+    6,
+    2
+   ],
+   "seconds": 120,
+   "series": [
+    {
+     "value": "GVL_Bridge.aFollowingError[1]",
+     "label": "J1 °"
+    },
+    {
+     "value": "GVL_Bridge.aFollowingError[2]",
+     "label": "J2 °"
+    },
+    {
+     "value": "GVL_Bridge.aFollowingError[3]",
+     "label": "J3 °"
+    },
+    {
+     "value": "GVL_Bridge.aFollowingError[4]",
+     "label": "J4 °"
+    },
+    {
+     "value": "GVL_Bridge.aFollowingError[5]",
+     "label": "J5 °"
+    },
+    {
+     "value": "GVL_Bridge.aFollowingError[6]",
+     "label": "J6 °"
+    }
+   ]
+  }
+ ]
+}
