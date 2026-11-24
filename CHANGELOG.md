@@ -23,6 +23,8 @@ Phase 2 — Digital twin and OPC UA bridge.
   SoftMotion on 11 reference poses (0.5 mm / 0.1°).
 - `airc run`: 20 ms twin-bridge cycle with a ground-truth stand-in for vision, seeded part supply
   and fault injection (E-stop, door, dropped part, full bin, lost bridge, blocked joint).
+- Flight recorder in `airc run`: the last 50 cycles are logged when the cell leaves Execute through
+  a fault.
 - End-to-end tests on the real soft-PLC (`pytest -m codesys`): sorting by class, and recovery
   from an E-stop, a full bin, a lost bridge and an opened door.
 
@@ -31,6 +33,8 @@ Phase 2 — Digital twin and OPC UA bridge.
 - `FB_JointMonitor` compares joint feedback with the setpoint sample it answers (128-sample
   history), so transport delay is not counted as following error; an error must persist for
   3 cycles (12 ms), so a torn OPC UA write cannot abort the cell.
+  Feedback older than the setpoint history (a bridge hiccup within the watchdog) is not judged;
+  if it stays that old for the feedback timeout it is stale.
 - `airc plc start` refuses to start while a firewall rule exposes the runtime (`--allow-network`).
 
 ### Fixed
@@ -44,6 +48,9 @@ Phase 2 — Digital twin and OPC UA bridge.
 - Clearing could hang after a SoftMotion lag error: a reset answered "no error to reset" kept the
   fault latched, and re-enabling an already enabled group failed. The TCP lag tolerance is now set
   to 10 mm (the twin's servo lag is supervised by `FB_JointMonitor`).
+- After an abort with a part on the cup, recovery lifts straight up and goes through the ready
+  pose before the point-to-point move to Quarantine (a direct move could leave the working
+  area); a reset after a real group error no longer re-latches the fault in the same cycle.
 
 ## [0.2.0] - 2026-11-23
 

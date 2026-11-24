@@ -239,6 +239,96 @@
       ]
     },
     {
+      "name": "old_samples_during_bridge_hiccup_no_fault",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.iLag": 10,
+            "PRG_TestJointMonitor.xFreeze": false,
+            "PRG_TestJointMonitor.xRamp": true,
+            "PRG_TestJointMonitor.xAutoSeq": true,
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.iTornAge": 150,
+            "PRG_TestJointMonitor.iTornSamples": 40
+          }
+        },
+        {
+          "waitMs": 400
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.fbMon.xFault": false,
+            "PRG_TestJointMonitor.fbAlarms.xCriticalActive": false
+          }
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.xRamp": false
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
+    },
+    {
+      "name": "too_old_feedback_is_stale",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.iLag": 150,
+            "PRG_TestJointMonitor.xFreeze": false,
+            "PRG_TestJointMonitor.xRamp": true,
+            "PRG_TestJointMonitor.xAutoSeq": true,
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true
+          }
+        },
+        {
+          "waitMs": 1500
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.fbMon.xStale": true,
+            "PRG_TestJointMonitor.fbMon.xFault": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.xRamp": false,
+            "PRG_TestJointMonitor.iLag": 0
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
+    },
+    {
       "name": "torn_sample_no_fault",
       "steps": [
         {
@@ -264,6 +354,7 @@
         },
         {
           "write": {
+            "PRG_TestJointMonitor.iTornAge": 25,
             "PRG_TestJointMonitor.iTornSamples": 1
           }
         },

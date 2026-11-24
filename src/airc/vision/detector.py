@@ -35,6 +35,11 @@ class LabelMap:
         return cls({p.prompt: i for i, p in enumerate(catalogue.classes)})
 
     @classmethod
+    def for_slugs(cls, catalogue: PartCatalogue) -> "LabelMap":
+        """YOLOE-26 with visual prompts: the classes are named by their catalogue slug."""
+        return cls({p.slug: i for i, p in enumerate(catalogue.classes)})
+
+    @classmethod
     def for_coco(cls, catalogue: PartCatalogue) -> "LabelMap":
         """YOLO26 (COCO): the COCO name of each class that has one."""
         return cls({p.coco: i for i, p in enumerate(catalogue.classes) if p.coco is not None})

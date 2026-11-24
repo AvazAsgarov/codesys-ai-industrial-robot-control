@@ -249,7 +249,8 @@
           "expect": {
             "PRG_TestPick.fbSeq.udiPlaced": 2,
             "PRG_TestPick.fbSeq.eLastBin": "E_Bin.Quarantine",
-            "PRG_TestPick.fbVac.xValveOn": false
+            "PRG_TestPick.fbVac.xValveOn": false,
+            "PRG_TestPick.xSawRecoverLift": true
           }
         },
         {
@@ -261,6 +262,95 @@
         },
         {
           "waitMs": 500
+        }
+      ]
+    },
+    {
+      "name": "pick_height_follows_class",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestPick.fbSeq.xRun": true
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "write": {
+            "PRG_TestPick.usiInjClass": 1,
+            "PRG_TestPick.eInjQuality": 1,
+            "PRG_TestPick.lrInjX": 1000,
+            "PRG_TestPick.xInject": true
+          }
+        },
+        {
+          "waitMs": 24000
+        },
+        {
+          "expect": {
+            "PRG_TestPick.lrGripZ": {
+              "op": "=",
+              "value": 76.19,
+              "tolerance": 1.0
+            },
+            "PRG_TestPick.fbAlarms.xErrorActive": false
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPick.usiInjClass": 0,
+            "PRG_TestPick.eInjQuality": 1,
+            "PRG_TestPick.lrInjX": 1000,
+            "PRG_TestPick.xInject": true
+          }
+        },
+        {
+          "waitMs": 24000
+        },
+        {
+          "expect": {
+            "PRG_TestPick.lrGripZ": {
+              "op": "=",
+              "value": 51.39,
+              "tolerance": 1.0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "unidentified_part_not_picked",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestPick.xInjInvalid": true,
+            "PRG_TestPick.usiInjClass": 0,
+            "PRG_TestPick.eInjQuality": 1,
+            "PRG_TestPick.lrInjX": 1000,
+            "PRG_TestPick.xInject": true
+          }
+        },
+        {
+          "waitMs": 14000
+        },
+        {
+          "expect": {
+            "PRG_TestPick.fbSeq.eStep": "E_PickStep.WaitPart",
+            "PRG_TestPick.fbAlarms.xErrorActive": false,
+            "PRG_TestPick.fbAlarms.xCriticalActive": false,
+            "PRG_TestPick.fbSeq.udiPlaced": 4,
+            "PRG_TestPick.fbTracker.udiMissed": 2
+          }
+        },
+        {
+          "write": {
+            "PRG_TestPick.xInjInvalid": false,
+            "PRG_TestPick.fbSeq.xRun": false
+          }
+        },
+        {
+          "waitMs": 8000
         },
         {
           "write": {
