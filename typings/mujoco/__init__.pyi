@@ -19,6 +19,7 @@ class _Contacts:
 
 class MjModel:
     geom_bodyid: _I32
+    body_mocapid: _I32
     nlight: int
     light_dir: _F64
     light_diffuse: _F64
@@ -45,6 +46,8 @@ class MjData:
     ncon: int
     contact: _Contacts
     cam_xpos: _F64
+    mocap_pos: _F64
+    mocap_quat: _F64
     cam_xmat: _F64
     qpos: _F64
     qvel: _F64
@@ -94,5 +97,6 @@ def mj_ray(
     bodyexclude: int,
     geomid: _I32,
 ) -> float: ...
+def mju_mat2Quat(quat: _F64, mat: _F64) -> None: ...  # noqa: N802 - MuJoCo's name
 def mju_negQuat(res: _F64, quat: _F64) -> None: ...  # noqa: N802 - MuJoCo's name
 def mju_mulQuat(res: _F64, quat1: _F64, quat2: _F64) -> None: ...  # noqa: N802 - MuJoCo's name

@@ -1,5 +1,6 @@
 """Command-line interface: ``airc``."""
 
+import json
 from pathlib import Path
 from typing import Annotated
 
@@ -189,4 +190,51 @@ def run_cell(
         f"parts spawned {report.spawned} (skipped {report.spawn_skipped}), captures "
         f"{report.captures}, bins {report.bin_counts}, wrong bin {report.wrong_bin}, "
         f"missed {report.missed}, lost {report.lost}"
+    )
+
+
+@app.command("calibrate")
+def calibrate_camera(
+    poses: Annotated[int, typer.Option(help="Checkerboard views.")] = 15,
+    seed: Annotated[int, typer.Option(help="Seed of the board poses.")] = 7,
+    out: Annotated[Path, typer.Option(help="Calibration study (JSON).")] = Path(
+        "experiments/results/calibration.json"
+    ),
+    model: Annotated[Path, typer.Option(help="Calibrated camera for the vision service.")] = Path(
+        "config/calibration/cam_inspect.json"
+    ),
+) -> None:
+    """Calibrate the inspection camera with a checkerboard and compare with the exact camera."""
+    from airc.vision.calibration import compare, run_calibration  # noqa: PLC0415 - OpenCV
+    from airc.vision.camera import CameraModel  # noqa: PLC0415
+
+    twin = Twin()
+    truth = CameraModel.from_mujoco(twin.model, twin.data, "cam_inspect")
+    try:
+        cal = run_calibration(twin, poses=poses, seed=seed)
+    except RuntimeError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from None
+    report = compare(cal.camera, truth)
+    study = {
+        "command": f"airc calibrate --poses {poses} --seed {seed}",
+        "seed": seed,
+        "poses": poses,
+        "views": cal.views,
+        "rms_px": round(cal.rms_px, 4),
+        "distortion": [round(float(d), 6) for d in cal.dist],
+        "focal_error_pct": round(report.focal_error_pct, 4),
+        "principal_point_error_px": round(report.principal_point_error_px, 3),
+        "position_error_mm": round(report.position_error_mm, 3),
+        "rotation_error_deg": round(report.rotation_error_deg, 4),
+        "k_calibrated": cal.camera.k.round(3).tolist(),
+        "k_true": truth.k.round(3).tolist(),
+    }
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(study, indent=2) + "\n", encoding="utf-8")
+    cal.camera.save(model, note=f"airc calibrate --poses {poses} --seed {seed}")
+    typer.echo(
+        f"{cal.views} views, RMS {cal.rms_px:.3f} px, focal error {report.focal_error_pct:+.3f} %, "
+        f"position error {report.position_error_mm:.2f} mm, rotation error "
+        f"{report.rotation_error_deg:.3f} deg -> {out}, {model}"
     )

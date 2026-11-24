@@ -1,0 +1,52 @@
+{
+  "command": "airc calibrate --poses 15 --seed 7",
+  "seed": 7,
+  "poses": 15,
+  "views": 15,
+  "rms_px": 0.0626,
+  "distortion": [
+    3.8e-05,
+    0.004262,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "focal_error_pct": -0.0186,
+  "principal_point_error_px": 0.623,
+  "position_error_mm": 1.214,
+  "rotation_error_deg": 0.0918,
+  "k_calibrated": [
+    [
+      868.963,
+      0.0,
+      639.855
+    ],
+    [
+      0.0,
+      868.947,
+      359.394
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "k_true": [
+    [
+      869.117,
+      0.0,
+      640.0
+    ],
+    [
+      0.0,
+      869.117,
+      360.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ]
+}
