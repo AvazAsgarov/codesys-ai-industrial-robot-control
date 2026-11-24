@@ -11,10 +11,18 @@ or the file's own folder when it does not live in a ``config/`` folder.
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, Self, cast
 
 import yaml
-from pydantic import BaseModel, ConfigDict, ValidationError, ValidationInfo, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 CONFIG_ENV_VAR = "AIRC_CONFIG"
 _CONFIG_RELATIVE = Path("config") / "cell.yaml"
@@ -71,6 +79,14 @@ class ProjectInfo(_Frozen):
     version: str
 
 
+def _resolve(value: Path | None, info: ValidationInfo) -> Path | None:
+    context = cast("dict[str, Any] | None", info.context)
+    base = context.get("base_dir") if context else None
+    if value is None or value.is_absolute() or not isinstance(base, Path):
+        return value
+    return base / value
+
+
 class PlcInfo(_Frozen):
     """PLC project location and OPC UA endpoint."""
 
@@ -80,11 +96,42 @@ class PlcInfo(_Frozen):
     @field_validator("project_file")
     @classmethod
     def _resolve_relative(cls, value: Path, info: ValidationInfo) -> Path:
-        context = cast("dict[str, Any] | None", info.context)
-        base = context.get("base_dir") if context else None
-        if value.is_absolute() or not isinstance(base, Path):
-            return value
-        return base / value
+        return value if (resolved := _resolve(value, info)) is None else resolved
+
+
+class DecisionConfig(_Frozen):
+    """THX-02 decision layer (spec 7, ADR 0006). Absent from the file: ``mode: off``."""
+
+    mode: Literal["api", "replay", "off"] = "off"
+    base_url: str = ""  # API root; required for mode api
+    model: str = "thx-02"
+    deadline_s: float = Field(default=2.5, gt=0)  # recipe default; timeout -> fallback
+    request_timeout_s: float = Field(default=2.0, gt=0)  # per HTTP call
+    # The free tier allows 60 decisions per minute per IP and counts every question, so one
+    # part (two questions) costs two tokens: 50 per minute = 25 parts per minute.
+    rate_limit_per_min: float = Field(default=50.0, gt=0, le=60)
+    burst: float = Field(default=2.0, ge=2)  # >= the decisions of one part
+    max_retry_wait_s: float = Field(default=1.0, ge=0)  # longer Retry-After -> fallback
+    max_429_retries: int = Field(default=1, ge=0)
+    unreliable_no_prob: float = Field(default=0.8, gt=0, le=1)  # P(no) -> unreliable
+    api_key_env: str = "HALX_API_KEY"  # optional key; the free tier needs none
+    record_dir: Path | None = None  # JSONL per run; None = do not record
+    replay_file: Path | None = None  # recording to answer from in mode replay
+
+    @field_validator("record_dir", "replay_file")
+    @classmethod
+    def _resolve_relative(cls, value: Path | None, info: ValidationInfo) -> Path | None:
+        return _resolve(value, info)
+
+    @model_validator(mode="after")
+    def _mode_needs(self) -> Self:
+        if self.mode == "api" and not self.base_url:
+            msg = "base_url is required for mode api"
+            raise ValueError(msg)
+        if self.mode == "replay" and self.replay_file is None:
+            msg = "replay_file is required for mode replay"
+            raise ValueError(msg)
+        return self
 
 
 class CellConfig(_Frozen):
@@ -92,6 +139,7 @@ class CellConfig(_Frozen):
 
     project: ProjectInfo
     plc: PlcInfo
+    decision: DecisionConfig = DecisionConfig()
 
 
 def _format_validation_error(err: ValidationError) -> str:

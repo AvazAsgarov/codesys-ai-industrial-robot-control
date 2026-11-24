@@ -69,3 +69,38 @@ def test_config_is_frozen():
     cfg = load_config()
     with pytest.raises(pydantic.ValidationError):
         cfg.project.name = "x"  # type: ignore[misc]
+
+
+def test_decision_block_of_the_shipped_config():
+    dec = load_config().decision
+    assert dec.mode == "api"
+    assert dec.base_url == "https://api.hal-x.ai"
+    assert dec.model == "thx-02"
+    assert dec.deadline_s == 2.5
+    assert dec.rate_limit_per_min <= 60
+    assert dec.record_dir == REPO_ROOT / "experiments" / "recordings" / "thx02"
+
+
+def test_decision_defaults_to_off_when_absent(write_yaml):
+    assert load_config(write_yaml(VALID_YAML)).decision.mode == "off"
+
+
+def test_decision_replay_needs_a_file(write_yaml):
+    with pytest.raises(ConfigError, match="replay_file"):
+        load_config(write_yaml(VALID_YAML + "decision:\n  mode: replay\n"))
+
+
+def test_decision_api_needs_a_base_url(write_yaml):
+    with pytest.raises(ConfigError, match="base_url"):
+        load_config(write_yaml(VALID_YAML + "decision:\n  mode: api\n"))
+
+
+def test_decision_rate_limit_above_free_tier_rejected(write_yaml):
+    text = VALID_YAML + "decision:\n  mode: off\n  rate_limit_per_min: 61\n"
+    with pytest.raises(ConfigError, match="rate_limit_per_min"):
+        load_config(write_yaml(text))
+
+
+def test_decision_replay_file_resolves_against_config_folder(write_yaml, tmp_path: Path):
+    text = VALID_YAML + "decision:\n  mode: replay\n  replay_file: rec/run.jsonl\n"
+    assert load_config(write_yaml(text)).decision.replay_file == tmp_path / "rec" / "run.jsonl"

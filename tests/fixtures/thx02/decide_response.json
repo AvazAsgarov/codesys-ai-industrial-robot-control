@@ -1,0 +1,25 @@
+{
+  "model": "THX-02",
+  "answers": {
+    "ident_reliable": {
+      "type": "noul",
+      "noul": 0.8860767021586231
+    },
+    "quality": {
+      "type": "choice",
+      "probabilities": {
+        "scrap": 0.03441411231149649,
+        "ok": 0.8946024112805544,
+        "rework": 0.07098347640794905
+      },
+      "choice": "ok",
+      "confidence": 0.8419036169208316
+    }
+  },
+  "usage": {
+    "input_tokens": 390,
+    "output_tokens": 0,
+    "thoughts": 0
+  },
+  "latency_ms": 146.6
+}

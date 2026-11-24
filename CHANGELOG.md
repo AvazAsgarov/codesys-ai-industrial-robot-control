@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-25
+
+Phase 4 — Decision layer.
+
+### Added
+
+- THX-02 decision service (ADR 0006): one `POST /v1/decide` per part with the quality and
+  identification questions, client-side rate limit (50 decisions = 25 parts per minute), per-part
+  deadline with the rule fallback, JSONL record and replay of every exchange.
+- Decision worker in `airc run --decision thx02|replay:<path>|off` (default `off`, needs
+  `--vision yoloe`): each part vision saw is decided in the worker's own thread and event loop,
+  so the 20 ms bridge cycle never waits; only AI decisions that arrive before the part reaches
+  the pick window are written to the PLC (`write_decision`), fallbacks never are. The optional
+  API key is read from the environment variable named in `config/cell.yaml` and never printed.
+- Run report: decision requests, answers, written, fallbacks, dropped, latency p50/p95.
+- Bridge input `decision_active` (`GVL_Bridge.xDecisionActive`): TRUE every cycle while a
+  decision service is configured, so the PLC waits for `stDecision` up to its deadline; FALSE
+  without one (and on shutdown), so the PLC decides each part by its rule as soon as vision has
+  identified it. Needs a PLC with `xDecisionActive` (Phase 5).
+
 ## [0.5.0] - 2026-11-25
 
 Phase 5 — Operator HMI.

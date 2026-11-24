@@ -22,6 +22,7 @@ version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "asyncua" },
+    { name = "httpx" },
     { name = "mujoco" },
     { name = "numpy" },
     { name = "opencv-python" },
@@ -55,6 +56,7 @@ vision = [
 [package.metadata]
 requires-dist = [
     { name = "asyncua", specifier = ">=2.1,<3" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "mujoco", specifier = ">=4.0,<5" },
     { name = "numpy", specifier = ">=2" },
     { name = "opencv-python", specifier = ">=4.10" },

@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from airc.bridge.client import BridgeClient, BridgeDisconnectedError
-from airc.bridge.messages import PackMLCommand, PlcInputs, VisionMsg
+from airc.bridge.messages import DecisionMsg, PackMLCommand, PlcInputs, Quality, VisionMsg
 from airc.bridge.tags import TagMap
 from tests.integration.fake_plc import FakePlc, free_port
 
@@ -78,6 +78,31 @@ def test_vision_seq_written_last() -> None:
             assert await plc.get("vision.cls") == 2
             assert plc.write_log[-1] == "vision.seq"
             assert "vision.part_id" in plc.write_log[:-1]
+            await client.close()
+        finally:
+            await plc.stop()
+
+    asyncio.run(scenario())
+
+
+def test_decision_seq_written_last() -> None:
+    async def scenario() -> None:
+        plc = FakePlc(free_port(), TagMap.load())
+        await plc.start()
+        try:
+            client = BridgeClient(plc.endpoint, TagMap.load())
+            await client.connect()
+            msg = DecisionMsg(
+                seq=4, part_id=11, quality=Quality.REWORK, quality_prob=0.75, ident_reliable=False
+            )
+            await client.write_decision(msg)
+            assert await plc.get("decision.part_id") == 11
+            assert await plc.get("decision.quality") == 2
+            assert await plc.get("decision.quality_prob") == pytest.approx(0.75)
+            assert await plc.get("decision.ident_reliable") is False
+            assert await plc.get("decision.seq") == 4
+            assert plc.write_log[-1] == "decision.seq"
+            assert "decision.quality" in plc.write_log[:-1]
             await client.close()
         finally:
             await plc.stop()
