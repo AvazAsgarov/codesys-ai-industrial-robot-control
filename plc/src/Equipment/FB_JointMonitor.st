@@ -9,8 +9,9 @@
     Outputs : aFollowingError [deg], iWorstJoint (1..6, 0 = none), xWarn, xFault, xStale
     Latency : the feedback travels through OPC UA and the twin (tens of ms). The last
               HISTORY_SIZE setpoints are kept, and the feedback is compared with the setpoint it
-              answers, so transport delay does not count as following error; a feedback older
-              than the history is compared with the current setpoint.
+              answers, so transport delay does not count as following error. A feedback older
+              than the history (a bridge hiccup) cannot be judged and counts as no error; if the
+              feedback stays that old for tFeedbackTimeout it is stale.
     Debounce: a following error counts after CONFIRM_CYCLES cycles in a row. OPC UA does not
               hand a write to the task atomically: for one cycle the new positions may meet the
               old sequence number (a torn sample), which must not abort the cell.
@@ -63,12 +64,10 @@ udiSlot := udiFeedbackForSeq MOD HISTORY_SIZE;
 lrWorst := 0;
 iWorstJoint := 0;
 FOR i := 1 TO 6 DO
-    IF xLoopback THEN
-        aFollowingError[i] := 0;
-    ELSIF xFromHistory THEN
-        aFollowingError[i] := ABS(aHistory[udiSlot, i] - aFeedback[i]);
+    IF xLoopback OR NOT xFromHistory THEN
+        aFollowingError[i] := 0;           // nothing to compare with: no judgement
     ELSE
-        aFollowingError[i] := ABS(aSetpoint[i] - aFeedback[i]);
+        aFollowingError[i] := ABS(aHistory[udiSlot, i] - aFeedback[i]);
     END_IF
     IF aFollowingError[i] > lrWorst THEN
         lrWorst := aFollowingError[i];
@@ -89,8 +88,9 @@ END_IF
 xWarn := uiWarnCycles >= CONFIRM_CYCLES;
 xFault := uiFaultCycles >= CONFIRM_CYCLES;
 
-// Feedback must keep arriving while supervised (not in loopback).
-tonStale(IN := xActive AND NOT xLoopback AND udiFeedbackSeq = udiLastSeq, PT := GVL_Params.tFeedbackTimeout);
+// Feedback must keep arriving, and answer a setpoint still in the history, while supervised.
+tonStale(IN := xActive AND NOT xLoopback AND (udiFeedbackSeq = udiLastSeq OR NOT xFromHistory),
+         PT := GVL_Params.tFeedbackTimeout);
 udiLastSeq := udiFeedbackSeq;
 xStale := tonStale.Q;
 xFault := xFault OR xStale;
