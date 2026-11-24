@@ -24,3 +24,7 @@ settings:
     NetworkAdapter: Loopback Pseudo-Interface 1
   CmpWebServer:
     LocalAddress: 127.0.0.1
+  # `airc plc stop` ends the process hard, so the retain data is not saved; start the boot
+  # application anyway with RETAIN variables at their initial values (Standard recipe).
+  CmpApp:
+    Bootproject.RetainMismatch.Init: "1"

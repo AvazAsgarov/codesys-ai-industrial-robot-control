@@ -1,6 +1,6 @@
 [project]
 name = "airc"
-version = "0.1.0"
+version = "0.3.0"
 description = "AI Industrial Robot Control: services for a vision-guided, AI-supervised robotic sorting cell on a CODESYS soft-PLC."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -38,7 +38,10 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --strict-markers"
+addopts = "-q --strict-markers -m 'not codesys'"
+markers = [
+    "codesys: needs CODESYS Control Win on this machine (local only: pytest -m codesys)",
+]
 
 [tool.ruff]
 line-length = 100

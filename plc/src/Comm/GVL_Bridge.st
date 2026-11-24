@@ -27,4 +27,11 @@ VAR_GLOBAL
     stCapture : ST_CaptureMsg;
     eState : E_PackMLState;
     eMode : E_PackMLMode;
+    // --- diagnostics (PLC -> bridge, HMI) ---
+    eNewestAlarm : E_AlarmId;
+    xAlarmError : BOOL;                                    // an Error-class alarm is active
+    xAlarmCritical : BOOL;                                 // a Critical-class alarm is active
+    ePickStep : E_PickStep;
+    iWorstJoint : INT;                                     // joint with the largest following error
+    aFollowingError : ARRAY[1..6] OF LREAL;                // [deg]
 END_VAR

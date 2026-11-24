@@ -115,6 +115,8 @@ def plc_status() -> None:
     typer.echo(f"programming port open: {st.programming_port_open}")
     typer.echo(f"OPC UA port open: {st.opcua_port_open}")
     typer.echo(f"PackML state (GVL_Bridge.eState): {st.packml_state}")
+    if st.main_task_period_ms is not None:
+        typer.echo(f"MainTask period: {st.main_task_period_ms:.2f} ms (configured 4 ms)")
 
 
 @plc_app.command("deploy")
@@ -176,5 +178,5 @@ def run_cell(
     typer.echo(
         f"parts spawned {report.spawned} (skipped {report.spawn_skipped}), captures "
         f"{report.captures}, bins {report.bin_counts}, wrong bin {report.wrong_bin}, "
-        f"lost {report.lost}"
+        f"missed {report.missed}, lost {report.lost}"
     )

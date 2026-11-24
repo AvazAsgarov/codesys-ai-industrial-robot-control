@@ -161,12 +161,12 @@
         },
         {
           "write": {
-            "PRG_TestJointMonitor.fbMon.xLoopback": false,
-            "PRG_TestJointMonitor.fbMon.xActive": true,
             "PRG_TestJointMonitor.iLag": 10,
             "PRG_TestJointMonitor.xFreeze": false,
             "PRG_TestJointMonitor.xRamp": true,
-            "PRG_TestJointMonitor.xAutoSeq": true
+            "PRG_TestJointMonitor.xAutoSeq": true,
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true
           }
         },
         {
@@ -209,12 +209,12 @@
         },
         {
           "write": {
-            "PRG_TestJointMonitor.fbMon.xLoopback": false,
-            "PRG_TestJointMonitor.fbMon.xActive": true,
             "PRG_TestJointMonitor.iLag": 10,
             "PRG_TestJointMonitor.xFreeze": true,
             "PRG_TestJointMonitor.xRamp": true,
-            "PRG_TestJointMonitor.xAutoSeq": true
+            "PRG_TestJointMonitor.xAutoSeq": true,
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true
           }
         },
         {

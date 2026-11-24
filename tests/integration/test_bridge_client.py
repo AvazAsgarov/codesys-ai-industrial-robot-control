@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from airc.bridge.client import BridgeClient, BridgeDisconnectedError
-from airc.bridge.messages import PlcInputs, VisionMsg
+from airc.bridge.messages import PackMLCommand, PlcInputs, VisionMsg
 from airc.bridge.tags import TagMap
 from tests.integration.fake_plc import FakePlc, free_port
 
@@ -101,6 +101,22 @@ def test_reconnects_after_server_restart() -> None:
             await plc.set("setpoint_seq", 77)
             await client.ensure_connected(timeout_s=10.0)
             assert (await client.read_outputs()).setpoint_seq == 77
+            await client.close()
+        finally:
+            await plc.stop()
+
+    asyncio.run(scenario())
+
+
+def test_send_command_writes_the_hmi_command() -> None:
+    async def scenario() -> None:
+        plc = FakePlc(free_port(), TagMap.load())
+        await plc.start()
+        try:
+            client = BridgeClient(plc.endpoint, TagMap.load())
+            await client.connect()
+            await client.send_command(PackMLCommand.START)
+            assert await plc.get("hmi.command") == 2
             await client.close()
         finally:
             await plc.stop()

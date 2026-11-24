@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-24
+
+Phase 2 — Digital twin and OPC UA bridge.
+
+### Added
+
+- Soft-PLC on CODESYS Control Win V3 x64 as a console process, started, deployed and checked by
+  `airc plc start|deploy|status|stop` (headless IDE script); OPC UA anonymous on localhost only
+  (ADR 0008).
+- OPC UA bridge: single-source tag map (`config/opcua_tags.yaml`), batched async client with
+  reconnect, operator commands over `GVL_Hmi`.
+- MuJoCo digital twin generated from the PLC geometry: 6-axis arm with simulated servo drives
+  (PD + velocity feed-forward, torque limits), conveyor carried by the PLC belt position, suction
+  gripper, ray-cast photo-eyes, bins with fill level. Kinematics verified against CODESYS
+  SoftMotion on 11 reference poses (0.5 mm / 0.1°).
+- `airc run`: 20 ms twin-bridge cycle with a ground-truth stand-in for vision, seeded part supply
+  and fault injection (E-stop, door, dropped part, full bin, lost bridge, blocked joint).
+- End-to-end test on the real soft-PLC (`pytest -m codesys`).
+
+### Changed
+
+- `FB_JointMonitor` compares joint feedback with the setpoint sample it answers (128-sample
+  history), so transport delay is not counted as following error.
+
+### Fixed
+
+- HMI commands written during a PLC cycle could be lost (`PRG_Main` now clears only the command it
+  has read).
+
 ## [0.2.0] - 2026-11-23
 
 Phase 1 — PLC core.

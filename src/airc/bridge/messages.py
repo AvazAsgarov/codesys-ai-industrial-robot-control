@@ -1,8 +1,50 @@
 """Values exchanged with the PLC each bridge cycle (units as in the PLC: mm, degrees)."""
 
 from dataclasses import dataclass, field
+from enum import IntEnum
 
 Six = tuple[float, float, float, float, float, float]
+
+
+class PackMLCommand(IntEnum):
+    """``E_PackMLCommand`` of the PLC."""
+
+    NONE = 0
+    RESET = 1
+    START = 2
+    STOP = 3
+    HOLD = 4
+    UNHOLD = 5
+    SUSPEND = 6
+    UNSUSPEND = 7
+    ABORT = 8
+    CLEAR = 9
+    COMPLETE = 10
+
+
+class PackMLState(IntEnum):
+    """``E_PackMLState`` of the PLC (ISA-TR88 numbering)."""
+
+    UNDEFINED = 0
+    CLEARING = 1
+    STOPPED = 2
+    STARTING = 3
+    IDLE = 4
+    SUSPENDED = 5
+    EXECUTE = 6
+    STOPPING = 7
+    ABORTING = 8
+    ABORTED = 9
+    HOLDING = 10
+    HELD = 11
+    UNHOLDING = 12
+    SUSPENDING = 13
+    UNSUSPENDING = 14
+    RESETTING = 15
+    COMPLETING = 16
+    COMPLETE = 17
+
+
 ZERO6: Six = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
 
@@ -59,3 +101,15 @@ class PlcInputs:
     bin_full: tuple[bool, bool, bool, bool, bool, bool]
     door_closed: bool
     estop_ok: bool
+
+
+@dataclass(frozen=True)
+class PlcDiagnostics:
+    """Alarm and sequence state of the cell (``PRG_Main.fbCell``), read on demand."""
+
+    newest_alarm: int
+    error_active: bool
+    critical_active: bool
+    pick_step: int
+    worst_joint: int
+    following_error_deg: Six

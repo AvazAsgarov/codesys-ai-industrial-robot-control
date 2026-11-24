@@ -6,8 +6,10 @@
     Commands: GVL_Hmi.eCommand / xAlarmAck are written asynchronously (HMI, OPC UA). They are
               read once per cycle into a snapshot and cleared only if they still hold that
               value, so a command written during the cycle is never lost.
+    OPC UA  : published read-only for diagnostics (alarms, pick step) and the HMI.
 *)
 PROGRAM PRG_Main
+{attribute 'symbol' := 'read'}
 VAR
     sProjectVersion : STRING := GVL_Constants.PROJECT_VERSION;  // diagnostics: project version visible online and via OPC UA
     fbCell : FB_SortingCell;
@@ -50,7 +52,13 @@ fbCell(AxisGroup := AxisGroup_Robot,
        xVacuumOn => GVL_Bridge.xVacuumOn,
        stCapture => GVL_Bridge.stCapture,
        eState => GVL_Bridge.eState,
-       eMode => GVL_Bridge.eMode);
+       eMode => GVL_Bridge.eMode,
+       ePickStep => GVL_Bridge.ePickStep,
+       eNewestAlarm => GVL_Bridge.eNewestAlarm,
+       xAlarmError => GVL_Bridge.xAlarmError,
+       xAlarmCritical => GVL_Bridge.xAlarmCritical,
+       iWorstJoint => GVL_Bridge.iWorstJoint,
+       aFollowingError => GVL_Bridge.aFollowingError);
 // commands are one-shot: consume the value this cycle has seen, keep a newer one
 IF GVL_Hmi.eCommand = eCommand THEN
     GVL_Hmi.eCommand := E_PackMLCommand.None;

@@ -14,7 +14,15 @@ from asyncua import ua
 from asyncua.client.client import Client
 from asyncua.common.node import Node
 
-from airc.bridge.messages import CaptureMsg, PlcInputs, PlcOutputs, Six, VisionMsg
+from airc.bridge.messages import (
+    CaptureMsg,
+    PackMLCommand,
+    PlcDiagnostics,
+    PlcInputs,
+    PlcOutputs,
+    Six,
+    VisionMsg,
+)
 from airc.bridge.tags import TagMap
 
 OUTPUT_TAGS = (
@@ -205,3 +213,35 @@ class BridgeClient:
             [msg.part_id, msg.valid, msg.cls, msg.confidence, msg.x_mm, msg.y_mm, msg.theta_deg],
         )
         await self._write(("vision.seq",), [msg.seq])
+
+    async def send_command(self, command: PackMLCommand) -> None:
+        """Send an operator command (the PLC consumes it within one cycle)."""
+        await self._write(("hmi.command",), [int(command)])
+
+    async def acknowledge_alarms(self) -> None:
+        """Acknowledge all alarms, as the operator's alarm-ack button does."""
+        await self._write(("hmi.alarm_ack",), [True])
+
+    async def read_diag(self) -> PlcDiagnostics:
+        """Read the cell's alarm summary, pick step and joint following errors."""
+        names = (
+            "diag.newest_alarm",
+            "diag.error_active",
+            "diag.critical_active",
+            "diag.pick_step",
+            "diag.worst_joint",
+            "diag.following_error_deg",
+        )
+        client = self._require()
+        try:
+            values: list[Any] = await client.read_values([self._nodes[n] for n in names])
+        except _COMM_ERRORS as exc:
+            raise await self._lost(exc) from exc
+        return PlcDiagnostics(
+            newest_alarm=int(values[0]),
+            error_active=bool(values[1]),
+            critical_active=bool(values[2]),
+            pick_step=int(values[3]),
+            worst_joint=int(values[4]),
+            following_error_deg=_six(values[5]),
+        )

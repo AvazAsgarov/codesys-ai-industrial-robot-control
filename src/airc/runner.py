@@ -92,7 +92,8 @@ class RunReport:
     captures: int = 0
     bin_counts: tuple[int, ...] = ()
     wrong_bin: int = 0
-    lost: int = 0
+    missed: int = 0  # ran off the end of the belt without being picked
+    lost: int = 0  # on the floor anywhere else (e.g. missed a bin on release)
     cycle_ms: list[float] = field(default_factory=list[float])
     max_gap_ms: float = 0.0  # longest time between two cycle starts
     faults: int = 0
@@ -239,7 +240,10 @@ class Runner:
             if part.in_bin is not None and part.in_bin != part.cls:
                 report.wrong_bin += 1
             elif part.in_bin is None and part.z_mm < belt_top - 100.0:
-                report.lost += 1
+                if part.x_mm > self.twin.cfg.belt.length_mm:
+                    report.missed += 1
+                else:
+                    report.lost += 1
         return report
 
     async def run(

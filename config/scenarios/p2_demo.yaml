@@ -3,7 +3,7 @@ name: p2_demo
 seed: 42
 duration_s: 300
 spawn:
-  pitch_mm: 600          # one part per 600 mm of belt travel (6 s at 100 mm/s)
+  pitch_mm: 1000         # one part per metre of belt (10 s at 100 mm/s): the pick cycle is ~9 s
   jitter_mm: 100
   mix: [1, 1, 1]         # Type A, B, C
   y_offset_mm: 50

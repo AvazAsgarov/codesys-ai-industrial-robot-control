@@ -1,5 +1,6 @@
 from typer.testing import CliRunner
 
+import airc
 from airc.cli import app
 from tests.conftest import VALID_YAML
 
@@ -9,7 +10,7 @@ runner = CliRunner()
 def test_cli_version():
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert f"airc {airc.__version__}" in result.output
 
 
 def test_cli_config_show():

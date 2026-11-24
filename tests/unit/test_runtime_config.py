@@ -1,5 +1,7 @@
 """Editing the soft-PLC's user-level CODESYSControl.cfg (airc.plc.runtime)."""
 
+import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -7,6 +9,7 @@ import pytest
 from airc.plc.runtime import (
     RuntimeSettings,
     apply_runtime_settings,
+    disable_timer_throttling,
     inbound_allowed_from_rules,
     load_runtime_settings,
 )
@@ -96,3 +99,8 @@ def test_enabled_allow_rule_is_reported() -> None:
     assert inbound_allowed_from_rules("False|Allow|Inbound\nFalse|Allow|Inbound\n") is False
     assert inbound_allowed_from_rules("True|Block|Inbound\n") is False
     assert inbound_allowed_from_rules("") is False
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows power throttling")
+def test_timer_throttling_can_be_disabled_for_a_process() -> None:
+    assert disable_timer_throttling(os.getpid()) is True

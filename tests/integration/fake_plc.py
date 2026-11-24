@@ -14,10 +14,12 @@ ARRAY_LENGTH = {
     "GVL_Bridge.aJointPosSp": 6,
     "GVL_Bridge.aJointPosFb": 6,
     "GVL_Bridge.aJointTorqueFb": 6,
+    "GVL_Bridge.aFollowingError": 6,
     "GVL_Bridge.axBinFull": 6,
 }
 DEFAULTS: dict[str, Any] = {
     "Boolean": False,
+    "Int16": 0,
     "Double": 0.0,
     "UInt32": 0,
     "Int32": 0,

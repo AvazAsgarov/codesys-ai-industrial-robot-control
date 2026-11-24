@@ -5,7 +5,7 @@ name: p2_faults
 seed: 43
 duration_s: 300
 spawn:
-  pitch_mm: 600
+  pitch_mm: 1000
   jitter_mm: 100
   mix: [1, 1, 1]
   y_offset_mm: 50

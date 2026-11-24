@@ -10,12 +10,15 @@ The PLC application is deployed headlessly by the CODESYS IDE running the IronPy
 """
 
 import asyncio
+import ctypes
 import os
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import time
+from ctypes import wintypes
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -145,6 +148,7 @@ class RuntimeStatus:
     programming_port_open: bool
     opcua_port_open: bool
     packml_state: int | None = None
+    main_task_period_ms: float | None = None
 
 
 def _state_dir() -> Path:
@@ -193,6 +197,49 @@ def _read_pid() -> int | None:
     return int(text) if text.isdigit() else None
 
 
+_PROCESS_SET_INFORMATION = 0x0200
+_PROCESS_POWER_THROTTLING = 4  # PROCESS_INFORMATION_CLASS.ProcessPowerThrottling
+_THROTTLING_VERSION = 1
+_THROTTLING_EXECUTION_SPEED = 0x1
+_THROTTLING_IGNORE_TIMER_RESOLUTION = 0x4
+
+
+class _PowerThrottlingState(ctypes.Structure):
+    _fields_ = (
+        ("Version", wintypes.ULONG),
+        ("ControlMask", wintypes.ULONG),
+        ("StateMask", wintypes.ULONG),
+    )
+
+
+def disable_timer_throttling(pid: int) -> bool:
+    """Exempt a process from Windows 11 power throttling of timers and execution speed.
+
+    Windows 11 ignores the timer-resolution request of a process without a visible window, so
+    the soft-PLC started by :func:`start` would run its 4 ms task every 15.6 ms (and SoftMotion
+    would move everything at a quarter speed). Returns True if the setting was applied.
+    """
+    if sys.platform != "win32":
+        return True
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    handle = kernel32.OpenProcess(_PROCESS_SET_INFORMATION, False, pid)
+    if not handle:
+        return False
+    try:
+        mask = _THROTTLING_IGNORE_TIMER_RESOLUTION | _THROTTLING_EXECUTION_SPEED
+        state = _PowerThrottlingState(_THROTTLING_VERSION, mask, 0)
+        ok = kernel32.SetProcessInformation(
+            wintypes.HANDLE(handle),
+            _PROCESS_POWER_THROTTLING,
+            ctypes.byref(state),
+            ctypes.sizeof(state),
+        )
+        return bool(ok)
+    finally:
+        kernel32.CloseHandle(wintypes.HANDLE(handle))
+
+
 def _launch(settings: RuntimeSettings) -> int:
     log = (_state_dir() / "runtime.log").open("wb")
     proc = subprocess.Popen(
@@ -203,6 +250,7 @@ def _launch(settings: RuntimeSettings) -> int:
         creationflags=_CREATE_NO_WINDOW | _DETACHED_PROCESS,
     )
     _pid_file().write_text(str(proc.pid), encoding="utf-8")
+    disable_timer_throttling(proc.pid)
     return proc.pid
 
 
@@ -287,33 +335,52 @@ def stop() -> bool:
     return True
 
 
-STATE_NODE = "ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Bridge.eState"
+_APP = "ns=4;s=|var|CODESYS Control Win V3 x64.Application."
+STATE_NODE = _APP + "GVL_Bridge.eState"
+SEQ_NODE = _APP + "GVL_Bridge.udiSetpointSeq"  # +1 per MainTask cycle
 
 
-async def read_packml_state(endpoint: str, timeout_s: float = 4.0) -> int | None:
-    """Read ``GVL_Bridge.eState`` over OPC UA; None if the application is not reachable."""
+async def read_packml_state(
+    endpoint: str, timeout_s: float = 4.0, sample_s: float = 2.0
+) -> tuple[int | None, float | None]:
+    """Read ``GVL_Bridge.eState`` and measure the MainTask period over ``sample_s`` seconds.
+
+    Returns:
+        (PackML state, MainTask period in ms); None where the application is not reachable.
+    """
     try:
         async with Client(endpoint, timeout=timeout_s) as client:
             value: object = await client.get_node(STATE_NODE).read_value()
+            seq = client.get_node(SEQ_NODE)
+            first: object = await seq.read_value()
+            start = time.perf_counter()
+            await asyncio.sleep(sample_s)
+            last: object = await seq.read_value()
+            elapsed = time.perf_counter() - start
     except (OSError, TimeoutError, ua.UaError):
-        return None
-    return int(value) if isinstance(value, int) else None
+        return None, None
+    state = int(value) if isinstance(value, int) else None
+    period = None
+    if isinstance(first, int) and isinstance(last, int) and last > first:
+        period = elapsed * 1000.0 / (last - first)
+    return state, period
 
 
 def status(settings: RuntimeSettings, endpoint: str | None = None) -> RuntimeStatus:
     """Report whether the runtime process and its ports are up, and the PackML state."""
     pid = _read_pid()
     opcua_open = port_open(settings.opcua_port)
-    state = None
+    state = period = None
     if opcua_open:
         url = endpoint or f"opc.tcp://127.0.0.1:{settings.opcua_port}"
-        state = asyncio.run(read_packml_state(url))
+        state, period = asyncio.run(read_packml_state(url))
     return RuntimeStatus(
         pid=pid,
         process_alive=pid is not None and process_alive(pid),
         programming_port_open=port_open(settings.programming_port),
         opcua_port_open=opcua_open,
         packml_state=state,
+        main_task_period_ms=period,
     )
 
 

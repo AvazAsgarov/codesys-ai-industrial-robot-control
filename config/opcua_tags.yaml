@@ -43,3 +43,16 @@ tags:
   decision.quality_prob: {path: GVL_Bridge.stDecision.rQualityProb, variant: Float}
   decision.ident_reliable: {path: GVL_Bridge.stDecision.xIdentReliable, variant: Boolean}
   decision.seq: {path: GVL_Bridge.stDecision.udiSeq, variant: UInt32}
+
+  # --- operator (GVL_Hmi): tests and the later HMI ----------------------------------------------
+  hmi.command: {path: GVL_Hmi.eCommand, variant: Int32}
+  hmi.mode_request: {path: GVL_Hmi.eModeRequest, variant: Int32}
+  hmi.alarm_ack: {path: GVL_Hmi.xAlarmAck, variant: Boolean}
+
+  # --- diagnostics (PLC -> bridge, HMI) -------------------------------------------------------
+  diag.newest_alarm: {path: GVL_Bridge.eNewestAlarm, variant: Int32}
+  diag.error_active: {path: GVL_Bridge.xAlarmError, variant: Boolean}
+  diag.critical_active: {path: GVL_Bridge.xAlarmCritical, variant: Boolean}
+  diag.pick_step: {path: GVL_Bridge.ePickStep, variant: Int32}
+  diag.worst_joint: {path: GVL_Bridge.iWorstJoint, variant: Int16}
+  diag.following_error_deg: {path: GVL_Bridge.aFollowingError, variant: Double}

@@ -4,9 +4,10 @@
               to equipment actions; computes the interlocks.
     In/Out  : AxisGroup (AxisGroup_Robot), ConveyorAxis (Axis_Conveyor)
     Inputs  : operator commands (GVL_Hmi), sensors and messages (GVL_Bridge), xLoopback (feedback := setpoint)
-    Outputs : setpoints, belt and vacuum to the bridge; eState, eMode, ePickStep, aActAcs
-    States  : Resetting  - acknowledge alarms, reset equipment and the pick sequence; done when
-                           safe and fault-free
+    Outputs : setpoints, belt and vacuum to the bridge; eState, eMode, ePickStep, aActAcs;
+              diagnostics (newest alarm, alarm classes, worst joint, following errors)
+    States  : Resetting  - acknowledge alarms, reset equipment and the pick sequence, forget the
+                           tracked parts; done when safe and fault-free
               Starting / Unholding / Unsuspending - robot home -> ready, conveyor at speed
                            (a part still on the cup is placed in quarantine first)
               Execute    - automatic: pick sequence runs; Manual: jogging
@@ -54,6 +55,12 @@ VAR_OUTPUT
     ePickStep : E_PickStep;
     aActAcs : ARRAY[1..6] OF LREAL;
     udiSetpointSeq : UDINT;                   // +1 per cycle with every setpoint sample
+    // diagnostics (bridge, HMI)
+    eNewestAlarm : E_AlarmId;
+    xAlarmError : BOOL;
+    xAlarmCritical : BOOL;
+    iWorstJoint : INT;
+    aFollowingError : ARRAY[1..6] OF LREAL;   // [deg]
 END_VAR
 VAR
     fbSm : FB_PackMLStateMachine;
@@ -137,6 +144,7 @@ xMotionStill := (fbSeq.eStep = E_PickStep.Idle OR fbSeq.eStep = E_PickStep.Error
 CASE eState OF
     E_PackMLState.Resetting:
         fbSeq.xReset := TRUE;
+        fbTracker.Clear();                        // parts on the belt are unknown after a stop
         fbRobot.Reset();
         fbVac.Reset();
         fbConv.Reset();
@@ -253,6 +261,11 @@ stCapture := fbTracker.stCapture;
 eState := fbSm.eState;
 eMode := fbSm.eMode;
 ePickStep := fbSeq.eStep;
+eNewestAlarm := fbAlarms.eNewest;
+xAlarmError := fbAlarms.xErrorActive;
+xAlarmCritical := fbAlarms.xCriticalActive;
+iWorstJoint := fbMon.iWorstJoint;
+aFollowingError := fbMon.aFollowingError;
 FOR i := 1 TO 6 DO
     CASE i OF
         1: aActAcs[i] := fbRobot.stActAcs.a.a0;

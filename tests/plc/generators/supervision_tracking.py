@@ -111,6 +111,60 @@ jm_cases = [
             e(JM, **{"fbMon.xStale": False, "fbMon.xFault": False}),
         ],
     },
+    {
+        # feedback that answers an older setpoint sample is compared with that sample
+        "name": "lagged_feedback_no_fault",
+        "steps": [
+            w(JM, xReinit=True),
+            wait(200),
+            w(
+                JM,
+                iLag=10,
+                xFreeze=False,
+                xRamp=True,
+                xAutoSeq=True,
+                **{"fbMon.xLoopback": False, "fbMon.xActive": True},
+            ),
+            wait(1500),
+            e(
+                JM,
+                lrRampSpeed={"op": ">", "value": 50},
+                **{
+                    "fbMon.xWarn": False,
+                    "fbMon.xFault": False,
+                    "fbMon.aFollowingError[1]": {"op": "<", "value": 0.5},
+                },
+            ),
+            w(JM, xRamp=False),
+            wait(200),
+        ],
+    },
+    {
+        "name": "blocked_joint_faults",
+        "steps": [
+            w(JM, xReinit=True),
+            wait(200),
+            w(
+                JM,
+                iLag=10,
+                xFreeze=True,
+                xRamp=True,
+                xAutoSeq=True,
+                **{"fbMon.xLoopback": False, "fbMon.xActive": True},
+            ),
+            wait(1500),
+            e(
+                JM,
+                **{
+                    "fbMon.xFault": True,
+                    "fbMon.iWorstJoint": 1,
+                    "fbAlarms.xCriticalActive": True,
+                },
+            ),
+            w(JM, xRamp=False, xFreeze=False),
+            wait(200),
+        ],
+    },
 ]
 
 
@@ -287,6 +341,23 @@ tr_cases = [
             w(TR, xAck=True),
             wait(300),
             e(TR, uiCount=1, **{"fbAlarms.xErrorActive": False}),
+        ],
+    },
+    {
+        # PackML Resetting forgets the tracked parts (the belt may have been cleared by hand)
+        "name": "clear_forgets_all_parts",
+        "steps": [
+            w(TR, xReinit=True, lrBeltPos=0.0),
+            wait(200),
+            *capture(),
+            *capture(),
+            e(TR, uiCount=2, **{"fbTracker.stCapture.udiPartId": 2}),
+            w(TR, xClear=True),
+            wait(200),
+            e(TR, uiCount=0),
+            *capture(),
+            # part ids keep counting: a late message for an old part matches nothing
+            e(TR, uiCount=1, **{"fbTracker.stCapture.udiPartId": 3}),
         ],
     },
 ]

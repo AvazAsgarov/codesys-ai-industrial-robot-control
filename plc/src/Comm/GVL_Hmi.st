@@ -1,5 +1,7 @@
-// Operator commands from the HMI.
+// Operator commands from the HMI (CODESYS Visualization) and, for tests and the HMI of later
+// phases, over OPC UA (published by the symbol configuration).
 {attribute 'qualified_only'}
+{attribute 'symbol' := 'readwrite'}
 VAR_GLOBAL
     eCommand : E_PackMLCommand;
     eModeRequest : E_PackMLMode := E_PackMLMode.Production;

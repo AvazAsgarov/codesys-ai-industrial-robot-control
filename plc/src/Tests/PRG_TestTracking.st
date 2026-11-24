@@ -3,7 +3,7 @@
     Purpose : Simulation test harness for FB_PartTracker and F_SelectBin (tests/plc/tracking.json).
     Inputs  : lrBeltPos; xTriggerPE1 (one capture); uiFillCount (that many captures, one per cycle);
               stVisIn + xSendVision / xResendVision (same sequence number again);
-              stDecIn + xSendDecision; udiQueryId - part to show in stRec; xAck
+              stDecIn + xSendDecision; udiQueryId - part to show in stRec; xAck; xClear
     Outputs : uiCount, uiNext (next pickable index), stRec, xQueryFound
 *)
 PROGRAM PRG_TestTracking
@@ -22,6 +22,7 @@ VAR
     xResendVision : BOOL;
     xSendDecision : BOOL;
     xAck : BOOL;
+    xClear : BOOL;
     udiVisionSeq : UDINT;
     udiDecisionSeq : UDINT;
     udiQueryId : UDINT;
@@ -64,6 +65,10 @@ stDecIn.udiSeq := udiDecisionSeq;
 IF xAck THEN
     xAck := FALSE;
     fbAlarms.AcknowledgeAll();
+END_IF
+IF xClear THEN
+    xClear := FALSE;
+    fbTracker.Clear();
 END_IF
 
 fbTracker.itfAlarms := fbAlarms;
