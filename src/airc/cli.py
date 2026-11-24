@@ -202,8 +202,6 @@ def run_cell(  # noqa: PLR0913, PLR0917 - one parameter per command-line option
             typer.echo(f"error: {exc}", err=True)
             raise typer.Exit(EXIT_CONFIG_ERROR) from None
     worker = _vision_worker(twin) if vision == "yoloe" else None
-    if worker is not None:
-        _wait_for_vision(worker)
     runner = Runner(client, twin, scen, vision=worker, recorder=recorder)
     handle = None
     if viewer:
@@ -257,7 +255,9 @@ def _vision_worker(twin: Twin) -> "VisionWorker":
     from airc.vision.detector import LabelMap, OpenVinoDetector  # noqa: PLC0415
 
     labels = LabelMap.for_slugs(PartCatalogue.load())
-    return VisionWorker(twin, lambda: OpenVinoDetector(models.yoloe_dir("visual"), labels))
+    worker = VisionWorker(twin, lambda: OpenVinoDetector(models.yoloe_dir("visual"), labels))
+    _wait_for_vision(worker)  # the first part must not wait for the model to load
+    return worker
 
 
 @app.command("calibrate")
