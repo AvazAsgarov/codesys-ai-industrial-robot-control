@@ -13,7 +13,12 @@ class _Named:
     id: int
     name: str
 
+class _Contacts:
+    geom1: _I32
+    geom2: _I32
+
 class MjModel:
+    geom_bodyid: _I32
     njnt: int
     nu: int
     nbody: int
@@ -33,6 +38,8 @@ class MjModel:
 
 class MjData:
     time: float
+    ncon: int
+    contact: _Contacts
     qpos: _F64
     qvel: _F64
     ctrl: _F64

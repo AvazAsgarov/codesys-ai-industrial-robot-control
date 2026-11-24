@@ -43,14 +43,20 @@ def plc() -> str:
 
 
 async def _wait_state(control: BridgeClient, wanted: PackMLState, timeout_s: float) -> None:
+    seen: list[str] = []  # states passed through, with the newest alarm in each
     for _ in range(int(timeout_s * 10)):
-        if (await control.read_outputs()).state == wanted:
+        state = PackMLState((await control.read_outputs()).state)
+        if state == wanted:
             return
+        if not seen or not seen[-1].startswith(state.name):
+            alarm = ALARMS.get((await control.read_diag()).newest_alarm)
+            seen.append(f"{state.name}({alarm})")
         await asyncio.sleep(0.1)
     state = PackMLState((await control.read_outputs()).state)
     d = await control.read_diag()
     pytest.fail(
-        f"PLC did not reach {wanted.name} within {timeout_s} s (state {state.name}, alarm "
+        f"PLC did not reach {wanted.name} within {timeout_s} s via {' > '.join(seen)} "
+        f"(state {state.name}, alarm "
         f"{ALARMS.get(d.newest_alarm)}, step {d.pick_step}, worst joint {d.worst_joint}, "
         f"following error {d.following_error_deg})"
     )
@@ -109,7 +115,8 @@ async def _production_run(endpoint: str, scenario: Scenario) -> tuple[RunReport,
                     runner_state += f" error={task.exception()!r}"
                 pytest.fail(
                     f"Stop ended in ABORTED after {k / 10:.1f} s: alarm "
-                    f"{ALARMS.get(d.newest_alarm)}, step {d.pick_step}, {runner_state}"
+                    f"{ALARMS.get(d.newest_alarm)}, step {d.pick_step}, {runner_state}; "
+                    "left Execute:\n" + "\n".join(EVENTS)
                 )
             await asyncio.sleep(0.1)
         else:

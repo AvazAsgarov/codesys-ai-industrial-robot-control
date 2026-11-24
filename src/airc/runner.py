@@ -16,6 +16,7 @@ import os
 import statistics
 import sys
 import time
+from collections import deque
 from collections.abc import Callable, Coroutine, Generator
 from dataclasses import dataclass, field
 from typing import Any
@@ -23,15 +24,17 @@ from typing import Any
 import numpy as np
 
 from airc.bridge.client import BridgeClient, BridgeDisconnectedError
-from airc.bridge.messages import PlcInputs, PlcOutputs, Six
+from airc.bridge.messages import PackMLState, PlcInputs, PlcOutputs, Six
 from airc.bridge.oracle import GroundTruthOracle
 from airc.plc.runtime import disable_timer_throttling
 from airc.twin.scenario import FaultEvent, FaultTimeline, Scenario, SpawnSchedule
-from airc.twin.twin import Twin, TwinState
+from airc.twin.twin import MAX_STEP_S, Twin, TwinState
 
 MM = 0.001
 BLOCKED_DAMPING = 1e7  # N·m·s/rad: a blocked joint
 GAP_LOG_MS = 200.0  # log a cycle longer than this (the PLC's bridge watchdog is 500 ms)
+RECORDER_CYCLES = 50  # flight recorder: cycles kept, dumped when the cell leaves Execute
+_STOPPED_BY_FAULT = {PackMLState.ABORTING, PackMLState.ABORTED, PackMLState.STOPPING}
 
 _log = logging.getLogger(__name__)
 
@@ -164,6 +167,9 @@ class Runner:
         self._feedback_seq = 0
         self._last_capture = 0
         self._pending: PlcInputs | None = None
+        self._recorder: deque[str] = deque(maxlen=RECORDER_CYCLES)
+        self._last_state = 0
+        self._dt_s: float | None = None  # real duration of the last cycle (None: nominal)
         self._last_start: float | None = None
         self._report = RunReport()
 
@@ -202,7 +208,9 @@ class Runner:
             out.belt_pos_mm * MM,
             out.belt_vel_mm_s * MM,
             out.vacuum_on,
+            dt_s=self._dt_s if self._dt_s is not None else self.period_s,
         )
+        self._record(out, state)
         for spec in self.schedule.due(out.belt_pos_mm):
             try:
                 self.twin.spawn(spec)
@@ -225,6 +233,25 @@ class Runner:
                 (t2 - t1) * 1000.0,
                 (t3 - t2) * 1000.0,
             )
+
+    def _record(self, out: PlcOutputs, state: TwinState) -> None:
+        """Flight recorder: keep the last cycles; dump them when the cell leaves Execute."""
+        err = np.abs(np.degrees(state.joint_pos_rad) - np.array(out.joint_sp_deg))
+        joint = int(np.argmax(err)) + 1
+        contacts = ",".join(self.twin.held_contacts()) or "-"
+        dt_ms = (self._dt_s if self._dt_s is not None else self.period_s) * 1000.0
+        self._recorder.append(
+            f"dt {dt_ms:5.1f} ms seq {out.setpoint_seq} max error {err.max():6.2f} deg (J{joint}) "
+            f"vacuum {int(out.vacuum_on)}/{int(state.vacuum_ok)} held-part contacts {contacts}"
+        )
+        if self._last_state == PackMLState.EXECUTE and out.state in _STOPPED_BY_FAULT:
+            _log.warning(
+                "flight recorder: last %d cycles before %s\n%s",
+                len(self._recorder),
+                PackMLState(out.state).name,
+                "\n".join(self._recorder),
+            )
+        self._last_state = out.state
 
     def _apply(self, event: FaultEvent) -> None:
         fault, on = event.fault, event.start
@@ -301,12 +328,14 @@ class Runner:
                 self._apply(event)
             if self.bridge_lost:  # fault: no exchange with the PLC, the twin stands still
                 self._last_start = None
+                self._dt_s = None
                 next_t += self.period_s
                 await asyncio.sleep(max(0.0, next_t - time.perf_counter()))
                 continue
             if self._last_start is not None:
                 gap = (t0 - self._last_start) * 1000.0
                 self._report.max_gap_ms = max(self._report.max_gap_ms, gap)
+                self._dt_s = min(max(gap / 1000.0, self.period_s), MAX_STEP_S)
             self._last_start = t0
             try:
                 await self.client.ensure_connected()

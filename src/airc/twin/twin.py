@@ -23,6 +23,7 @@ BELT_JUMP_M = 0.2  # a larger belt position change in one cycle is a PLC restart
 SETTLED_SPEED = 0.05  # m/s: a part slower than this counts as resting
 STACK_ALLOWANCE_M = 0.08  # a part resting this far above a bin's rim lies on other parts in it
 RESTING_TOL_M = 0.005  # a part this close to the belt surface lies on it
+MAX_STEP_S = 0.1  # one step never simulates more than this (after a stall)
 CUP_PENETRATION_M = 0.002  # the cup may press this far into the part top and still grip
 
 
@@ -311,6 +312,29 @@ class Twin:
             self.data.eq_active[self._weld_eq[self._active[self._held].slot]] = 0
         self._held = None
 
+    def held_contacts(self) -> list[str]:
+        """Names of the bodies the held part touches, apart from the cup (empty if none held).
+
+        A carried part that strikes something (a pile in a bin, a bin wall) blocks the arm
+        through the suction weld; this tells what it struck.
+        """
+        if self._held is None:
+            return []
+        body = self._body[self._active[self._held].slot]
+        n = self.data.ncon
+        ids = self.model.geom_bodyid
+        names: list[str] = []
+        for g1, g2 in zip(self.data.contact.geom1[:n], self.data.contact.geom2[:n], strict=True):
+            b1, b2 = int(ids[g1]), int(ids[g2])
+            if body not in (b1, b2):
+                continue
+            other = b2 if b1 == body else b1
+            if other != self._tool:
+                name = self.model.body(other).name or f"body{other}"
+                if name not in names:
+                    names.append(name)
+        return names
+
     def drop_part(self, block_grip: bool = True) -> None:
         """Fault: the gripped part falls; while ``block_grip`` the cup cannot grip again."""
         self._release()
@@ -372,6 +396,7 @@ class Twin:
         belt_pos_m: float,
         belt_vel_m_s: float,
         vacuum_on: bool,
+        dt_s: float | None = None,
     ) -> TwinState:
         """Advance one bridge cycle.
 
@@ -380,6 +405,8 @@ class Twin:
             belt_pos_m: Conveyor axis position (m).
             belt_vel_m_s: Conveyor velocity (m/s).
             vacuum_on: Vacuum valve command.
+            dt_s: Time the cycle really took (default: the bridge period); the physics follows
+                the PLC's real time, at most ``MAX_STEP_S`` per call.
 
         Returns:
             The state after the cycle.
@@ -393,13 +420,15 @@ class Twin:
         carried = [a.slot for a in self._active.values() if self._on_belt(a)]
         self._update_suction(vacuum_on)
         # velocity feed-forward: the actuator force is kp (q* - q) + kv (dq* - dq)
-        feed_forward = self._kv_over_kp * (target - start) / self.cfg.bridge_period_s
-        for k in range(1, self._nsub + 1):
-            self.data.ctrl[:6] = start + (target - start) * (k / self._nsub) + feed_forward
+        period = self.cfg.bridge_period_s if dt_s is None else min(max(dt_s, 0.0), MAX_STEP_S)
+        nsub = max(1, round(period / self.cfg.physics_timestep_s))
+        feed_forward = self._kv_over_kp * (target - start) / (nsub * self.cfg.physics_timestep_s)
+        for k in range(1, nsub + 1):
+            self.data.ctrl[:6] = start + (target - start) * (k / nsub) + feed_forward
             for slot in carried:
                 # carried by position only: the belt's own motion is the PLC's axis position
                 q, v = self._free_q[slot], self._free_v[slot]
-                self.data.qpos[q] += delta / self._nsub
+                self.data.qpos[q] += delta / nsub
                 self.data.qvel[v] = 0.0
             mujoco.mj_step(self.model, self.data)
         # mj_step leaves positions of the pre-integration state: recompute them for the sensors

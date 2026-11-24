@@ -211,3 +211,50 @@ def test_long_cycle_gap_is_logged(caplog: pytest.LogCaptureFixture) -> None:
             await plc.stop()
 
     asyncio.run(scenario())
+
+
+def test_twin_steps_by_the_real_cycle_time() -> None:
+    async def scenario() -> None:
+        plc = FakePlc(free_port(), TagMap.load())
+        await plc.start()
+        try:
+            twin = Twin()
+            real_step = twin.step
+            dts: list[float] = []
+
+            def slow_step(*args: object, **kwargs: object) -> object:
+                dts.append(float(kwargs.get("dt_s", 0.0)))  # type: ignore[arg-type]
+                time.sleep(0.03)  # every cycle takes longer than 20 ms
+                return real_step(*args, **kwargs)  # type: ignore[arg-type]
+
+            twin.step = slow_step  # type: ignore[method-assign]
+            runner = await _runner(plc, twin)
+            await runner.run(duration_s=0.5)
+            assert dts[0] == pytest.approx(0.02)  # first cycle: the nominal period
+            assert min(dts[2:]) >= 0.03  # then the time that really passed
+        finally:
+            await plc.stop()
+
+    asyncio.run(scenario())
+
+
+def test_flight_recorder_dumped_when_the_cell_aborts(caplog: pytest.LogCaptureFixture) -> None:
+    async def scenario() -> None:
+        plc = FakePlc(free_port(), TagMap.load())
+        await plc.start()
+        try:
+            await plc.set("state", 6)  # Execute
+            runner = await _runner(plc, Twin())
+            task = asyncio.create_task(runner.run(duration_s=0.6))
+            await asyncio.sleep(0.3)
+            await plc.set("state", 8)  # Aborting
+            with caplog.at_level(logging.WARNING, logger="airc.runner"):
+                await task
+            dumps = [r.message for r in caplog.records if "flight recorder" in r.message]
+            assert len(dumps) == 1  # once per transition
+            assert "ABORTING" in dumps[0]
+            assert "max error" in dumps[0]
+        finally:
+            await plc.stop()
+
+    asyncio.run(scenario())
