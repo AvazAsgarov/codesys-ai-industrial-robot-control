@@ -2,9 +2,10 @@
 
 import json
 import os
+import threading
 import time
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Protocol
 
 import typer
 import yaml
@@ -38,6 +39,7 @@ app.add_typer(plc_app, name="plc")
 
 EXIT_CONFIG_ERROR = 2
 EXIT_PLC_ERROR = 3
+VISION_WARMUP_S = 120.0  # loading and compiling the detector on the CPU
 
 
 def _version_callback(value: bool) -> None:
@@ -302,6 +304,19 @@ def _video_recorder(twin: Twin, path: Path | None, fps: float, camera: str) -> A
         raise typer.Exit(EXIT_CONFIG_ERROR) from None
 
 
+class _Ready(Protocol):
+    ready: threading.Event
+
+
+def _wait_for_vision(worker: _Ready, timeout_s: float = VISION_WARMUP_S) -> bool:
+    """Wait until the detector is loaded, so the first part is answered before its deadline."""
+    typer.echo("loading the detector ...")
+    if worker.ready.wait(timeout_s):
+        return True
+    typer.echo(f"vision not ready after {timeout_s:.0f} s: the first captures may go unanswered")
+    return False
+
+
 def _vision_worker(twin: Twin) -> "VisionWorker":
     """Camera + YOLOE (visual prompts) on OpenVINO, in its own thread."""
     from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415
@@ -309,7 +324,9 @@ def _vision_worker(twin: Twin) -> "VisionWorker":
     from airc.vision.detector import LabelMap, OpenVinoDetector  # noqa: PLC0415
 
     labels = LabelMap.for_slugs(PartCatalogue.load())
-    return VisionWorker(twin, lambda: OpenVinoDetector(models.yoloe_dir("visual"), labels))
+    worker = VisionWorker(twin, lambda: OpenVinoDetector(models.yoloe_dir("visual"), labels))
+    _wait_for_vision(worker)  # the first part must not wait for the model to load
+    return worker
 
 
 @app.command("calibrate")
