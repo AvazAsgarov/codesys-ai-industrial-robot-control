@@ -3,9 +3,10 @@
     Purpose : Simulation test harness for the whole cell in PRG_Main (tests/plc/cell.json).
               Simulates the vacuum switch, injects parts (PE1 pulse, then vision and decision
               messages for the captured part id) and can press the E-stop or lose the vacuum
-              during a transfer.
+              during a transfer. Can play the twin's bridge (heartbeat, joint feedback answering
+              the current setpoint sample, twin active) and stall it.
     Inputs  : xActive; xInject (+ usiInjClass, eInjQuality); xEStopOnTransfer; xVacLostOnTransfer;
-              xMark (J1 reference)
+              xMark (J1 reference); xBridgeSim; xBridgeStall (heartbeat stops toggling)
     Outputs : lrJ1Delta - J1 movement since xMark [deg]
 *)
 PROGRAM PRG_TestCell
@@ -23,6 +24,8 @@ VAR
     xMark : BOOL;
     lrJ1Start : LREAL;
     lrJ1Delta : LREAL;
+    xBridgeSim : BOOL;
+    xBridgeStall : BOOL;
 END_VAR
 VAR CONSTANT
     PE1_PULSE : TIME := T#250MS;
@@ -39,6 +42,17 @@ ELSIF NOT xVacLostOnTransfer THEN
 END_IF
 tonVac(IN := GVL_Bridge.xVacuumOn, PT := T#100MS);
 GVL_Bridge.xVacuumOk := tonVac.Q AND NOT xVacLost;
+
+// the twin's bridge: feedback answers the current setpoint sample, heartbeat toggles
+IF xBridgeSim THEN
+    GVL_Bridge.xTwinActive := TRUE;
+    GVL_Bridge.aJointPosFb := GVL_Bridge.aJointPosSp;
+    GVL_Bridge.udiFeedbackForSeq := GVL_Bridge.udiSetpointSeq;
+    IF NOT xBridgeStall THEN
+        GVL_Bridge.xHeartbeat := NOT GVL_Bridge.xHeartbeat;
+        GVL_Bridge.udiFeedbackSeq := GVL_Bridge.udiFeedbackSeq + 1;
+    END_IF
+END_IF
 
 CASE iInject OF
     0:

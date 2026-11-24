@@ -169,6 +169,34 @@ cases = [
         ],
     },
     {
+        # the twin's bridge stops toggling the heartbeat: BridgeLost (Critical) aborts the cell
+        "name": "bridge_loss_aborts_cell",
+        "steps": [
+            {"write": {T + "xBridgeSim": True}},
+            {"waitMs": 500},
+            *start_from_stopped(),
+            {"expect": {CELL + "fbAlarms.xCriticalActive": False}},
+            {"write": {T + "xBridgeStall": True}},
+            {"waitMs": 3000},
+            state("Aborted"),
+            {
+                "expect": {
+                    "GVL_Bridge.eNewestAlarm": "E_AlarmId.BridgeLost",
+                    "GVL_Bridge.xAlarmCritical": True,
+                    CELL + "fbRobot.xMoving": False,
+                }
+            },
+            {"write": {T + "xBridgeStall": False}},
+            {"waitMs": 300},
+            *recover_to_stopped(),
+            *start_from_stopped(),
+            *cmd("Stop", 12000),
+            state("Stopped"),
+            {"write": {T + "xBridgeSim": False, "GVL_Bridge.xTwinActive": False}},
+            {"waitMs": 300},
+        ],
+    },
+    {
         "name": "manual_jog_only_in_manual",
         "steps": [
             *start_from_stopped(),
