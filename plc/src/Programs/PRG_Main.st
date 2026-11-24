@@ -6,6 +6,8 @@
     Commands: GVL_Hmi.eCommand / xAlarmAck are written asynchronously (HMI, OPC UA). They are
               read once per cycle into a snapshot and cleared only if they still hold that
               value, so a command written during the cycle is never lost.
+    HMI     : fbHmiPanel turns the visualization's buttons into GVL_Hmi commands before the
+              snapshot; fbHmiView prepares GVL_HmiView after the cell has run.
     OPC UA  : published read-only for diagnostics (alarms, pick step) and the HMI.
 *)
 PROGRAM PRG_Main
@@ -13,6 +15,8 @@ PROGRAM PRG_Main
 VAR
     sProjectVersion : STRING := GVL_Constants.PROJECT_VERSION;  // diagnostics: project version visible online and via OPC UA
     fbCell : FB_SortingCell;
+    fbHmiPanel : FB_HmiPanel;
+    fbHmiView : FB_HmiView;
     eCommand : E_PackMLCommand;
     xAlarmAck : BOOL;
 END_VAR
@@ -21,6 +25,7 @@ IF NOT GVL_Config.xCellEnabled THEN
     RETURN;
 END_IF
 
+fbHmiPanel();
 eCommand := GVL_Hmi.eCommand;
 xAlarmAck := GVL_Hmi.xAlarmAck;
 fbCell(AxisGroup := AxisGroup_Robot,
@@ -66,3 +71,4 @@ END_IF
 IF xAlarmAck THEN
     GVL_Hmi.xAlarmAck := FALSE;
 END_IF
+fbHmiView(Cell := fbCell);

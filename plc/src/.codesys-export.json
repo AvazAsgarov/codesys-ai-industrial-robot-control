@@ -1,6 +1,6 @@
 {
-  "project": "C:\\dev\\airc-p3\\plc\\RobotCell.project",
-  "exported": "2026-11-24T20:29:27.001Z",
+  "project": "C:\\dev\\airc-p5\\plc\\RobotCell.project",
+  "exported": "2026-11-24T21:04:51.983Z",
   "files": [
     "Comm/FB_BridgeWatchdog.st",
     "Comm/FB_MessageIntake.st",
@@ -52,6 +52,10 @@
     "Framework/FB_PartQueue/PutRecord.st",
     "Framework/FB_PartQueue/Release.st",
     "GVL_Recipe_Cell.st",
+    "Hmi/FB_HmiPanel.st",
+    "Hmi/FB_HmiView.st",
+    "Hmi/GVL_HmiPanel.st",
+    "Hmi/GVL_HmiView.st",
     "Interfaces/I_AlarmSink.st",
     "Interfaces/I_AlarmSink/Clear.st",
     "Interfaces/I_AlarmSink/Raise.st",
@@ -79,6 +83,8 @@
     "Process/FB_PickSequence/Request.st",
     "Process/FB_PickSequence/TrackedPose.st",
     "Process/FB_SortingCell.st",
+    "Process/FB_SortingCell/AlarmState.st",
+    "Process/FB_SortingCell/PlacedCount.st",
     "Process/F_SelectBin.st",
     "Programs/PRG_Comm.st",
     "Programs/PRG_Main.st",
