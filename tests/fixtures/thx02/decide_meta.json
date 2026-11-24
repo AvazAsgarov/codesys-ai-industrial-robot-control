@@ -1,0 +1,14 @@
+{
+  "endpoint": "POST https://api.hal-x.ai/v1/decide",
+  "recorded": "2026-11-25",
+  "docs": "https://api.hal-x.ai/docs/thx-02/",
+  "content": "synthetic only: a rendered 96x96 grey rectangle on a dark background",
+  "status": 200,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-halx-tier": "public",
+    "x-ratelimit-limit-decisions": "60",
+    "x-ratelimit-remaining-decisions": "58"
+  },
+  "note": "remaining dropped from 60 to 58 for one request with two questions: the free tier counts each question as one decision"
+}

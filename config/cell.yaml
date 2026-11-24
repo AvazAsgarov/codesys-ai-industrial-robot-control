@@ -4,3 +4,17 @@ project:
 plc:
   project_file: plc/RobotCell.project
   opcua_endpoint: opc.tcp://127.0.0.1:4840  # IPv4: OPC UA is bound to 127.0.0.1 only
+decision:  # THX-02 decision layer (spec section 7, ADR 0006)
+  mode: api  # api | replay | off
+  base_url: https://api.hal-x.ai
+  model: thx-02
+  deadline_s: 2.5  # recipe default; no answer by then -> rule fallback
+  request_timeout_s: 2.0
+  rate_limit_per_min: 50  # decisions (questions) per minute; free tier: 60 per IP
+  burst: 2
+  max_retry_wait_s: 1.0  # a longer 429 Retry-After falls back at once
+  max_429_retries: 1
+  unreliable_no_prob: 0.8  # identification unreliable when P(no) >= this
+  api_key_env: HALX_API_KEY  # optional; read from the environment
+  record_dir: experiments/recordings/thx02  # one JSONL per run
+  replay_file: null  # recording for mode replay

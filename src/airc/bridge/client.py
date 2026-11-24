@@ -1,7 +1,7 @@
 """Async OPC UA client for the PLC's ``GVL_Bridge`` (ADR 0003, ADR 0008).
 
 One cycle is one batched read of the PLC outputs and one batched write of the inputs. A message
-(vision, later decision) is written member by member in one request and its ``seq`` in a second
+(vision, decision) is written member by member in one request and its ``seq`` in a second
 request, so the PLC never sees a new sequence number with old members.
 """
 
@@ -16,6 +16,7 @@ from asyncua.common.node import Node
 
 from airc.bridge.messages import (
     CaptureMsg,
+    DecisionMsg,
     PackMLCommand,
     PlcDiagnostics,
     PlcInputs,
@@ -59,6 +60,12 @@ VISION_MEMBERS = (
     "vision.x_mm",
     "vision.y_mm",
     "vision.theta_deg",
+)
+DECISION_MEMBERS = (
+    "decision.part_id",
+    "decision.quality",
+    "decision.quality_prob",
+    "decision.ident_reliable",
 )
 _COMM_ERRORS = (OSError, TimeoutError, asyncio.TimeoutError, ua.UaError, ConnectionError)
 
@@ -213,6 +220,14 @@ class BridgeClient:
             [msg.part_id, msg.valid, msg.cls, msg.confidence, msg.x_mm, msg.y_mm, msg.theta_deg],
         )
         await self._write(("vision.seq",), [msg.seq])
+
+    async def write_decision(self, msg: DecisionMsg) -> None:
+        """Write a quality decision: members first, then its sequence number."""
+        await self._write(
+            DECISION_MEMBERS,
+            [msg.part_id, int(msg.quality), msg.quality_prob, msg.ident_reliable],
+        )
+        await self._write(("decision.seq",), [msg.seq])
 
     async def send_command(self, command: PackMLCommand) -> None:
         """Send an operator command (the PLC consumes it within one cycle)."""

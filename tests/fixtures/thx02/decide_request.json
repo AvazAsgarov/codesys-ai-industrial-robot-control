@@ -1,0 +1,22 @@
+{
+  "model": "thx-02",
+  "state": "{\"detected_class\": \"box\", \"detector_confidence\": 0.91}",
+  "images": [
+    "<synthetic 96x96 PNG (grey rectangle on dark background), base64 data URI, omitted>"
+  ],
+  "questions": {
+    "quality": {
+      "type": "choice",
+      "instructions": "What is the quality disposition of the part in the image?",
+      "criteria": {
+        "ok": "Intact part without visible defects",
+        "rework": "Small defect that can be repaired: dent, scratch, misprint or loose label",
+        "scrap": "Severe damage, the part cannot be used: crushed, torn, broken or leaking"
+      }
+    },
+    "ident_reliable": {
+      "type": "noul",
+      "instructions": "Does the image show one whole box, as the detector says?"
+    }
+  }
+}
