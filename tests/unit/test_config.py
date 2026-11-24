@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def test_load_config_default():
     cfg = load_config()
     assert cfg.project.name == "codesys-ai-industrial-robot-control"
-    assert cfg.plc.opcua_endpoint == "opc.tcp://localhost:4840"
+    assert cfg.plc.opcua_endpoint == "opc.tcp://127.0.0.1:4840"
 
 
 def test_load_config_default_path_independent_of_cwd(

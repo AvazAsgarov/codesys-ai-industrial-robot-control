@@ -15,7 +15,7 @@ def test_cli_version():
 def test_cli_config_show():
     result = runner.invoke(app, ["config", "show"])
     assert result.exit_code == 0
-    assert "opc.tcp://localhost:4840" in result.output
+    assert "opc.tcp://127.0.0.1:4840" in result.output
 
 
 def test_cli_bad_config_exit_code(write_yaml):

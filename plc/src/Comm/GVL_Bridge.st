@@ -1,13 +1,15 @@
 // Exchange with the Python bridge over OPC UA (published by the symbol configuration).
-// In Phase 1, tests write the inputs.
+// Tag names for the bridge: config/opcua_tags.yaml. In Phase 1, tests write the inputs.
 {attribute 'qualified_only'}
 {attribute 'symbol' := 'readwrite'}
 VAR_GLOBAL
     // --- inputs (bridge -> PLC) ---
     xHeartbeat : BOOL;                                     // toggled by the bridge every cycle
+    xTwinActive : BOOL;                                    // the twin delivers joint feedback
     aJointPosFb : ARRAY[1..6] OF LREAL;                    // measured joint positions [deg]
     aJointTorqueFb : ARRAY[1..6] OF LREAL;                 // measured joint torques [Nm]
     udiFeedbackSeq : UDINT;                                // increments with every feedback sample
+    udiFeedbackForSeq : UDINT;                             // udiSetpointSeq the feedback belongs to
     xPE1 : BOOL;                                           // photo-eye at the camera
     xPE2 : BOOL;                                           // photo-eye at the pick window start
     xVacuumOk : BOOL;                                      // vacuum switch of the suction cup
@@ -18,6 +20,7 @@ VAR_GLOBAL
     stDecision : ST_DecisionMsg;
     // --- outputs (PLC -> bridge) ---
     aJointPosSp : ARRAY[1..6] OF LREAL;                    // joint setpoints [deg]
+    udiSetpointSeq : UDINT;                                // increments with every setpoint sample
     lrBeltPos : LREAL;                                     // conveyor position [mm]
     lrBeltVel : LREAL;                                     // conveyor velocity [mm/s]
     xVacuumOn : BOOL;                                      // vacuum valve
