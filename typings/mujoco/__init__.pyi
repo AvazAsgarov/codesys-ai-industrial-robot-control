@@ -22,6 +22,7 @@ class MjModel:
     jnt_dofadr: _I32
     body_jntadr: _I32
     eq_data: _F64
+    dof_damping: _F64
     @staticmethod
     def from_xml_string(xml: str) -> MjModel: ...
     def joint(self, key: int | str) -> _Named: ...
@@ -39,6 +40,7 @@ class MjData:
     xquat: _F64
     xmat: _F64
     site_xpos: _F64
+    site_xmat: _F64
     actuator_force: _F64
     qfrc_actuator: _F64
     eq_active: NDArray[np.uint8]

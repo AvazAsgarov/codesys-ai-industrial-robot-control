@@ -24,10 +24,11 @@ class BeltConfig(_Frozen):
 
 
 class ServoConfig(_Frozen):
-    """Simulated servo drives, one entry per joint J1..J6."""
+    """Simulated servo drives (PD + velocity feed-forward), one entry per joint J1..J6."""
 
     kp: Six
-    damping: Six
+    kv: Six
+    friction: Six
     torque_limit: Six
     armature: Six
     range_deg: tuple[tuple[float, float], ...]

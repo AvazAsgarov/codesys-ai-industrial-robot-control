@@ -1,6 +1,6 @@
 {
   "project": "C:\\dev\\codesys-ai-industrial-robot-control\\plc\\RobotCell.project",
-  "exported": "2026-11-24T09:47:09.971Z",
+  "exported": "2026-11-24T10:50:53.084Z",
   "files": [
     "Comm/FB_BridgeWatchdog.st",
     "Comm/FB_MessageIntake.st",

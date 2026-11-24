@@ -11,10 +11,14 @@ belt:
 
 photo_eye_height_mm: 20          # beam height above the belt
 
-# Simulated servo drives: PD position control, torque limit, rotor inertia (armature).
+# Simulated servo drives: PD position control with velocity feed-forward (as a drive does),
+# torque limit, rotor inertia (armature) and a little viscous friction.
 servo:
-  kp: [2000, 2000, 2000, 400, 400, 400]            # N·m/rad
-  damping: [60, 60, 60, 10, 10, 10]                # N·m·s/rad
+  kp: [5000, 5000, 5000, 400, 400, 400]            # N·m/rad
+  # kv for a damping ratio of about 0.9 with the joint inertia at HOME (3.65, 7.62, 1.17, 0.033,
+  # 0.025, 0.020 kg·m², measured in the model)
+  kv: [245, 350, 140, 7, 6, 5]                     # N·m·s/rad (velocity gain)
+  friction: [2, 2, 2, 0.5, 0.5, 0.5]               # N·m·s/rad (joint viscous friction)
   torque_limit: [300, 300, 300, 60, 60, 60]        # N·m
   armature: [0.1, 0.1, 0.1, 0.02, 0.02, 0.02]      # kg·m²
   # Joint limits [deg], as the PLC drives (Phase 1 plan, Task 1)

@@ -29,7 +29,7 @@ def test_held_part_follows_the_tool_and_drops_on_release() -> None:
     twin.step(q, 0.0, 0.0, True)
     z0 = twin.part(pid).z_mm
     lifted = q.copy()
-    lifted[1] -= np.radians(8.0)  # shoulder back: the tool rises
+    lifted[1] += np.radians(8.0)  # J2 positive (about -Y): the tool rises
     state = twin.state()
     for _ in range(40):
         state = twin.step(lifted, 0.0, 0.0, True)

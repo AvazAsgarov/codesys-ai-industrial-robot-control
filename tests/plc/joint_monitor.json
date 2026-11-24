@@ -147,6 +147,96 @@
           }
         }
       ]
+    },
+    {
+      "name": "lagged_feedback_no_fault",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true,
+            "PRG_TestJointMonitor.iLag": 10,
+            "PRG_TestJointMonitor.xFreeze": false,
+            "PRG_TestJointMonitor.xRamp": true,
+            "PRG_TestJointMonitor.xAutoSeq": true
+          }
+        },
+        {
+          "waitMs": 1500
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.lrRampSpeed": {
+              "op": ">",
+              "value": 50
+            },
+            "PRG_TestJointMonitor.fbMon.xWarn": false,
+            "PRG_TestJointMonitor.fbMon.xFault": false,
+            "PRG_TestJointMonitor.fbMon.aFollowingError[1]": {
+              "op": "<",
+              "value": 0.5
+            }
+          }
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.xRamp": false
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
+    },
+    {
+      "name": "blocked_joint_faults",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestJointMonitor.xReinit": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.fbMon.xLoopback": false,
+            "PRG_TestJointMonitor.fbMon.xActive": true,
+            "PRG_TestJointMonitor.iLag": 10,
+            "PRG_TestJointMonitor.xFreeze": true,
+            "PRG_TestJointMonitor.xRamp": true,
+            "PRG_TestJointMonitor.xAutoSeq": true
+          }
+        },
+        {
+          "waitMs": 1500
+        },
+        {
+          "expect": {
+            "PRG_TestJointMonitor.fbMon.xFault": true,
+            "PRG_TestJointMonitor.fbMon.iWorstJoint": 1,
+            "PRG_TestJointMonitor.fbAlarms.xCriticalActive": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestJointMonitor.xRamp": false,
+            "PRG_TestJointMonitor.xFreeze": false
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
     }
   ]
 }

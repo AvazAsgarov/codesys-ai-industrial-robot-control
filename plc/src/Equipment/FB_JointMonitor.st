@@ -3,9 +3,14 @@
     Purpose : Supervises the robot joints against the feedback of the digital twin's servo
               motors: following error per joint and freshness of the feedback.
     Inputs  : aSetpoint / aFeedback [deg], aTorque [Nm], udiFeedbackSeq (changes with every new
-              feedback sample), xLoopback (feedback := setpoint, no staleness check),
-              xActive (supervision on), itfAlarms
+              feedback sample), udiSetpointSeq (number of the current setpoint sample, +1 per
+              cycle), udiFeedbackForSeq (setpoint sample the feedback answers), xLoopback
+              (feedback := setpoint, no staleness check), xActive (supervision on), itfAlarms
     Outputs : aFollowingError [deg], iWorstJoint (1..6, 0 = none), xWarn, xFault, xStale
+    Latency : the feedback travels through OPC UA and the twin (tens of ms). The last
+              HISTORY_SIZE setpoints are kept, and the feedback is compared with the setpoint it
+              answers, so transport delay does not count as following error; a feedback older
+              than the history is compared with the current setpoint.
     Limits  : GVL_Params.lrFollowErrWarn / lrFollowErrFault / tFeedbackTimeout
     Alarms  : FollowingErrorWarn, FollowingErrorFault, FeedbackStale
 *)
@@ -15,6 +20,8 @@ VAR_INPUT
     aFeedback : ARRAY[1..6] OF LREAL;
     aTorque : ARRAY[1..6] OF LREAL;
     udiFeedbackSeq : UDINT;
+    udiSetpointSeq : UDINT;
+    udiFeedbackForSeq : UDINT;
     xLoopback : BOOL;
     xActive : BOOL;
     itfAlarms : I_AlarmSink;
@@ -31,13 +38,29 @@ VAR
     lrWorst : LREAL;
     udiLastSeq : UDINT;
     tonStale : TON;
+    aHistory : ARRAY[0..HISTORY_SIZE - 1, 1..6] OF LREAL;
+    udiSlot : UDINT;
+    xFromHistory : BOOL;
 END_VAR
+VAR CONSTANT
+    HISTORY_SIZE : UDINT := 128;            // setpoint samples kept (512 ms at 4 ms)
+END_VAR
+
+udiSlot := udiSetpointSeq MOD HISTORY_SIZE;
+FOR i := 1 TO 6 DO
+    aHistory[udiSlot, i] := aSetpoint[i];
+END_FOR
+// UDINT arithmetic: a feedback that answers a future setpoint wraps to a large age.
+xFromHistory := udiSetpointSeq - udiFeedbackForSeq < HISTORY_SIZE;
+udiSlot := udiFeedbackForSeq MOD HISTORY_SIZE;
 
 lrWorst := 0;
 iWorstJoint := 0;
 FOR i := 1 TO 6 DO
     IF xLoopback THEN
         aFollowingError[i] := 0;
+    ELSIF xFromHistory THEN
+        aFollowingError[i] := ABS(aHistory[udiSlot, i] - aFeedback[i]);
     ELSE
         aFollowingError[i] := ABS(aSetpoint[i] - aFeedback[i]);
     END_IF

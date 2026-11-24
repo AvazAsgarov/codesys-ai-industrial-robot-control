@@ -93,7 +93,11 @@
         },
         {
           "expect": {
-            "GVL_Bridge.eState": "E_PackMLState.Execute"
+            "GVL_Bridge.eState": "E_PackMLState.Execute",
+            "GVL_Bridge.udiSetpointSeq": {
+              "op": ">",
+              "value": 1000
+            }
           }
         }
       ]
@@ -510,7 +514,7 @@
           "waitMs": 300
         },
         {
-          "waitMs": 16000
+          "waitMs": 24000
         },
         {
           "expect": {

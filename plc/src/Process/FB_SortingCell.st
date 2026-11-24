@@ -3,7 +3,7 @@
     Purpose : The sorting cell as one PackML unit. Owns all equipment and maps the PackML states
               to equipment actions; computes the interlocks.
     In/Out  : AxisGroup (AxisGroup_Robot), ConveyorAxis (Axis_Conveyor)
-    Inputs  : operator commands (GVL_Hmi), sensors and messages (GVL_Bridge), xLoopback
+    Inputs  : operator commands (GVL_Hmi), sensors and messages (GVL_Bridge), xLoopback (feedback := setpoint)
     Outputs : setpoints, belt and vacuum to the bridge; eState, eMode, ePickStep, aActAcs
     States  : Resetting  - acknowledge alarms, reset equipment and the pick sequence; done when
                            safe and fault-free
@@ -33,6 +33,7 @@ VAR_INPUT
     aJointPosFb : ARRAY[1..6] OF LREAL;
     aJointTorqueFb : ARRAY[1..6] OF LREAL;
     udiFeedbackSeq : UDINT;
+    udiFeedbackForSeq : UDINT;                // setpoint sample the joint feedback answers
     xPE1 : BOOL;
     xVacuumOk : BOOL;
     axBinFull : ARRAY[E_Bin.TypeA..E_Bin.Quarantine] OF BOOL;
@@ -52,6 +53,7 @@ VAR_OUTPUT
     eMode : E_PackMLMode := E_PackMLMode.Production;
     ePickStep : E_PickStep;
     aActAcs : ARRAY[1..6] OF LREAL;
+    udiSetpointSeq : UDINT;                   // +1 per cycle with every setpoint sample
 END_VAR
 VAR
     fbSm : FB_PackMLStateMachine;
@@ -224,8 +226,10 @@ FOR i := 1 TO 6 DO
         aFeedback[i] := aJointPosFb[i];
     END_IF
 END_FOR
+udiSetpointSeq := udiSetpointSeq + 1;
 fbMon(aSetpoint := fbRobot.aSetAcs, aFeedback := aFeedback, aTorque := aJointTorqueFb,
-      udiFeedbackSeq := udiFeedbackSeq, xLoopback := xLoopback, xActive := fbRobot.xReady);
+      udiFeedbackSeq := udiFeedbackSeq, udiSetpointSeq := udiSetpointSeq,
+      udiFeedbackForSeq := udiFeedbackForSeq, xLoopback := xLoopback, xActive := fbRobot.xReady);
 fbWatchdog(xHeartbeat := xHeartbeat, xEnable := NOT xLoopback AND eState <> E_PackMLState.Stopped);
 
 // --- PackML ------------------------------------------------------------------------------------

@@ -68,7 +68,13 @@ cases = [
                     CELL + "fbAlarms.xCriticalActive": False,
                 }
             },
-            state("Execute"),
+            {
+                "expect": {
+                    "GVL_Bridge.eState": "E_PackMLState.Execute",
+                    # one setpoint sample per 4 ms cycle for the bridge's latency compensation
+                    "GVL_Bridge.udiSetpointSeq": {"op": ">", "value": 1000},
+                }
+            },
         ],
     },
     {
@@ -151,7 +157,7 @@ cases = [
             *start_from_stopped(),
             {"write": {T + "xVacLostOnTransfer": True}},
             *inject(0, "Ok"),
-            {"waitMs": 16000},
+            {"waitMs": 24000},  # pick, transfer, loss, stop: margin for a slow simulator
             state("Stopped"),
             {"expect": {CELL + "fbRobot.xMoving": False, CELL + "fbConv.lrActVelocity": 0}},
             {"write": {T + "xVacLostOnTransfer": False}},

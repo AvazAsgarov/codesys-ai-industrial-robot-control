@@ -15,6 +15,7 @@ from numpy.typing import NDArray
 
 from airc.twin.cell import CellGeometry
 from airc.twin.config import TwinConfig
+from airc.twin.kinematics import TOOL_FROM_FLANGE
 from airc.twin.scene import MM, PART_GROUP, PartSlot, build_mjcf, part_slots
 
 FloatArray = NDArray[np.float64]
@@ -104,6 +105,7 @@ class Twin:
         self._weld_eq = [m.equality(s.weld).id for s in self._slots]
         self._tool = m.body("link6").id
         self._tcp = m.site("tcp").id
+        self._kv_over_kp = np.array(self.cfg.servo.kv) / np.array(self.cfg.servo.kp)
         self._nsub = max(1, round(self.cfg.bridge_period_s / self.cfg.physics_timestep_s))
         self._active: dict[int, _Active] = {}
         self._next_pid = 1
@@ -226,6 +228,24 @@ class Twin:
         """Measured joint positions J1..J6 (rad)."""
         return np.array([self.data.qpos[a] for a in self._qadr])
 
+    def set_joint_positions(self, q_rad: FloatArray) -> None:
+        """Teleport the arm to joint positions J1..J6 (rad), at rest, and hold them."""
+        for i, adr in enumerate(self._qadr):
+            self.data.qpos[adr] = q_rad[i]
+            self.data.qvel[self._dadr[i]] = 0.0
+        self.data.ctrl[:6] = q_rad
+        self._last_sp = np.asarray(q_rad, dtype=np.float64).copy()
+        mujoco.mj_forward(self.model, self.data)
+
+    def set_joint_damping(self, joint: int, damping: float) -> None:
+        """Change the damping of a joint (index 0..5); a huge value blocks the joint."""
+        self.model.dof_damping[self._dadr[joint]] = damping
+
+    def tool_rotation(self) -> FloatArray:
+        """Rotation of the tool frame (Z = approach direction), as the PLC's MCS orientation."""
+        flange = self.data.site_xmat[self._tcp].reshape(3, 3)
+        return flange @ TOOL_FROM_FLANGE
+
     def tcp_position_m(self) -> FloatArray:
         """World position of the suction cup tip (m)."""
         return self.data.site_xpos[self._tcp].copy()
@@ -345,8 +365,10 @@ class Twin:
         self._last_sp, self._last_belt = target, belt_pos_m
         carried = [a.slot for a in self._active.values() if self._on_belt(a)]
         self._update_suction(vacuum_on)
+        # velocity feed-forward: the actuator force is kp (q* - q) + kv (dq* - dq)
+        feed_forward = self._kv_over_kp * (target - start) / self.cfg.bridge_period_s
         for k in range(1, self._nsub + 1):
-            self.data.ctrl[:6] = start + (target - start) * (k / self._nsub)
+            self.data.ctrl[:6] = start + (target - start) * (k / self._nsub) + feed_forward
             for slot in carried:
                 # carried by position only: the belt's own motion is the PLC's axis position
                 q, v = self._free_q[slot], self._free_v[slot]

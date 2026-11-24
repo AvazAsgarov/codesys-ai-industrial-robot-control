@@ -1,9 +1,9 @@
 """MJCF of the cell, generated from the PLC geometry and ``config/twin.yaml``.
 
 World frame = robot base frame of the PLC (Z up), in metres. The arm is a generic 6-axis arm with a
-spherical wrist: J1 about Z; J2, J3 and J5 about Y; J4 and J6 about the forearm axis. At all joints
-zero the upper arm points up (+Z) and the forearm and tool point forward (+X); the tool points
-straight down when J2 + J3 + J5 = 90 deg (the PLC's HOME pose 0/-30/60/0/60/0 does that).
+spherical wrist. At all joints zero the upper arm points up (+Z) and the forearm and tool point
+forward (+X), as in CODESYS; the joint directions are those measured against CODESYS
+(``airc.twin.kinematics.JOINT_AXES``).
 
 Collision groups (contype/conaffinity bits): environment 1, parts 2, suction cup 4. The arm's links
 are visual only; parts collide with the environment, each other and the cup.
@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from airc.twin.cell import CellGeometry
 from airc.twin.config import PartClass, TwinConfig
+from airc.twin.kinematics import JOINT_AXES
 
 MM = 0.001
 FLOOR_Z = -0.8  # the belt and the bins stand on frames; the floor is 0.8 m below their tops
@@ -49,34 +50,35 @@ def _robot(geo: CellGeometry, cfg: TwinConfig) -> str:
     cup_r = cfg.suction.cup_radius_mm * MM
     s = cfg.servo
 
-    def joint(i: int, axis: str) -> str:
+    def joint(i: int) -> str:
+        axis = " ".join(str(v) for v in JOINT_AXES[i])
         lo, hi = s.range_deg[i]
         return (
             f'<joint name="j{i + 1}" axis="{axis}" range="{_f(lo, hi)}" limited="true" '
-            f'damping="{s.damping[i]:g}" armature="{s.armature[i]:g}"/>'
+            f'damping="{s.friction[i]:g}" armature="{s.armature[i]:g}"/>'
         )
 
     return f"""
     <body name="base">
       <geom type="cylinder" size="0.15 0.2" pos="0 0 -0.2" class="link"/>
       <body name="link1" gravcomp="1">
-        {joint(0, "0 0 1")}
+        {joint(0)}
         <geom type="capsule" fromto="{_f(0, 0, 0.05, 0, 0, d1)}" size="0.08" class="link"/>
         <geom type="capsule" fromto="{_f(0, 0, d1, a1, 0, d1)}" size="0.07" class="link"/>
         <body name="link2" pos="{_f(a1, 0, d1)}" gravcomp="1">
-          {joint(1, "0 1 0")}
+          {joint(1)}
           <geom type="capsule" fromto="{_f(0, 0, 0, 0, 0, a2)}" size="0.06" class="link"/>
           <body name="link3" pos="{_f(0, 0, a2)}" gravcomp="1">
-            {joint(2, "0 1 0")}
+            {joint(2)}
             <geom type="capsule" fromto="{_f(0, 0, 0, 0, 0, a3)}" size="0.055" class="link"/>
             <body name="link4" pos="{_f(0, d3, a3)}" gravcomp="1">
-              {joint(3, "1 0 0")}
+              {joint(3)}
               <geom type="capsule" fromto="{_f(0, 0, 0, d4, 0, 0)}" size="0.045" class="link"/>
               <body name="link5" pos="{_f(d4, 0, 0)}" gravcomp="1">
-                {joint(4, "0 1 0")}
+                {joint(4)}
                 <geom type="sphere" size="0.045" class="link"/>
                 <body name="link6" gravcomp="1">
-                  {joint(5, "1 0 0")}
+                  {joint(5)}
                   <geom type="capsule" fromto="{_f(0, 0, 0, d6 - 0.012, 0, 0)}" size="0.025"
                         class="link"/>
                   <geom name="cup" type="cylinder" fromto="{_f(d6 - 0.012, 0, 0, d6, 0, 0)}"
@@ -160,9 +162,10 @@ def build_mjcf(geo: CellGeometry, cfg: TwinConfig) -> str:
     """Return the cell as an MJCF document."""
     s = cfg.servo
     actuators = "\n    ".join(
-        f'<position name="a{i + 1}" joint="j{i + 1}" kp="{s.kp[i]:g}" forcelimited="true" '
+        f'<position name="a{i + 1}" joint="j{i + 1}" kp="{s.kp[i]:g}" kv="{s.kv[i]:g}" '
+        f'forcelimited="true" '
         f'forcerange="{_f(-s.torque_limit[i], s.torque_limit[i])}" '
-        f'ctrlrange="{_f(*(v * 3.141592653589793 / 180 for v in s.range_deg[i]))}"/>'
+        f'ctrllimited="false"/>'
         for i in range(6)
     )
     part_bodies, welds = _parts(cfg)
