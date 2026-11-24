@@ -17,6 +17,7 @@ from numpy.typing import NDArray
 from airc.twin.catalogue import PartCatalogue
 
 MASK_THRESHOLD = 0.5  # mask probability -> pixel belongs to the object
+SAME_OBJECT_IOU = 0.7  # two detections overlapping this much are one object with two labels
 
 
 class ModelsMissingError(FileNotFoundError):
@@ -60,6 +61,29 @@ class Detection:
     mask: NDArray[np.bool_]  # image-sized
 
 
+def _box_iou(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> float:
+    iw = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    ih = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    inter = iw * ih
+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return inter / union if union > 0 else 0.0
+
+
+def suppress_overlaps(
+    detections: list[Detection], iou_threshold: float = SAME_OBJECT_IOU
+) -> list[Detection]:
+    """One label per object: the most confident of detections that overlap (any labels).
+
+    The network suppresses duplicates per label only, so an object that looks like two classes
+    would otherwise be reported twice (box IoU >= ``iou_threshold``: the same object).
+    """
+    kept: list[Detection] = []
+    for det in sorted(detections, key=lambda d: d.confidence, reverse=True):
+        if all(_box_iou(det.box_xyxy, k.box_xyxy) < iou_threshold for k in kept):
+            kept.append(det)
+    return kept
+
+
 class Detector(Protocol):
     """Anything that finds parts in an RGB image."""
 
@@ -73,13 +97,15 @@ class Detector(Protocol):
 class OpenVinoDetector:
     """An Ultralytics segmentation model exported to OpenVINO."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - keyword options
         self,
         model_dir: Path,
         labels: LabelMap,
+        *,
         device: str = "intel:cpu",
         conf: float = 0.10,
         imgsz: int = 640,
+        one_label_per_object: bool = True,
     ) -> None:
         """Load the model.
 
@@ -89,6 +115,8 @@ class OpenVinoDetector:
             device: OpenVINO device (``intel:cpu``, ``intel:gpu``).
             conf: Minimum confidence of a detection.
             imgsz: Network input size.
+            one_label_per_object: Keep only the most confident label of an object
+                (:func:`suppress_overlaps`).
 
         Raises:
             ModelsMissingError: If the model directory does not exist.
@@ -104,6 +132,7 @@ class OpenVinoDetector:
         self._device = device
         self._conf = conf
         self._imgsz = imgsz
+        self._one_label = one_label_per_object
 
     def detect(self, rgb: NDArray[np.uint8]) -> list[Detection]:
         """Detections in the image (masks at image resolution), best first."""
@@ -140,7 +169,7 @@ class OpenVinoDetector:
                 )
             )
         out.sort(key=lambda d: d.confidence, reverse=True)
-        return out
+        return suppress_overlaps(out) if self._one_label else out
 
 
 class Rotated:

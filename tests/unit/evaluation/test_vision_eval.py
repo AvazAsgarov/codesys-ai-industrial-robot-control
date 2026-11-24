@@ -1,7 +1,6 @@
 """Vision benchmark: detections against rendered ground truth."""
 
 import json
-import math
 from pathlib import Path
 
 import numpy as np
@@ -45,7 +44,8 @@ def test_oracle_gives_perfect_map_and_small_pose_error(tmp_path: Path) -> None:
         assert result["per_class"][slug]["R"] == pytest.approx(1.0)
     assert result["pose_mm"]["mean"] < 5.0
     assert result["pose_mm"]["n"] > 8
-    assert not math.isnan(result["theta_deg"]["mean"])
+    assert result["theta_deg"]["mean"] < 2.0  # probiotic_box: nearly square, 57 mm tall
+    assert result["theta_deg"]["p95"] < 4.0
     assert result["latency_ms"]["p50"] >= 0.0
 
 
@@ -72,3 +72,13 @@ def test_cli_eval_vision_rejects_unknown_detector() -> None:
     res = CliRunner().invoke(app, ["eval", "vision", "--detector", "nope", "--frames", "1"])
     assert res.exit_code == 2
     assert "--detector" in res.output
+
+
+@pytest.mark.render
+def test_oracle_theta_is_the_part_yaw_for_a_box_long_along_its_y() -> None:
+    slugs = ["candy_box", "vitamin_jar", "coffee_can"]  # candy box: 67 x 115 mm footprint
+    cfg = TwinConfig.load(parts="catalogue", classes=slugs)
+    oracle = OracleDetector()
+    result = evaluate(oracle, render_dataset(41, 12, cfg), frame_hook=oracle.see)
+    assert result["theta_deg"]["n"] >= 3
+    assert result["theta_deg"]["mean"] < 3.0

@@ -15,7 +15,7 @@ from numpy.typing import NDArray
 
 from airc.twin.catalogue import PartCatalogue
 from airc.twin.cell import CellGeometry
-from airc.twin.config import TwinConfig
+from airc.twin.config import PartClass, TwinConfig
 from airc.twin.twin import PartSpec, Twin
 from airc.vision.camera import CameraModel
 from airc.vision.render import FrameRenderer, Randomisation
@@ -37,7 +37,7 @@ class SceneInfo:
     prompts: tuple[str, ...]  # YOLOE text prompt per class
     coco: tuple[str | None, ...]  # COCO name per class (YOLO26 baseline)
     symmetry: tuple[int, ...]  # rotational symmetry per class (0 = round)
-    heights_mm: tuple[float, ...]  # part height per class (as the vision worker uses it)
+    classes: tuple[PartClass, ...]  # size per class (as the vision worker uses it)
     tilt_deg: float
     camera: CameraModel  # pixel -> belt conversion (the exact camera unless given another)
     geo: CellGeometry
@@ -129,7 +129,7 @@ def render_dataset(
         prompts=tuple(p.prompt for p in catalogue.classes),
         coco=tuple(p.coco for p in catalogue.classes),
         symmetry=tuple(p.symmetry for p in catalogue.classes),
-        heights_mm=tuple(c.height_mm for c in cfg.parts.classes),
+        classes=cfg.parts.classes,
         tilt_deg=cfg.camera.tilt_deg,
         camera=cam,
         geo=twin.geo,

@@ -204,7 +204,7 @@ class Scorer:
         ]
         for i, j in match_frame(dets, boxes, self.conf, self.iou).items():
             part = frame.parts[j]
-            pose = belt_pose(dets[i], scene.roi, scene.camera, scene.geo, list(scene.heights_mm))
+            pose = belt_pose(dets[i], scene.roi, scene.camera, scene.geo, scene.classes)
             self._pos.append(position_error_mm((pose.x_mm, pose.y_mm), (part.x_mm, part.y_mm)))
             symmetry = scene.symmetry[part.cls]
             if symmetry != 0:  # a round part has no orientation to get wrong

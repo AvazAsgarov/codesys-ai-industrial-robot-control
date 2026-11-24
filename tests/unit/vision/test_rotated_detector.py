@@ -3,7 +3,7 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from airc.vision.detector import Detection, Rotated
+from airc.vision.detector import Detection, Rotated, suppress_overlaps
 
 
 class _MarkFinder:
@@ -50,3 +50,15 @@ def test_every_turn_maps_the_box_back() -> None:
         [found] = Rotated(_MarkFinder(), quarter_turns=k).detect(img)
         assert found.box_xyxy == (40.0, 5.0, 58.0, 10.0), k
         assert np.array_equal(found.mask, img[:, :, 0] > 0)
+
+
+def test_overlapping_labels_of_one_object_keep_the_most_confident() -> None:
+    m = np.zeros((4, 4), dtype=bool)
+    dets = [
+        Detection("can", 2, 0.9, (10.0, 10.0, 50.0, 50.0), m),
+        Detection("jar", 1, 0.7, (11.0, 10.0, 50.0, 51.0), m),  # the same object, other label
+        Detection("jar", 1, 0.6, (60.0, 10.0, 90.0, 50.0), m),  # another object
+        Detection("box", 0, 0.5, (30.0, 10.0, 70.0, 50.0), m),  # touching, not the same object
+    ]
+    kept = suppress_overlaps(dets)
+    assert [d.confidence for d in kept] == [0.9, 0.6, 0.5]

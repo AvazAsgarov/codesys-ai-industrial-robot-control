@@ -11,7 +11,7 @@ import logging
 import queue
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -21,7 +21,7 @@ from numpy.typing import NDArray
 
 from airc.bridge.messages import CaptureMsg, VisionMsg
 from airc.twin.cell import CellGeometry
-from airc.twin.config import TwinConfig
+from airc.twin.config import PartClass, TwinConfig
 from airc.twin.twin import Twin
 from airc.vision.camera import CameraModel
 from airc.vision.detector import Detection, Detector
@@ -131,13 +131,74 @@ class BeltPose:
     z_mm: float  # height above the belt of the plane the centroid is mapped onto
 
 
+RECT_STEP_DEG = 0.25  # angular resolution of the outline's minimum-area rectangle
+
+
+def _outline(mask: NDArray[np.bool_]) -> tuple[NDArray[np.intp], NDArray[np.intp]]:
+    """Rows and columns of the mask's boundary pixels."""
+    inner = mask.copy()
+    inner[1:-1, 1:-1] = (
+        mask[1:-1, 1:-1] & mask[:-2, 1:-1] & mask[2:, 1:-1] & mask[1:-1, :-2] & mask[1:-1, 2:]
+    )
+    vs, us = np.nonzero(mask & ~inner)
+    return vs, us
+
+
+def rect_yaw(
+    mask: NDArray[np.bool_],
+    roi: Roi,
+    camera: CameraModel,
+    geo: CellGeometry,
+    size_mm: tuple[float, ...],
+) -> float:
+    """Yaw of a box-like part (belt frame, degrees, modulo 180) from its mask.
+
+    The outline is mapped onto the plane of the part's top; its minimum-area rectangle gives
+    the sides' direction (modulo 90 deg). The side faces seen through the tilted camera stretch
+    the outline away from the camera's ground point; predicting the outline's extent along each
+    side from the part's footprint plus that stretch tells which side is the part's own x axis.
+    """
+    sx, sy, h = size_mm[0], size_mm[1], size_mm[-1]
+    vs, us = _outline(mask)
+    pts = camera.pixels_to_belt(
+        (us + roi[1].start).astype(np.float64), (vs + roi[0].start).astype(np.float64), h, geo
+    )
+    angles = np.radians(np.arange(0.0, 90.0, RECT_STEP_DEG))
+    axes_u = np.stack([np.cos(angles), np.sin(angles)], 1)
+    axes_v = np.stack([-np.sin(angles), np.cos(angles)], 1)
+    ext_u = np.ptp(pts @ axes_u.T, axis=0)
+    ext_v = np.ptp(pts @ axes_v.T, axis=0)
+    best = int(np.argmin(ext_u * ext_v))
+    u, v, eu, ev = axes_u[best], axes_v[best], float(ext_u[best]), float(ext_v[best])
+    cam_h = camera.position_m[2] / 1e-3 - geo.belt_surface_z
+    nadir = np.array(
+        [
+            camera.position_m[0] / 1e-3 - geo.belt_origin_x,
+            camera.position_m[1] / 1e-3 - geo.belt_origin_y,
+        ]
+    )
+    stretch = (h / cam_h) * (nadir - pts.mean(axis=0))  # base edge offset at the top plane
+    k = 1.0 - h / cam_h  # the base is seen smaller than the top by this factor
+
+    def extent(side: float, s: float) -> float:
+        return max(side / 2, s + k * side / 2) + max(side / 2, -s + k * side / 2)
+
+    su, sv = float(stretch @ u), float(stretch @ v)
+    x_along_u = abs(extent(sx, su) - eu) + abs(extent(sy, sv) - ev)
+    x_along_v = abs(extent(sy, su) - eu) + abs(extent(sx, sv) - ev)
+    yaw = float(np.degrees(angles[best])) + (0.0 if x_along_u <= x_along_v else 90.0)
+    return _wrap_theta(yaw)
+
+
 def belt_pose(
-    det: Detection, roi: Roi, camera: CameraModel, geo: CellGeometry, heights_mm: list[float]
+    det: Detection, roi: Roi, camera: CameraModel, geo: CellGeometry, classes: Sequence[PartClass]
 ) -> BeltPose:
     """Pixel -> belt pose of a detection found in the window ``roi``.
 
     The mask centroid is mapped onto the plane at half the class height (the mean height for a
-    detection without class); the mask's principal axis is mapped through two points along it.
+    detection without class). The yaw of a part comes from the outline's rectangle on the
+    plane of its top (:func:`rect_yaw`); a detection without class gets the mask's principal
+    axis (it is not picked).
 
     Raises:
         ValueError: If the mask is empty.
@@ -145,13 +206,17 @@ def belt_pose(
     pose = mask_pose(det.mask)
     u = pose.u + roi[1].start
     v = pose.v + roi[0].start
-    z = (heights_mm[det.cls] if det.cls is not None else float(np.mean(heights_mm))) / 2
+    heights = [c.height_mm for c in classes]
+    z = (heights[det.cls] if det.cls is not None else float(np.mean(heights))) / 2
     x, y = camera.pixel_to_belt(u, v, z, geo)
-    t = np.radians(pose.theta_deg)
-    du, dv = AXIS_PX * np.cos(t), -AXIS_PX * np.sin(t)  # image v points down
-    x1, y1 = camera.pixel_to_belt(u - du, v - dv, z, geo)
-    x2, y2 = camera.pixel_to_belt(u + du, v + dv, z, geo)
-    theta = _wrap_theta(float(np.degrees(np.arctan2(y2 - y1, x2 - x1))))
+    if det.cls is not None:
+        theta = rect_yaw(det.mask, roi, camera, geo, classes[det.cls].size_mm)
+    else:
+        t = np.radians(pose.theta_deg)
+        du, dv = AXIS_PX * np.cos(t), -AXIS_PX * np.sin(t)  # image v points down
+        x1, y1 = camera.pixel_to_belt(u - du, v - dv, z, geo)
+        x2, y2 = camera.pixel_to_belt(u + du, v + dv, z, geo)
+        theta = _wrap_theta(float(np.degrees(np.arctan2(y2 - y1, x2 - x1))))
     return BeltPose(x, y, theta, u, v, z)
 
 
@@ -181,7 +246,7 @@ class VisionWorker:
         self._jobs: queue.Queue[CaptureJob | None] = queue.Queue()
         self._done: queue.Queue[VisionResult] = queue.Queue()
         self._seq = 0
-        self._heights = [c.height_mm for c in twin.cfg.parts.classes]
+        self._classes = twin.cfg.parts.classes
         self._roi = pe1_roi(self._camera, twin.geo, twin.cfg)
         self._thread = threading.Thread(target=self._run, name="vision", daemon=True)
         self._thread.start()
@@ -262,7 +327,7 @@ class VisionWorker:
         pe1 = self._twin.geo.pe1_x
         best: tuple[float, Detection, float, float, float] | None = None
         for det in detections:
-            pose = belt_pose(det, self._roi, self._camera, self._twin.geo, self._heights)
+            pose = belt_pose(det, self._roi, self._camera, self._twin.geo, self._classes)
             distance = abs(pose.x_mm - travel - pe1)
             if distance > MAX_DISTANCE_MM:
                 continue

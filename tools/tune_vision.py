@@ -28,7 +28,14 @@ from airc.evaluation.dataset import render_dataset
 from airc.evaluation.vision_eval import Scorer, evaluate, make_detector
 from airc.twin.config import TwinConfig
 from airc.vision import models
-from airc.vision.detector import Detection, Detector, LabelMap, OpenVinoDetector, Rotated
+from airc.vision.detector import (
+    Detection,
+    Detector,
+    LabelMap,
+    OpenVinoDetector,
+    Rotated,
+    suppress_overlaps,
+)
 
 BOXES = ["probiotic_box", "candy_box", "ink_cartridge"]
 JARS = ["vitamin_jar", "glucosamine_jar"]
@@ -82,7 +89,7 @@ def main() -> None:
     tilts = [float(t) for t in args.tilts.split(",")]
     turn_options = [int(k) for k in args.turns.split(",")]
     prompt_sets = list(itertools.product(BOX_PROMPTS, JAR_PROMPTS, CAN_PROMPTS))
-    raw: Detector = OpenVinoDetector(_variants_model(), LabelMap())
+    raw: Detector = OpenVinoDetector(_variants_model(), LabelMap(), one_label_per_object=False)
     rows: list[dict[str, Any]] = []
     started = time.perf_counter()
     for tilt, triple in itertools.product(tilts, itertools.product(BOXES, JARS, CANS)):
@@ -98,7 +105,7 @@ def main() -> None:
                 found = det.detect(frame.rgb)
                 ms = (time.perf_counter() - t0) * 1000.0
                 for ps in prompt_sets:
-                    scorers[k, ps].add(frame, _relabel(found, ps), ms)
+                    scorers[k, ps].add(frame, suppress_overlaps(_relabel(found, ps)), ms)
             warm = True
         best = None
         for (k, ps), scorer in scorers.items():
