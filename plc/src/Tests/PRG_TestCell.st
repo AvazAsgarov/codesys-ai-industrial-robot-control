@@ -4,7 +4,8 @@
               Simulates the vacuum switch, injects parts (PE1 pulse, then vision and decision
               messages for the captured part id) and can press the E-stop or lose the vacuum
               during a transfer. Can play the twin's bridge (heartbeat, joint feedback answering
-              the current setpoint sample, twin active) and stall it.
+              the current setpoint sample, twin active) and stall it. While active it plays an AI
+              decision service (GVL_Bridge.xDecisionActive), reset when it is switched off.
     Inputs  : xActive; xInject (+ usiInjClass, eInjQuality); xEStopOnTransfer; xVacLostOnTransfer;
               xMark (J1 reference); xBridgeSim; xBridgeStall (heartbeat stops toggling);
               xBridgeStallOnTransfer
@@ -13,6 +14,7 @@
 PROGRAM PRG_TestCell
 VAR
     xActive : BOOL;
+    xWasActive : BOOL;
     xInject : BOOL;
     usiInjClass : USINT;
     eInjQuality : E_Quality := E_Quality.Ok;
@@ -37,8 +39,13 @@ VAR CONSTANT
 END_VAR
 
 IF NOT xActive THEN
+    IF xWasActive THEN                   // leave no fake decision service behind
+        GVL_Bridge.xDecisionActive := FALSE;
+        xWasActive := FALSE;
+    END_IF
     RETURN;
 END_IF
+xWasActive := TRUE;
 GVL_Bridge.xDecisionActive := TRUE;  // the harness injects AI decisions (eInjQuality)
 
 IF xVacLostOnTransfer AND PRG_Main.fbCell.ePickStep = E_PickStep.MoveToBin THEN
