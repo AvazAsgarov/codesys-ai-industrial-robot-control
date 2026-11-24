@@ -247,21 +247,28 @@ app.add_typer(vision_app, name="vision")
 @vision_app.command("export")
 def vision_export(
     prompts: Annotated[
-        str, typer.Option(help="YOLOE prompt set: 'classes' (the 3 parts) or 'candidates' (all).")
-    ] = "classes",
+        str,
+        typer.Option(
+            help="YOLOE prompts: 'visual' (example renders, default), 'classes' (text, the 3 "
+            "parts) or 'candidates' (text, all)."
+        ),
+    ] = "visual",
     precision: Annotated[str, typer.Option(help="fp32 or fp16.")] = "fp32",
 ) -> None:
     """Download the weights and export YOLOE-26 (with prompts) and YOLO26 to OpenVINO."""
     from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415
     from airc.vision import models  # noqa: PLC0415
 
-    if prompts not in ("classes", "candidates") or precision not in ("fp32", "fp16"):
-        typer.echo("error: --prompts classes|candidates, --precision fp32|fp16", err=True)
+    if prompts not in ("visual", "classes", "candidates") or precision not in ("fp32", "fp16"):
+        typer.echo("error: --prompts visual|classes|candidates, --precision fp32|fp16", err=True)
         raise typer.Exit(EXIT_CONFIG_ERROR)
     cat = PartCatalogue.load()
     parts = cat.classes if prompts == "classes" else cat.candidates
     prec: models.Precision = "fp16" if precision == "fp16" else "fp32"
-    yoloe = models.export_yoloe([p.prompt for p in parts], prompts, prec)
+    if prompts == "visual":
+        yoloe = models.export_yoloe_visual([p.slug for p in cat.classes], prec)
+    else:
+        yoloe = models.export_yoloe([p.prompt for p in parts], prompts, prec)
     coco = models.export_coco(prec)
     typer.echo(f"exported {yoloe} and {coco}")
 

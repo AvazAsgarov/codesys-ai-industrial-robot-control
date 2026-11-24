@@ -66,7 +66,6 @@ def test_mesh_part_grippable_at_its_grip_height(cls: int) -> None:
     assert twin.step(twin.joint_positions_rad(), 0.0, 0.0, True).vacuum_ok
 
 
-@pytest.mark.xfail(reason="PLC per-class pick heights come in plan Task 6", strict=True)
 def test_plc_part_heights_match_catalogue(catalogue: PartCatalogue) -> None:
     text = (REPO / "plc/src/Config/GVL_CellGeometry.st").read_text(encoding="utf-8")
     match = re.search(r"PART_HEIGHTS\s*:\s*ARRAY\[0\.\.2\] OF LREAL\s*:=\s*\[([^\]]*)\]", text)

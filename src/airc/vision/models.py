@@ -87,3 +87,41 @@ def export_coco(precision: Precision = "fp32") -> Path:
     target = _export(model, coco_dir(precision), precision)
     _record(weights, target, None)
     return target
+
+
+def export_yoloe_visual(
+    names: Sequence[str], precision: Precision = "fp32", seed: int = 7, count: int = 6
+) -> Path:
+    """Export YOLOE-26-S with visual prompts (no training).
+
+    One embedding per class: the mean over ``count`` seeded reference renders of the twin
+    (``airc.vision.references``).
+    """
+    ultralytics: Any = importlib.import_module("ultralytics")
+    torch: Any = importlib.import_module("torch")
+    yoloe_predict: Any = importlib.import_module("ultralytics.models.yolo.yoloe")
+    from airc.vision.references import reference_scenes, render_scene  # noqa: PLC0415
+
+    models_dir().mkdir(exist_ok=True)
+    weights = models_dir() / YOLOE_WEIGHTS
+    model = ultralytics.YOLOE(str(weights))
+    predictor = yoloe_predict.YOLOEVPSegPredictor(
+        overrides={
+            "task": "segment",
+            "mode": "predict",
+            "save": False,
+            "batch": 1,
+            "verbose": False,
+        }
+    )
+    embeddings: list[Any] = []
+    for k, scene in enumerate(reference_scenes(seed=seed, count=count)):
+        image, boxes, classes = render_scene(scene, seed=seed * 1000 + k)
+        predictor.set_prompts({"bboxes": boxes, "cls": classes})
+        predictor.setup_model(model=model.model, verbose=False)
+        embeddings.append(predictor.get_vpe(image))
+    vpe = torch.nn.functional.normalize(torch.cat(embeddings).mean(0, keepdim=True), dim=-1)
+    model.set_classes(list(names), vpe)
+    target = _export(model, yoloe_dir("visual", precision), precision)
+    _record(weights, target, [f"visual:{n} (seed {seed}, {count} views)" for n in names])
+    return target

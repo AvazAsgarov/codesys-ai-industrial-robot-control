@@ -12,5 +12,14 @@
     ],
     "weights": "yoloe-26s-seg.pt",
     "weights_sha256": "48f24206bc8680d60cbbfa296b0140da849669b9515058b72f5a945142df0654"
+  },
+  "yoloe-26s-seg-visual-fp32_openvino_model": {
+    "prompts": [
+      "visual:probiotic_box (seed 7, 6 views)",
+      "visual:vitamin_jar (seed 7, 6 views)",
+      "visual:coffee_can (seed 7, 6 views)"
+    ],
+    "weights": "yoloe-26s-seg.pt",
+    "weights_sha256": "48f24206bc8680d60cbbfa296b0140da849669b9515058b72f5a945142df0654"
   }
 }
