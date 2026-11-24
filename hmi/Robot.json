@@ -140,8 +140,8 @@
     3
    ],
    "value": "GVL_Bridge.aJointPosSp[4]",
-   "min": -180,
-   "max": 180,
+   "min": -360,
+   "max": 360,
    "unit": "°",
    "decimals": 1
   },
@@ -170,8 +170,8 @@
     3
    ],
    "value": "GVL_Bridge.aJointPosSp[6]",
-   "min": -180,
-   "max": 180,
+   "min": -360,
+   "max": 360,
    "unit": "°",
    "decimals": 1
   },
@@ -544,53 +544,43 @@
   },
   {
    "type": "value",
-   "title": "Pick sequence",
-   "icon": "process",
+   "title": "Vision class (0 box, 1 jar, 2 can)",
+   "icon": "info",
    "at": [
     4,
     7,
     3,
     2
    ],
-   "value": "GVL_HmiView.sPickStep"
+   "value": "GVL_Bridge.stVision.usiClass",
+   "decimals": 0
   },
   {
-   "type": "trend",
-   "title": "Following error",
-   "icon": "trend",
+   "type": "value",
+   "title": "Vision confidence",
+   "icon": "info",
    "at": [
     7,
     7,
-    6,
+    3,
     2
    ],
-   "seconds": 120,
-   "series": [
-    {
-     "value": "GVL_Bridge.aFollowingError[1]",
-     "label": "J1 °"
-    },
-    {
-     "value": "GVL_Bridge.aFollowingError[2]",
-     "label": "J2 °"
-    },
-    {
-     "value": "GVL_Bridge.aFollowingError[3]",
-     "label": "J3 °"
-    },
-    {
-     "value": "GVL_Bridge.aFollowingError[4]",
-     "label": "J4 °"
-    },
-    {
-     "value": "GVL_Bridge.aFollowingError[5]",
-     "label": "J5 °"
-    },
-    {
-     "value": "GVL_Bridge.aFollowingError[6]",
-     "label": "J6 °"
-    }
-   ]
+   "value": "GVL_Bridge.stVision.rConfidence",
+   "decimals": 2
+  },
+  {
+   "type": "value",
+   "title": "Vision position x",
+   "icon": "info",
+   "at": [
+    10,
+    7,
+    3,
+    2
+   ],
+   "value": "GVL_Bridge.stVision.lrX",
+   "unit": "mm",
+   "decimals": 1
   }
  ]
 }

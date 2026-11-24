@@ -624,8 +624,8 @@
           ],
           "title": "J4",
           "value": "GVL_Bridge.aJointPosSp[4]",
-          "min": -180,
-          "max": 180,
+          "min": -360,
+          "max": 360,
           "unit": "°"
         },
         {
@@ -652,8 +652,8 @@
           ],
           "title": "J6",
           "value": "GVL_Bridge.aJointPosSp[6]",
-          "min": -180,
-          "max": 180,
+          "min": -360,
+          "max": 360,
           "unit": "°"
         },
         {
@@ -990,47 +990,37 @@
             3,
             2
           ],
-          "title": "Pick sequence",
-          "icon": "process",
-          "value": "GVL_HmiView.sPickStep"
+          "title": "Vision class (0 box, 1 jar, 2 can)",
+          "icon": "info",
+          "value": "GVL_Bridge.stVision.usiClass",
+          "decimals": 0
         },
         {
-          "type": "trend",
+          "type": "value",
           "at": [
             7,
             7,
-            6,
+            3,
             2
           ],
-          "title": "Following error",
-          "icon": "trend",
-          "series": [
-            {
-              "value": "GVL_Bridge.aFollowingError[1]",
-              "label": "J1 °"
-            },
-            {
-              "value": "GVL_Bridge.aFollowingError[2]",
-              "label": "J2 °"
-            },
-            {
-              "value": "GVL_Bridge.aFollowingError[3]",
-              "label": "J3 °"
-            },
-            {
-              "value": "GVL_Bridge.aFollowingError[4]",
-              "label": "J4 °"
-            },
-            {
-              "value": "GVL_Bridge.aFollowingError[5]",
-              "label": "J5 °"
-            },
-            {
-              "value": "GVL_Bridge.aFollowingError[6]",
-              "label": "J6 °"
-            }
+          "title": "Vision confidence",
+          "icon": "info",
+          "value": "GVL_Bridge.stVision.rConfidence",
+          "decimals": 2
+        },
+        {
+          "type": "value",
+          "at": [
+            10,
+            7,
+            3,
+            2
           ],
-          "seconds": 120
+          "title": "Vision position x",
+          "icon": "info",
+          "value": "GVL_Bridge.stVision.lrX",
+          "unit": "mm",
+          "decimals": 1
         }
       ]
     },

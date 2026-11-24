@@ -6,6 +6,7 @@ Run: python hmi/build_screens.py
 """
 
 import json
+from collections.abc import Iterable
 from pathlib import Path
 
 HERE = Path(__file__).parent
@@ -34,12 +35,13 @@ PREFIX = {"critical": "P1", "error": "P2", "warning": "P3"}
 SEVERITY = {"critical": "alarm", "error": "alarm", "warning": "warning"}  # the tool's two tones
 BINS = ["Type A", "Type B", "Type C", "Rework", "Scrap", "Quarantine"]
 BIN_CAPACITY = 30
+JOINT_RANGE = (180, 180, 180, 360, 180, 360)  # bar scale per joint [deg]: wrist axes turn further
 MAINT = {"min": "Maintenance"}
 
 TONE = {"critical": "alarm", "error": "alarm", "warning": "warn"}
 
 
-def alarm_lamps(rows: range) -> list[dict]:
+def alarm_lamps(rows: Iterable[int]) -> list[dict]:
     """Alarm rows as lamps (lit while active or unacknowledged), text with the priority prefix."""
     return [
         {
@@ -260,8 +262,8 @@ robot = page(
                 "title": f"J{j}",
                 "at": [j, 1, 1, 3],
                 "value": f"GVL_Bridge.aJointPosSp[{j}]",
-                "min": -180,
-                "max": 180,
+                "min": -JOINT_RANGE[j - 1],
+                "max": JOINT_RANGE[j - 1],
                 "unit": "°",
                 "decimals": 1,
             }
@@ -361,23 +363,31 @@ robot = page(
             "value": "GVL_Bridge.iWorstJoint",
             "decimals": 0,
         },
+        # last vision answer (the pick step is shown under the state in the top bar)
         {
             "type": "value",
-            "title": "Pick sequence",
-            "icon": "process",
+            "title": "Vision class (0 box, 1 jar, 2 can)",
+            "icon": "info",
             "at": [4, 7, 3, 2],
-            "value": "GVL_HmiView.sPickStep",
+            "value": "GVL_Bridge.stVision.usiClass",
+            "decimals": 0,
         },
         {
-            "type": "trend",
-            "title": "Following error",
-            "icon": "trend",
-            "at": [7, 7, 6, 2],
-            "seconds": 120,
-            "series": [
-                {"value": f"GVL_Bridge.aFollowingError[{j}]", "label": f"J{j} °"}
-                for j in range(1, 7)
-            ],
+            "type": "value",
+            "title": "Vision confidence",
+            "icon": "info",
+            "at": [7, 7, 3, 2],
+            "value": "GVL_Bridge.stVision.rConfidence",
+            "decimals": 2,
+        },
+        {
+            "type": "value",
+            "title": "Vision position x",
+            "icon": "info",
+            "at": [10, 7, 3, 2],
+            "value": "GVL_Bridge.stVision.lrX",
+            "unit": "mm",
+            "decimals": 1,
         },
     ],
 )

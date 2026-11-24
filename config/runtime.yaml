@@ -24,6 +24,8 @@ settings:
     NetworkAdapter: Loopback Pseudo-Interface 1
   CmpWebServer:
     LocalAddress: 127.0.0.1
+    # 8080 is often taken by another local web server; WebVisu: http://127.0.0.1:8081/webvisu.htm
+    WebServerPortNr: "8081"
   # `airc plc stop` ends the process hard, so the retain data is not saved; start the boot
   # application anyway with RETAIN variables at their initial values (Standard recipe).
   CmpApp:
