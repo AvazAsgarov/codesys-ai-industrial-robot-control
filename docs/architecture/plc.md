@@ -96,13 +96,14 @@ simulation (see `plc/scripts/README.md`).
 | `packml.json` | 8 | state machine, modes, held abort condition |
 | `alarms.json` | 7 | latching, acknowledgement, classes, one-shot events |
 | `equipment.json` | 6 | photo-eye, vacuum gripper, bin, safety monitor |
-| `motion.json` | 5 | conveyor, robot PTP/linear, override, stop |
-| `joint_monitor.json` | 5 | following error, stale feedback |
-| `tracking.json` | 10 | capture, messages, fallback, missed parts, overflow |
-| `pick.json` | 5 | tracked pick-and-place, vacuum loss, window end, abort and quarantine recovery |
-| `cell.json` | 8 | **end-to-end cell (exit test)**, E-stop recovery, door, bin full, operator suspend, restart after vacuum loss, manual jog |
+| `motion.json` | 8 | conveyor, robot PTP/linear, override, stop, lag recovery |
+| `joint_monitor.json` | 10 | following error against the setpoint history, stale feedback, torn samples |
+| `tracking.json` | 12 | capture, messages, fallback, missed parts, overflow, rule decision without an AI service |
+| `pick.json` | 7 | tracked pick-and-place, vacuum loss, window end, abort and quarantine recovery, pick height per class, no pick without vision |
+| `cell.json` | 9 | **end-to-end cell (exit test)**, E-stop recovery, door, bin full, operator suspend, restart after vacuum loss, bridge loss, manual jog |
+| `hmi.json` | 7 | operator panel buttons and mode selector, view texts and signals, alarm rows |
 | `recipes.json` | 2 | Standard / HighSpeed |
-| **Total** | **58** | |
+| **Total** | **78** | all passing on the Phase 5 build |
 
 Time-based cases use real-time waits; CODESYS's simulation slows down under CPU load, so the waits
 have margin and expectations check steady states.

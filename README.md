@@ -19,7 +19,7 @@ native CODESYS visualization.
 **Live results** (soft-PLC + twin + camera/YOLOE, started from the HMI): 20-minute run, 87 parts
 captured, 78 sorted, 0 wrong bin, 0 missed, 0 lost; bridge cycle 8 ms mean, longest gap 256 ms.
 Vision benchmark (951 rendered parts): mAP@0.5 0.997, position error 2.0 mm mean.
-PLC: 77 test cases in the CODESYS simulation (`tests/plc/`).
+PLC: 78 test cases in the CODESYS simulation (`tests/plc/`).
 
 Design: [`docs/specs/2026-11-23-system-design.md`](docs/specs/2026-11-23-system-design.md);
 architecture: [PLC](docs/architecture/plc.md), [twin and bridge](docs/architecture/twin-bridge.md),
