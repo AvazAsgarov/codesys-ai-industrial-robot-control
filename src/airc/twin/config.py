@@ -35,17 +35,29 @@ class ServoConfig(_Frozen):
 
 
 class PartClass(_Frozen):
-    """A part type: box (x, y, z mm) or cylinder (diameter, height mm)."""
+    """A part type: box (x, y, z mm), cylinder (diameter, height mm) or scanned mesh (x, y, z mm).
+
+    A mesh part's origin is the middle of its height at the centroid of its top view;
+    ``grip_mm`` is its top surface above the belt there (where the suction cup lands).
+    """
 
     name: str
-    shape: Literal["box", "cylinder"]
+    shape: Literal["box", "cylinder", "mesh"]
     size_mm: tuple[float, ...]
-    rgba: tuple[float, float, float, float]
+    rgba: tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0)
+    mesh_file: str | None = None
+    texture_file: str | None = None
+    grip_mm: float | None = None
 
     @property
     def height_mm(self) -> float:
         """Height of the part."""
         return self.size_mm[-1]
+
+    @property
+    def grip_height_mm(self) -> float:
+        """Top surface above the belt where the suction cup lands (the part's origin)."""
+        return self.grip_mm if self.grip_mm is not None else self.height_mm
 
     @property
     def length_mm(self) -> float:
@@ -91,8 +103,34 @@ class TwinConfig(_Frozen):
     bins: BinsConfig
 
     @classmethod
-    def load(cls, path: Path | None = None) -> "TwinConfig":
-        """Load ``config/twin.yaml`` (default: the repository's)."""
+    def load(
+        cls, path: Path | None = None, parts: Literal["placeholder", "catalogue"] = "placeholder"
+    ) -> "TwinConfig":
+        """Load ``config/twin.yaml`` (default: the repository's).
+
+        Args:
+            path: The twin configuration file.
+            parts: ``placeholder`` - the geometric parts of ``twin.yaml``; ``catalogue`` - the
+                three scanned parts of ``config/parts.yaml`` (Phase 3).
+        """
         file = path if path is not None else default_config_path().parent / "twin.yaml"
         raw: Any = yaml.safe_load(file.read_text(encoding="utf-8"))
-        return cls.model_validate(raw)
+        cfg = cls.model_validate(raw)
+        if parts == "catalogue":
+            from airc.twin.catalogue import PartCatalogue  # noqa: PLC0415 - avoids a cycle
+
+            classes = tuple(
+                PartClass(
+                    name=p.slug,
+                    shape="mesh",
+                    size_mm=p.size_mm,
+                    mesh_file=p.mesh_path.as_posix(),
+                    texture_file=p.texture_path.as_posix(),
+                    grip_mm=p.grip_height_mm,
+                )
+                for p in PartCatalogue.load(file.parent / "parts.yaml").classes
+            )
+            cfg = cfg.model_copy(
+                update={"parts": cfg.parts.model_copy(update={"classes": classes})}
+            )
+        return cfg

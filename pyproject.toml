@@ -36,6 +36,12 @@ dev = [
     "types-PyYAML",
 ]
 
+# Asset preparation only (tools/fetch_objects.py): uv sync --group assets
+assets = [
+    "trimesh>=4.4",
+    "pillow>=10",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers -m 'not codesys'"

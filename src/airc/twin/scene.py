@@ -130,12 +130,24 @@ def _bins(geo: CellGeometry, cfg: TwinConfig) -> str:
     return "\n    ".join(out)
 
 
-def _part_geom(part: PartClass, friction: float) -> str:
-    rgba = _f(*part.rgba)
+def _part_assets(cfg: TwinConfig) -> str:
+    """Meshes, textures and materials of the scanned part classes."""
+    out: list[str] = []
+    for cls, part in enumerate(cfg.parts.classes):
+        if part.shape == "mesh":
+            out.append(f'<mesh name="part_mesh_{cls}" file="{part.mesh_file}"/>')
+            out.append(f'<texture name="part_tex_{cls}" type="2d" file="{part.texture_file}"/>')
+            out.append(f'<material name="part_mat_{cls}" texture="part_tex_{cls}"/>')
+    return "\n    ".join(out)
+
+
+def _part_geom(cls: int, part: PartClass, friction: float) -> str:
     common = (
-        f'contype="2" conaffinity="7" group="{PART_GROUP}" friction="{friction:g} 0.005 0.0001" '
-        f'rgba="{rgba}"'
+        f'contype="2" conaffinity="7" group="{PART_GROUP}" friction="{friction:g} 0.005 0.0001"'
     )
+    if part.shape == "mesh":  # collides as the convex hull of the scan
+        return f'<geom type="mesh" mesh="part_mesh_{cls}" material="part_mat_{cls}" {common}/>'
+    common += f' rgba="{_f(*part.rgba)}"'
     if part.shape == "box":
         sx, sy, sz = (v * MM / 2 for v in part.size_mm)
         return f'<geom type="box" size="{_f(sx, sy, sz)}" {common}/>'
@@ -150,7 +162,7 @@ def _parts(cfg: TwinConfig) -> tuple[str, str]:
         part = cfg.parts.classes[slot.cls]
         bodies.append(
             f'<body name="{slot.body}" pos="{_f(*slot.park_xyz)}"><freejoint/>'
-            f"{_part_geom(part, cfg.parts.friction)}"
+            f"{_part_geom(slot.cls, part, cfg.parts.friction)}"
             f'<inertial pos="0 0 0" mass="{cfg.parts.mass_kg:g}" '
             f'diaginertia="{_f(1e-4, 1e-4, 1e-4)}"/></body>'
         )
@@ -171,7 +183,13 @@ def build_mjcf(geo: CellGeometry, cfg: TwinConfig) -> str:
     part_bodies, welds = _parts(cfg)
     return f"""<mujoco model="sorting_cell">
   <compiler angle="degree" autolimits="true"/>
+  <asset>
+    {_part_assets(cfg)}
+  </asset>
   <option timestep="{cfg.physics_timestep_s:g}" gravity="0 0 -9.81" integrator="implicitfast"/>
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+  </visual>
   <default>
     <default class="link">
       <geom contype="0" conaffinity="0" rgba="0.92 0.55 0.1 1" density="2700"/>

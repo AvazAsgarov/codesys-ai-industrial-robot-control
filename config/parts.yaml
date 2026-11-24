@@ -1,0 +1,79 @@
+# Part catalogue (spec §6.3): scanned objects from Google Scanned Objects (CC BY 4.0), fetched
+# from Gazebo Fuel and prepared by tools/fetch_objects.py into assets/objects/<slug>/.
+#
+# candidates: the shortlist. rotate_deg turns the scan into its resting pose on the belt (XYZ
+# order, degrees); scale is uniform (1.0 = real size). prompt is the YOLOE-26 text prompt;
+# coco is the matching COCO class for the YOLO26 baseline (null if none); symmetry is the
+# rotational symmetry about the vertical axis (1 = none, 2 = 180 deg, 0 = round).
+# classes: the three sorted part types, in PLC class order (usiClass 0, 1, 2); chosen by the
+# zero-shot benchmark (plan Task 7).
+fuel_url: https://fuel.gazebosim.org/1.0/GoogleResearch/models/{name}/1/{name}.zip
+
+candidates:
+  - slug: cup
+    fuel_name: Ecoforms_Cup_B4_SAN
+    sha256: c9747d4a5afc5952b4e011918f04c408a929e9ff72ea268249bd8c901f93e016
+    rotate_deg: [180, 0, 0]          # upside down: the flat base is the suction face
+    scale: 1.0
+    prompt: cup
+    coco: cup
+    symmetry: 0
+  - slug: ramekin
+    fuel_name: BIA_Porcelain_Ramekin_With_Glazed_Rim_35_45_oz_cup
+    sha256: d6cd0a07d9f62c59edbbc26b560335c1bd73ae8ae2eca0ac73d95d337acba32d
+    rotate_deg: [180, 0, 0]
+    scale: 1.0
+    prompt: bowl
+    coco: bowl
+    symmetry: 0
+  - slug: ink_cartridge
+    fuel_name: Office_Depot_HP_71_Remanufactured_Ink_Cartridge_Black
+    sha256: 4d55dd7dc78f3adb1f132542d67a9dec246cbb6d69f6d4c68f6652d38fc8e073
+    rotate_deg: [90, 0, 0]           # lying on its largest face
+    scale: 1.0
+    prompt: ink cartridge box
+    coco: null
+    symmetry: 2
+  - slug: android_figure
+    fuel_name: Android_Figure_Orange
+    sha256: 3fdf4a98a5cf6443b83813d9f6e100a7fa019832c3baf4cb9ae74d11d7c21b65
+    rotate_deg: [0, 0, 0]
+    scale: 1.0
+    prompt: toy robot figure
+    coco: null
+    symmetry: 1
+  - slug: triceratops
+    fuel_name: Great_Dinos_Triceratops_Toy
+    sha256: b64189f8a7b94965774cc7d97c2836063b01d01588ed2040c516b2e0a950ab5b
+    rotate_deg: [0, 0, 0]
+    scale: 1.0
+    prompt: toy dinosaur
+    coco: null
+    symmetry: 1
+  - slug: bull
+    fuel_name: Schleich_Hereford_Bull
+    sha256: 54fd2c88e507f4fbde3cb7eeec67d4156ff812e0df6ecf8bf64bd0c3fe352630
+    rotate_deg: [0, 0, 0]
+    scale: 0.85
+    prompt: toy cow
+    coco: cow
+    symmetry: 1
+  - slug: rhino
+    fuel_name: Schleich_African_Black_Rhino
+    sha256: 8a8c4fc63f078c1f5e20aab1b226d18b6e29a7eb6371b6d35e3265d3ab1c3456
+    rotate_deg: [0, 0, 0]
+    scale: 0.85
+    prompt: toy rhinoceros
+    coco: null
+    symmetry: 1
+  - slug: fire_truck
+    fuel_name: FIRE_TRUCK
+    sha256: 478fdbd819442ed49c62a81b8dda0af2628294bd383a1d83b0c0a62252a41b2e
+    rotate_deg: [0, 0, 0]
+    scale: 0.85
+    prompt: toy truck
+    coco: truck
+    symmetry: 1
+
+# Until the benchmark (Task 7) chooses, the three most likely to grip and to be detected.
+classes: [cup, ink_cartridge, bull]

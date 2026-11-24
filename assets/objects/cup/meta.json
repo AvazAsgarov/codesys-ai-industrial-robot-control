@@ -1,0 +1,19 @@
+{
+  "slug": "cup",
+  "source": "https://fuel.gazebosim.org/1.0/GoogleResearch/models/Ecoforms_Cup_B4_SAN/1/Ecoforms_Cup_B4_SAN.zip",
+  "sha256": "c9747d4a5afc5952b4e011918f04c408a929e9ff72ea268249bd8c901f93e016",
+  "licence": "CC BY 4.0",
+  "rotate_deg": [
+    180,
+    0,
+    0
+  ],
+  "scale": 1.0,
+  "size_mm": [
+    99.85,
+    99.99,
+    71.61
+  ],
+  "grip_height_mm": 69.66,
+  "faces": 7542
+}
