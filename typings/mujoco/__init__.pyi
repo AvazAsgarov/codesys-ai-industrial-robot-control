@@ -19,6 +19,10 @@ class _Contacts:
 
 class MjModel:
     geom_bodyid: _I32
+    nlight: int
+    light_dir: _F64
+    light_diffuse: _F64
+    cam_fovy: _F64
     njnt: int
     nu: int
     nbody: int
@@ -40,6 +44,8 @@ class MjData:
     time: float
     ncon: int
     contact: _Contacts
+    cam_xpos: _F64
+    cam_xmat: _F64
     qpos: _F64
     qvel: _F64
     ctrl: _F64
@@ -52,6 +58,29 @@ class MjData:
     qfrc_actuator: _F64
     eq_active: NDArray[np.uint8]
     def __init__(self, model: MjModel) -> None: ...
+
+class MjvOption:
+    geomgroup: NDArray[np.uint8]
+    def __init__(self) -> None: ...
+
+class MjvCamera:
+    azimuth: float
+    elevation: float
+    distance: float
+    lookat: _F64
+    def __init__(self) -> None: ...
+
+class Renderer:
+    def __init__(self, model: MjModel, height: int = 240, width: int = 320) -> None: ...
+    def update_scene(
+        self,
+        data: MjData,
+        camera: int | str | MjvCamera = -1,
+        scene_option: MjvOption | None = None,
+    ) -> None: ...
+    def render(self) -> NDArray[np.uint8]: ...
+    def enable_segmentation_rendering(self) -> None: ...
+    def close(self) -> None: ...
 
 def mj_step(m: MjModel, d: MjData, nstep: int = 1) -> None: ...
 def mj_forward(m: MjModel, d: MjData) -> None: ...

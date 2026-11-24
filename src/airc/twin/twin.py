@@ -215,6 +215,10 @@ class Twin:
         )
         self._place(a.slot, pos, 0.0)
 
+    def part_body_id(self, pid: int) -> int:
+        """MuJoCo body id of an active part (to find it in a rendered segmentation)."""
+        return self._body[self._active[pid].slot]
+
     def part(self, pid: int) -> PartTruth:
         """Ground truth of a spawned part."""
         a = self._active[pid]

@@ -11,6 +11,8 @@ are visual only; parts collide with the environment, each other and the cup.
 
 from dataclasses import dataclass
 
+import numpy as np
+
 from airc.twin.cell import CellGeometry
 from airc.twin.config import PartClass, TwinConfig
 from airc.twin.kinematics import JOINT_AXES
@@ -109,6 +111,24 @@ def _belt(geo: CellGeometry, cfg: TwinConfig) -> str:
     )
 
 
+def _cameras(geo: CellGeometry, cfg: TwinConfig) -> str:
+    """``cam_inspect`` over photo-eye PE1 (tilted to look down the belt) and ``cam_showcase``."""
+    c = cfg.camera
+    tilt = np.radians(c.tilt_deg)
+    target = np.array([geo.belt_origin_x + geo.pe1_x, geo.belt_origin_y, geo.belt_surface_z]) * MM
+    view = np.array([np.sin(tilt), 0.0, -np.cos(tilt)])  # down the belt and down
+    pos = target - view * c.distance_mm * MM
+    right = np.array([np.cos(tilt), 0.0, np.sin(tilt)])  # image right: belt +X
+    up = np.array([0.0, 1.0, 0.0])  # image up: belt +Y
+    showcase = target + np.array([0.9, -1.6, 1.1])
+    return (
+        f'<camera name="cam_inspect" pos="{_f(*pos)}" xyaxes="{_f(*right, *up)}" '
+        f'fovy="{c.fovy_deg:g}"/>\n    '
+        f'<camera name="cam_showcase" pos="{_f(*showcase)}" mode="targetbody" '
+        f'target="link1" fovy="50"/>'
+    )
+
+
 def _bins(geo: CellGeometry, cfg: TwinConfig) -> str:
     w, d, h = (v * MM for v in cfg.bins.size_mm)
     t = cfg.bins.wall_mm * MM
@@ -203,6 +223,7 @@ def build_mjcf(geo: CellGeometry, cfg: TwinConfig) -> str:
     <geom name="floor" type="plane" size="6 6 0.1" pos="{_f(0, 0, FLOOR_Z)}" class="env"
           rgba="0.75 0.75 0.75 1"/>
     {_belt(geo, cfg)}
+    {_cameras(geo, cfg)}
     {_bins(geo, cfg)}
     {_robot(geo, cfg)}
     {part_bodies}

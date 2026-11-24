@@ -47,6 +47,7 @@ testpaths = ["tests"]
 addopts = "-q --strict-markers -m 'not codesys'"
 markers = [
     "codesys: needs CODESYS Control Win on this machine (local only: pytest -m codesys)",
+    "render: needs an OpenGL context (MuJoCo offscreen rendering)",
 ]
 
 [tool.ruff]

@@ -140,9 +140,10 @@ def write_obj(path: Path, part: Prepared) -> None:
 
 def fetch(entry: dict[str, Any], url_template: str) -> None:
     """Download, check, prepare and write one candidate."""
-    import trimesh  # noqa: PLC0415 - asset tools only (dependency group "assets")
-    from PIL import Image  # noqa: PLC0415
-    from trimesh.resolvers import ZipResolver  # noqa: PLC0415
+    # asset tools only: dependency group "assets", not installed by a plain `uv sync` (CI)
+    import trimesh  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
+    from PIL import Image  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
+    from trimesh.resolvers import ZipResolver  # noqa: PLC0415  # pyright: ignore[reportMissingImports]
 
     name = entry["fuel_name"]
     url = url_template.format(name=name)

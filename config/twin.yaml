@@ -13,6 +13,15 @@ belt:
 
 photo_eye_height_mm: 20          # beam height above the belt
 
+# Inspection camera (spec §6.1): upstream of photo-eye PE1, looking down the belt at PE1 with
+# the given tilt from the vertical; image right = belt +X, image up = belt +Y.
+camera:
+  width_px: 1280
+  height_px: 720
+  fovy_deg: 45
+  tilt_deg: 25                   # 0 = straight down; chosen on the tuning seed (plan Task 7)
+  distance_mm: 750               # from the camera to the target point on the belt at PE1
+
 # Simulated servo drives: PD position control with velocity feed-forward (as a drive does),
 # torque limit, rotor inertia (armature) and a little viscous friction.
 servo:

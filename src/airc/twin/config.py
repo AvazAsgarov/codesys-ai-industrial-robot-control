@@ -81,6 +81,16 @@ class SuctionConfig(_Frozen):
     cup_radius_mm: float
 
 
+class CameraConfig(_Frozen):
+    """Inspection camera ``cam_inspect``: image size, field of view and placement over PE1."""
+
+    width_px: int
+    height_px: int
+    fovy_deg: float
+    tilt_deg: float
+    distance_mm: float
+
+
 class BinsConfig(_Frozen):
     """Bins (inner size in mm)."""
 
@@ -97,6 +107,7 @@ class TwinConfig(_Frozen):
     bridge_timeout_s: float  # OPC UA request timeout of the bridge cycle
     belt: BeltConfig
     photo_eye_height_mm: float
+    camera: CameraConfig
     servo: ServoConfig
     parts: PartsConfig
     suction: SuctionConfig
