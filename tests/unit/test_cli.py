@@ -25,3 +25,12 @@ def test_cli_bad_config_exit_code(write_yaml):
     assert result.exit_code == 2
     assert "opcua_endpointt" in result.output
     assert "Traceback" not in result.output
+
+
+def test_cli_run_rejects_an_unknown_record_camera(tmp_path):
+    out = tmp_path / "demo.mp4"
+    args = ["run", "--record", str(out), "--record-camera", "no_such_cam", "--duration", "1"]
+    result = runner.invoke(app, args)
+    assert result.exit_code == 2
+    assert "no_such_cam" in result.output
+    assert not out.exists()
