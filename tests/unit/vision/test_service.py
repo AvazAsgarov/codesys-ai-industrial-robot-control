@@ -102,6 +102,27 @@ def test_capture_picks_the_part_at_pe1(make: Build) -> None:
     assert res.crop.shape[2] == 3
 
 
+def test_detector_is_loaded_before_the_first_capture() -> None:
+    """Loading the model takes seconds: the first part must not wait for it (deadline)."""
+    twin = Twin(cfg=TwinConfig.load(parts="catalogue"))
+    det = OracleDetector(twin)
+    built = []
+
+    def factory() -> OracleDetector:
+        built.append(time.monotonic())
+        return det
+
+    worker = VisionWorker(twin, factory)
+    try:
+        deadline = time.monotonic() + 30.0
+        while not built and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert built, "detector not built until a capture arrived"
+        assert worker.ready.wait(30.0)
+    finally:
+        worker.close()
+
+
 def test_no_detection_gives_invalid_message(make: Build) -> None:
     twin, _, worker = make()
     worker.submit(_job(twin, 3, 1))  # nothing on the belt

@@ -40,9 +40,11 @@ products give one embedding per class, folded into the network and exported to O
 (`airc vision export --prompts visual`). Nothing is trained. The detector sees a 640x640 window
 around PE1 at native resolution (the part is about 150 px wide there).
 
-From the chosen detection's mask: centroid -> belt x/y at the part's top height; principal axis
--> orientation; the belt travel since the capture is subtracted, so the pose refers to the
-capture instant the PLC tracks.
+From the chosen detection's mask: centroid -> belt x/y at the part's top height; a
+minimum-area rectangle of the mask outline on the belt plane -> orientation (the side that is the
+part's x axis is chosen from the class size, allowing for the side faces the tilted camera sees);
+when two labels overlap (IoU >= 0.7) only the more confident one is kept; the belt travel since
+the capture is subtracted, so the pose refers to the capture instant the PLC tracks.
 
 ## Benchmark
 
@@ -51,12 +53,16 @@ lighting, and scores against the simulator's exact ground truth (parts and masks
 
 | Detector | mAP@0.5 | Position error mean / p95 | Latency mean (CPU) |
 |---|---|---|---|
-| YOLOE-26s-seg, visual prompts | 0.993 | 2.0 / 3.1 mm | 151 ms |
-| YOLOE-26s-seg, text prompts | 0.138 | 2.2 / 4.2 mm | 146 ms |
-| YOLO26s-seg, COCO classes | 0.074 | 2.0 / 2.5 mm | 162 ms |
+| YOLOE-26s-seg, visual prompts | 0.997 | 2.0 / 3.1 mm | 166 ms (p50) |
+| YOLOE-26s-seg, text prompts | 0.138 | 2.2 / 4.2 mm | 166 ms |
+| YOLOE-26s-seg, text prompts, image turned 90° | 0.566 | 2.1 / 2.8 mm | 176 ms |
+| YOLO26s-seg, COCO classes | 0.058 | 2.0 mm mean | 176 ms |
+| Oracle (true masks) | 1.000 | 1.8 / 3.2 mm | - |
 
-Results: `experiments/results/vision_*_301.json`. The tuning seed (camera tilt, ROI, confidence)
-was a different one; seed 301 was run once for the final numbers.
+Box orientation error: 1.0° p95 (oracle masks 0.7°). The position error is geometric: even the
+true masks give 1.8 mm, because the centre of a tilted view is not the centre of the footprint.
+Results: `experiments/results/vision_*_301.json`, summary `vision_summary.md`. Tuning used
+another seed (300); seed 301 was run once for the final numbers.
 
 ## Running it
 

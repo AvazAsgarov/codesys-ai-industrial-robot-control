@@ -1,0 +1,355 @@
+{
+  "cases": [
+    {
+      "name": "panel_buttons_run_the_cell",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestCell.xActive": true,
+            "GVL_Config.xCellEnabled": true
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xReset": true
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "expect": {
+            "GVL_HmiPanel.xReset": false
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xStart": true
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute"
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xStop": true
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mode_selector_requests_manual_and_back",
+      "steps": [
+        {
+          "write": {
+            "GVL_HmiPanel.iModeSelect": 3
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eMode": "E_PackMLMode.Manual",
+            "GVL_HmiPanel.iModeSelect": 3
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.iModeSelect": 1
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eMode": "E_PackMLMode.Production"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invalid_mode_selection_ignored",
+      "steps": [
+        {
+          "write": {
+            "GVL_HmiPanel.iModeSelect": 7
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eMode": "E_PackMLMode.Production",
+            "GVL_Hmi.eModeRequest": "E_PackMLMode.Production"
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.iModeSelect": 1
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
+    },
+    {
+      "name": "estop_abort_ack_clear_from_panel",
+      "steps": [
+        {
+          "write": {
+            "GVL_HmiPanel.xReset": true
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Idle"
+          }
+        },
+        {
+          "write": {
+            "GVL_Bridge.xEStopOk": false
+          }
+        },
+        {
+          "waitMs": 1500
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Aborted"
+          }
+        },
+        {
+          "expect": {
+            "GVL_HmiView.xAnyAlarm": true,
+            "GVL_HmiView.axAlarm[1]": true
+          }
+        },
+        {
+          "write": {
+            "GVL_Bridge.xEStopOk": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xClear": true
+          }
+        },
+        {
+          "waitMs": 4000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped"
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xAckAll": true
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "expect": {
+            "GVL_HmiView.axAlarm[1]": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "view_texts_follow_the_cell",
+      "steps": [
+        {
+          "expect": {
+            "GVL_HmiView.sState": "Stopped",
+            "GVL_HmiView.sMode": "Production"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.xActive": false
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
+    },
+    {
+      "name": "view_signals_follow_equipment",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestCell.xActive": true,
+            "GVL_Config.xCellEnabled": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "GVL_HmiView.xBeltRunning": false,
+            "GVL_HmiView.xJogPermitted": false,
+            "GVL_HmiView.xAnyBinFull": false
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xReset": true
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xStart": true
+          }
+        },
+        {
+          "waitMs": 16000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute",
+            "GVL_HmiView.xBeltRunning": true,
+            "GVL_HmiView.xJogPermitted": false
+          }
+        },
+        {
+          "write": {
+            "GVL_Bridge.axBinFull[0]": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "expect": {
+            "GVL_HmiView.xAnyBinFull": true
+          }
+        },
+        {
+          "write": {
+            "GVL_Bridge.axBinFull[0]": false
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xStop": true
+          }
+        },
+        {
+          "waitMs": 12000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Stopped",
+            "GVL_HmiView.xBeltRunning": false,
+            "GVL_HmiView.xRobotMoving": false
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.iModeSelect": 3
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xReset": true
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xStart": true
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eState": "E_PackMLState.Execute",
+            "GVL_HmiView.xJogPermitted": true
+          }
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.xStop": true
+          }
+        },
+        {
+          "waitMs": 3000
+        },
+        {
+          "write": {
+            "GVL_HmiPanel.iModeSelect": 1
+          }
+        },
+        {
+          "waitMs": 500
+        },
+        {
+          "expect": {
+            "GVL_Bridge.eMode": "E_PackMLMode.Production"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestCell.xActive": false
+          }
+        },
+        {
+          "waitMs": 200
+        }
+      ]
+    }
+  ]
+}

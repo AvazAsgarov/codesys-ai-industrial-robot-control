@@ -555,6 +555,72 @@
           }
         }
       ]
+    },
+    {
+      "name": "without_decision_layer_rule_decides_at_once",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestTracking.xReinit": true,
+            "PRG_TestTracking.lrBeltPos": 0.0,
+            "PRG_TestTracking.xNoDecisionLayer": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xTriggerPE1": true
+          }
+        },
+        {
+          "waitMs": 200
+        },
+        {
+          "write": {
+            "PRG_TestTracking.stVisIn.udiPartId": 1,
+            "PRG_TestTracking.stVisIn.xValid": true,
+            "PRG_TestTracking.stVisIn.usiClass": 1,
+            "PRG_TestTracking.stVisIn.rConfidence": 0.9,
+            "PRG_TestTracking.stVisIn.lrX": 300.0,
+            "PRG_TestTracking.stVisIn.lrY": 0.0,
+            "PRG_TestTracking.stVisIn.lrTheta": 0.0,
+            "PRG_TestTracking.xSendVision": true
+          }
+        },
+        {
+          "waitMs": 300
+        },
+        {
+          "write": {
+            "PRG_TestTracking.udiQueryId": 1
+          }
+        },
+        {
+          "waitMs": 150
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.stRec.eState": "E_PartState.Decided",
+            "PRG_TestTracking.stRec.eTargetBin": "E_Bin.TypeB",
+            "PRG_TestTracking.stRec.eDecisionSource": "E_DecisionSource.Fallback"
+          }
+        },
+        {
+          "expect": {
+            "PRG_TestTracking.fbAlarms.eNewest": "E_AlarmId.None"
+          }
+        },
+        {
+          "write": {
+            "PRG_TestTracking.xNoDecisionLayer": false
+          }
+        },
+        {
+          "waitMs": 100
+        }
+      ]
     }
   ]
 }

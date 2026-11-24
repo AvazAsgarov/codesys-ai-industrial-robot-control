@@ -75,3 +75,12 @@ def test_decision_worker_never_prints_the_api_key(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "set" in out
     assert "sk-secret-123" not in out
+
+
+def test_cli_run_rejects_an_unknown_record_camera(tmp_path):
+    out = tmp_path / "demo.mp4"
+    args = ["run", "--record", str(out), "--record-camera", "no_such_cam", "--duration", "1"]
+    result = runner.invoke(app, args)
+    assert result.exit_code == 2
+    assert "no_such_cam" in result.output
+    assert not out.exists()

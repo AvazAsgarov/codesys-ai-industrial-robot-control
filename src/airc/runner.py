@@ -24,7 +24,7 @@ import time
 from collections import deque
 from collections.abc import Callable, Coroutine, Generator
 from dataclasses import dataclass, field, replace
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import numpy as np
 
@@ -37,6 +37,9 @@ from airc.plc.runtime import disable_timer_throttling
 from airc.twin.scenario import FaultEvent, FaultTimeline, Scenario, SpawnSchedule
 from airc.twin.twin import MAX_STEP_S, Twin, TwinState
 from airc.vision.service import CaptureJob, VisionResult
+
+if TYPE_CHECKING:
+    from airc.video import VideoRecorder  # OpenCV only when recording
 
 MM = 0.001
 BLOCKED_DAMPING = 1e7  # N·m·s/rad: a blocked joint
@@ -170,6 +173,13 @@ class RunReport:
         return _percentile([d.latency_ms for d in self.decisions], 0.95)
 
 
+def _state_name(state: int) -> str:
+    try:
+        return PackMLState(state).name
+    except ValueError:
+        return f"STATE {state}"
+
+
 def _six(values: np.ndarray) -> Six:
     v = [float(x) for x in values]
     return (v[0], v[1], v[2], v[3], v[4], v[5])
@@ -183,10 +193,11 @@ class Runner:
         client: BridgeClient,
         twin: Twin,
         scenario: Scenario,
-        period_s: float | None = None,
         *,
+        period_s: float | None = None,
         vision: VisionSource | None = None,
         decision: DecisionWorker | None = None,
+        recorder: "VideoRecorder | None" = None,
     ) -> None:
         """Create a runner.
 
@@ -199,6 +210,8 @@ class Runner:
                 ground-truth stand-in (Phase 2).
             decision: Asks THX-02 about each part vision saw (in its own thread); needs
                 ``vision`` (the oracle has no image). ``None``: the PLC's fallback rule decides.
+            recorder: Renders a video of the run (in its own thread); closed when
+                :meth:`run` ends.
         """
         self.client = client
         self.twin = twin
@@ -207,6 +220,7 @@ class Runner:
         self.schedule = SpawnSchedule(scenario)
         self.oracle = GroundTruthOracle(twin.geo.pe1_x)
         self.vision = vision
+        self.recorder = recorder
         self._unwritten: list[VisionResult] = []  # vision answers not yet written to the PLC
         self.decision = decision
         self.pick_start_x = twin.geo.pe2_x  # belt frame: a decision must arrive before this
@@ -277,6 +291,8 @@ class Runner:
                 self._report.spawned += 1
             except RuntimeError:
                 self._report.spawn_skipped += 1
+        if self.recorder is not None:  # a state copy every 1/fps s; rendered in its thread
+            self.recorder.capture(self.twin, _state_name(out.state), sum(state.bin_counts))
         t2 = time.perf_counter()
         if self.vision is not None:
             if out.capture.seq not in (0, self._last_capture):
@@ -421,20 +437,27 @@ class Runner:
     ) -> RunReport:
         """Run cycles until ``duration_s`` passes or ``stop`` is set.
 
+        The video recorder, if any, is closed when the run ends (also on an error or when the
+        run is cancelled, e.g. by Ctrl+C), so its file is complete.
+
         Returns:
             The run report.
         """
-        await self.client.ensure_connected()  # connect first: the cycle gaps show steady state
-        report = await self._loop(duration_s, stop)
-        if self._pending is not None:  # flush the last cycle's inputs
-            # no decision service after the run: the PLC decides by its rule again
-            last = replace(self._pending, decision_active=False)
-            try:
-                await self.client.write_inputs(last)
-            except BridgeDisconnectedError:
-                report.reconnects += 1
-            self._pending = None
-        return report
+        try:
+            await self.client.ensure_connected()  # connect first: the cycle gaps show steady state
+            report = await self._loop(duration_s, stop)
+            if self._pending is not None:  # flush the last cycle's inputs
+                # no decision service after the run: the PLC decides by its rule again
+                last = replace(self._pending, decision_active=False)
+                try:
+                    await self.client.write_inputs(last)
+                except BridgeDisconnectedError:
+                    report.reconnects += 1
+                self._pending = None
+            return report
+        finally:
+            if self.recorder is not None:
+                self.recorder.close()
 
     async def _loop(self, duration_s: float | None, stop: asyncio.Event | None) -> RunReport:
         # perf_counter, not loop.time(): time.monotonic ticks every 15.6 ms on Windows

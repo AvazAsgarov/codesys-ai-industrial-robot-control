@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-25
+
 Phase 4 — Decision layer.
 
 ### Added
@@ -24,6 +26,28 @@ Phase 4 — Decision layer.
   without one (and on shutdown), so the PLC decides each part by its rule as soon as vision has
   identified it. Needs a PLC with `xDecisionActive` (Phase 5).
 
+## [0.5.0] - 2026-11-25
+
+Phase 5 — Operator HMI.
+
+### Added
+
+- Native CODESYS visualization (TargetVisu + WebVisu): Overview, Robot and Alarms pages after
+  ISA-101, generated from screen descriptions (`hmi/build_screens.py`, ADR 0010); WebVisu at
+  <http://127.0.0.1:8081/webvisu.htm>.
+- `FB_HmiPanel` (panel buttons and mode selector -> cell commands) and `FB_HmiView` (texts,
+  state groups, alarm rows, equipment signals for the screens); PLC tests `hmi.json`.
+- `airc run --record demo.mp4`: video of the live cell from the showcase camera.
+- `docs/demo.md`: how to run the classroom demo.
+
+### Changed
+
+- Without an AI decision service (`GVL_Bridge.xDecisionActive` FALSE) the PLC decides an
+  identified part with its rule at once instead of waiting for the decision deadline.
+- The soft-PLC's web server listens on 127.0.0.1:8081 (8080 is often taken).
+- The vision worker loads its renderer and detector when it starts, so the first capture is
+  answered in time.
+
 ## [0.4.0] - 2026-11-25
 
 Phase 3 — Vision.
@@ -40,8 +64,9 @@ Phase 3 — Vision.
   waits for it (`airc run --vision yoloe`).
 - YOLOE visual prompts from rendered reference views, no training (ADR 0009); text prompts and
   YOLO26 COCO as baselines.
-- Rendered benchmark `airc eval vision`: mAP@0.5 0.993 with visual prompts (text prompts 0.138,
-  COCO 0.074), position error 2.0 mm mean.
+- Rendered benchmark `airc eval vision`: mAP@0.5 0.997 with visual prompts (text prompts 0.138,
+  COCO 0.058), position error 2.0 mm mean, box orientation 1.0° p95; text-prompt tuning study
+  (`tools/tune_vision.py`).
 
 ### Changed
 

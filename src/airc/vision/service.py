@@ -248,6 +248,7 @@ class VisionWorker:
         self._seq = 0
         self._classes = twin.cfg.parts.classes
         self._roi = pe1_roi(self._camera, twin.geo, twin.cfg)
+        self.ready = threading.Event()  # set once the renderer and the detector are loaded
         self._thread = threading.Thread(target=self._run, name="vision", daemon=True)
         self._thread.start()
 
@@ -283,6 +284,13 @@ class VisionWorker:
         data = mujoco.MjData(model)
         renderer: FrameRenderer | None = None
         detector: Detector | None = None
+        # load both now: building the detector takes seconds, the first capture must not wait
+        try:
+            renderer = FrameRenderer(model, "cam_inspect", self._twin.cfg)
+            detector = self._factory()
+            self.ready.set()
+        except Exception:  # retried at the first capture, which then answers "not seen"
+            _log.exception("vision warm-up failed")
         while True:
             job = self._jobs.get()
             if job is None:

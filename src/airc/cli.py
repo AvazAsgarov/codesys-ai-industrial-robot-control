@@ -151,7 +151,7 @@ def plc_deploy(
 
 
 @app.command("run")
-def run_cell(
+def run_cell(  # noqa: PLR0913, PLR0917 - one parameter per command-line option
     scenario: Annotated[
         Path, typer.Option("--scenario", "-s", help="Scenario YAML (config/scenarios/...).")
     ] = Path("config/scenarios/p2_demo.yaml"),
@@ -177,6 +177,18 @@ def run_cell(
             "Needs --vision yoloe.",
         ),
     ] = "off",
+    record: Annotated[
+        Path | None,
+        typer.Option(
+            "--record", help="Record a video of the run to this .mp4 file (rendered off-cycle)."
+        ),
+    ] = None,
+    record_fps: Annotated[
+        float, typer.Option("--record-fps", help="Frames per second of the video.")
+    ] = 10.0,
+    record_camera: Annotated[
+        str, typer.Option("--record-camera", help="Scene camera to record.")
+    ] = "cam_showcase",
 ) -> None:
     """Run the digital twin against the soft-PLC through the OPC UA bridge."""
     try:
@@ -201,8 +213,9 @@ def run_cell(
     except (OSError, ValueError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_CONFIG_ERROR) from None
+    recorder = _video_recorder(twin, record, record_fps, record_camera)
     worker = _vision_worker(twin) if vision == "yoloe" else None
-    runner = Runner(client, twin, scen, vision=worker, decision=decider)
+    runner = Runner(client, twin, scen, vision=worker, decision=decider, recorder=recorder)
     handle = None
     if viewer:
         import mujoco.viewer  # noqa: PLC0415 - GUI libraries only when asked for
@@ -222,6 +235,9 @@ def run_cell(
             worker.close()
         if decider is not None:
             decider.close()
+        if recorder is not None:  # closed by the runner already, unless it never started
+            recorder.close()
+            typer.echo(f"video: {recorder.frames_written} frames -> {record}")
     typer.echo(
         f"cycles {report.cycles}, overruns {report.overruns}, reconnects {report.reconnects}, "
         f"cycle {report.cycle_ms_mean:.1f} ms mean / {report.cycle_ms_p95:.1f} ms p95, "
@@ -271,6 +287,19 @@ def _decision_worker(cfg: DecisionConfig, scen: Scenario) -> DecisionWorker:
         lambda: DecisionService.from_config(cfg, run_id=run_id, seed=scen.seed),
         deadline_s=cfg.deadline_s,
     )
+
+
+def _video_recorder(twin: Twin, path: Path | None, fps: float, camera: str) -> Any:  # noqa: ANN401
+    """The recorder for `--record` (None without it); a bad camera or path exits with code 2."""
+    if path is None:
+        return None
+    from airc.video import VideoRecorder  # noqa: PLC0415 - OpenCV only when recording
+
+    try:
+        return VideoRecorder(twin, path, fps=fps, camera=camera)
+    except (ValueError, OSError, RuntimeError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR) from None
 
 
 def _vision_worker(twin: Twin) -> "VisionWorker":

@@ -5,6 +5,7 @@ Compiler: 3.5.22.40
 [Tasks]
 SoftMotion_PlanningTask: Freewheeling, interval t#2ms, priority 15; calls nothing
 CommTask: Cyclic, interval t#50ms, priority 10; calls PRG_Comm
+VISU_TASK: Cyclic, interval 100 ms, priority 31; calls VisuElems.Visu_Prg, PRG_HMI_Alarms, PRG_HMI_Robot, PRG_HMI_Overview
 MainTask: Cyclic, interval 4 ms, priority 1; calls PRG_Main, PRG_Tests, PRG_Recipe_Cell
 
 [Libraries]
@@ -16,6 +17,23 @@ MainTask: Cyclic, interval 4 ms, priority 1; calls PRG_Main, PRG_Tests, PRG_Reci
 #3SLicense -> 3SLicense, 3.5.22.0 (CODESYS)
 #CAA Device Diagnosis -> CAA Device Diagnosis, 3.5.22.0 (CAA Technical Workgroup)
 #BreakpointLogging -> Breakpoint Logging Functions, 3.5.17.0 (3S - Smart Software Solutions GmbH)
+#AlarmManager -> AlarmManager, 4.10.0.0 (Intern)
+#CmpDynamicText -> CmpDynamicText, 3.5.20.0 (System)
+#System_VisuElems -> VisuElems, 4.10.0.0 (System)
+#System_VisuElemMeter -> VisuElemMeter, 4.10.0.0 (System)
+#System_VisuElemsSpecialControls -> VisuElemsSpecialControls, 4.7.0.0 (System)
+#System_VisuElemsWinControls -> VisuElemsWinControls, 4.10.0.0 (System)
+#System_VisuElemTextEditor -> VisuElemTextEditor, 4.8.0.0 (System)
+#System_VisuElemTrace -> VisuElemTrace, 4.10.0.0 (System)
+#System_VisuNativeControl -> VisuNativeControl, 4.9.0.0 (System)
+#System_VisuElemsAlarm -> VisuElemsAlarm, 4.10.0.0 (System)
+#System_VisuElemCamDisplayer -> VisuElemCamDisplayer, 4.7.0.0 (System)
+#System_VisuElem3DPath -> VisuElem3DPath, 4.7.0.0 (System)
+#System_VisuElemsDateTime -> VisuElemsDateTime, 4.9.0.0 (System)
+#System_VisuElemXYChart -> VisuElemXYChart, 4.10.0.0 (System)
+#System_VisuInputs -> VisuInputs, 4.7.0.0 (System)
+#VisuUserManagement -> VisuUserMgmt, 4.10.0.0 (System)
+#VisuDialogs -> VisuDialogs, 4.10.0.0 (System)
 
 [Devices]
 Device (type 4096, id 0000 0004, version 3.5.22.40)
