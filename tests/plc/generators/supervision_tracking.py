@@ -166,6 +166,49 @@ jm_cases = [
         ],
     },
     {
+        # a bridge hiccup (300 ms, within the 500 ms watchdog): with the pipelined write the
+        # feedback answers a sample older than the history; it cannot be judged, so no fault
+        "name": "old_samples_during_bridge_hiccup_no_fault",
+        "steps": [
+            w(JM, xReinit=True),
+            wait(200),
+            w(
+                JM,
+                iLag=10,
+                xFreeze=False,
+                xRamp=True,
+                xAutoSeq=True,
+                **{"fbMon.xLoopback": False, "fbMon.xActive": True},
+            ),
+            wait(500),
+            w(JM, iTornAge=150, iTornSamples=40),
+            wait(400),
+            e(JM, **{"fbMon.xFault": False, "fbAlarms.xCriticalActive": False}),
+            w(JM, xRamp=False),
+            wait(200),
+        ],
+    },
+    {
+        # feedback that stays older than the history for the feedback timeout is stale
+        "name": "too_old_feedback_is_stale",
+        "steps": [
+            w(JM, xReinit=True),
+            wait(200),
+            w(
+                JM,
+                iLag=150,
+                xFreeze=False,
+                xRamp=True,
+                xAutoSeq=True,
+                **{"fbMon.xLoopback": False, "fbMon.xActive": True},
+            ),
+            wait(1500),
+            e(JM, **{"fbMon.xStale": True, "fbMon.xFault": True}),
+            w(JM, xRamp=False, iLag=0),
+            wait(200),
+        ],
+    },
+    {
         # OPC UA may hand the task new positions before their sequence number (a torn write):
         # one bad sample must not abort the cell; a persisting error still does (blocked joint)
         "name": "torn_sample_no_fault",
@@ -181,7 +224,7 @@ jm_cases = [
                 **{"fbMon.xLoopback": False, "fbMon.xActive": True},
             ),
             wait(500),
-            w(JM, iTornSamples=1),
+            w(JM, iTornAge=25, iTornSamples=1),
             wait(300),
             e(
                 JM,

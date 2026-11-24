@@ -134,6 +134,7 @@ IF xResetRequest AND (fbReset.Done OR fbReset.Error) THEN
         xFault := FALSE;
         eSmcError := SMC_ERROR.SMC_NO_ERROR;
     END_IF
+    fbStatus(AxisGroup := AxisGroup);   // the fault check below must see the state after the reset
 END_IF
 
 fbReadAcs(AxisGroup := AxisGroup);

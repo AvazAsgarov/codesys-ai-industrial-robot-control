@@ -4,7 +4,8 @@
     Inputs  : xReinit; xAutoSeq - increment the feedback and setpoint sequences every cycle
               xRamp - J1 setpoint ramps by RAMP_STEP per cycle; iLag - feedback is the setpoint of
               iLag cycles earlier (and says so in udiFeedbackForSeq); xFreeze - feedback stands still;
-              iTornSamples - that many cycles claim a sample TORN_AGE older (a torn OPC UA write)
+              iTornSamples - that many cycles claim a sample iTornAge older (a torn OPC UA write,
+              or a bridge hiccup when iTornAge exceeds the history)
     Outputs : lrRampSpeed - measured J1 setpoint speed [deg/s]
 *)
 PROGRAM PRG_TestJointMonitor
@@ -25,10 +26,10 @@ VAR
     lrRampStart : LREAL;
     lrRampSpeed : LREAL;
     iTornSamples : INT;             // next cycles: feedback says it answers an older sample
+    iTornAge : INT := 25;           // [samples]
 END_VAR
 VAR CONSTANT
     RAMP_STEP : LREAL := 1.0;       // [deg per cycle]
-    TORN_AGE : UDINT := 25;         // [samples]
 END_VAR
 
 IF xReinit THEN
@@ -64,8 +65,8 @@ IF udiSpSeq >= INT_TO_UDINT(iLag) THEN
     IF NOT xFreeze THEN
         fbMon.aFeedback[1] := aSpHist[fbMon.udiFeedbackForSeq MOD 128];
     END_IF
-    IF iTornSamples > 0 AND fbMon.udiFeedbackForSeq >= TORN_AGE THEN
-        fbMon.udiFeedbackForSeq := fbMon.udiFeedbackForSeq - TORN_AGE;
+    IF iTornSamples > 0 AND fbMon.udiFeedbackForSeq >= INT_TO_UDINT(iTornAge) THEN
+        fbMon.udiFeedbackForSeq := fbMon.udiFeedbackForSeq - INT_TO_UDINT(iTornAge);
         iTornSamples := iTornSamples - 1;
     END_IF
 END_IF
