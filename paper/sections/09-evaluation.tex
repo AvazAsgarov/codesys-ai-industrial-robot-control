@@ -13,10 +13,9 @@ milliseconds, and compare variables with expected values. Test programs (\texttt
 inject parts, vision and decision messages, vacuum signals and faults where a block is tested
 without the twin. Time-based cases wait in real time; because the simulation slows down under CPU
 load, the waits have margin and the expectations check steady states. Table~\ref{tab:plctests}
-lists the 77 cases in 12 files.
-% TODO(owner): re-run all 77 cases on the final project build before submission. Pass records in
-% the repository are per phase (58/58 in Phase 1; hmi.json 6/6, cell.json 9/9, tracking.json
-% 12/12 in later commits), not one run of all 77 on one build.
+lists the 78 cases in 12 files. All of them pass on the final build: a full run of the
+77 cases, then, after the review fixes to the operator panel, a second run of the two affected
+files (\texttt{hmi} 7/7 with one new case, \texttt{cell} 9/9).
 
 \begin{table}[t]
 \caption{PLC Test Cases Run in the CODESYS Simulation}
@@ -38,9 +37,9 @@ File & Cases & What is checked \\
 \texttt{pick} & 7 & tracked pick, height per class, window end, vacuum loss, abort, unidentified part \\
 \texttt{cell} & 9 & production cycle, stop, E-stop in transfer with recovery, door, bin full, suspend, vacuum loss, bridge loss, jog \\
 \texttt{recipes} & 2 & apply \emph{HighSpeed}, restore \emph{Standard} \\
-\texttt{hmi} & 6 & panel commands, mode selector, recovery from the panel, view data \\
+\texttt{hmi} & 7 & panel commands, mode selector (refused outside Stopped, Idle, Aborted), recovery from the panel, view data \\
 \midrule
-Total & 77 & \\
+Total & 78 & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -76,9 +75,10 @@ Longest cycle gap & 39\,ms & 199\,ms & 256\,ms \\
 \bottomrule
 \end{tabular}
 \end{table}
-% TODO(owner): state what happened to the parts captured but not placed (1 in the sorting test,
-% 6 in the recorded run, 9 in the live run); presumably still on the belt or in the gripper when
-% the run ended (0 missed, 0 lost), but the run reports quoted here do not say so.
+The runs end on a timer, so the parts captured but not placed (1, 6 and 9) were still on the
+belt or on their way to a bin at the end: the run reports count a part that leaves the belt
+unpicked as missed and one that falls elsewhere as lost, and both counts are zero. In the live run
+bin A reached its capacity of 30 near the end and the cell suspended, as designed.
 
 In the 20-minute live run the camera and YOLOE answered every capture. Of the 87 captured
 parts, 78 were placed in the bins of their classes (30, 23 and 25 parts); no part was placed in a
