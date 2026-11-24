@@ -1,0 +1,68 @@
+{
+  "command": "airc eval vision --detector yoloe --prompts classes --seed 301 --frames 500 --quarter-turns 1",
+  "seed": 301,
+  "device": "intel:cpu",
+  "camera": "exact",
+  "quarter_turns": 1,
+  "detector": "yoloe-26s-seg-classes-fp32-rot90",
+  "tilt": 25.0,
+  "classes": [
+    "probiotic_box",
+    "vitamin_jar",
+    "coffee_can"
+  ],
+  "prompts": [
+    "box",
+    "bottle",
+    "can"
+  ],
+  "frames": 500,
+  "parts": 951,
+  "conf": 0.25,
+  "iou": 0.5,
+  "mAP50": 0.566,
+  "per_class": {
+    "probiotic_box": {
+      "P": 1.0,
+      "R": 0.0387,
+      "AP50": 0.419,
+      "n_truth": 284,
+      "n_det": 11
+    },
+    "vitamin_jar": {
+      "P": 0.8627,
+      "R": 0.3687,
+      "AP50": 0.5538,
+      "n_truth": 358,
+      "n_det": 153
+    },
+    "coffee_can": {
+      "P": 1.0,
+      "R": 0.1586,
+      "AP50": 0.7252,
+      "n_truth": 309,
+      "n_det": 49
+    }
+  },
+  "pose_mm": {
+    "mean": 2.0928,
+    "p50": 2.0889,
+    "p95": 2.8086,
+    "max": 3.19,
+    "n": 192.0
+  },
+  "theta_deg": {
+    "mean": 0.4712,
+    "p50": 0.4678,
+    "p95": 0.9524,
+    "max": 0.9929,
+    "n": 11.0
+  },
+  "latency_ms": {
+    "mean": 176.5029,
+    "p50": 175.7126,
+    "p95": 203.1328,
+    "max": 293.2634,
+    "n": 500.0
+  }
+}

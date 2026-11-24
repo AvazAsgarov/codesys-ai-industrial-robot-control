@@ -147,7 +147,7 @@ def main() -> None:
         "configurations": rows,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    args.out.write_text(json.dumps(record, separators=(",", ":")) + "\n", encoding="utf-8")
     for row in rows[:5]:
         print(_summary(row))
     print(f"confirmed with an export of {top['prompts']}: mAP {confirm['mAP50']} -> {args.out}")
