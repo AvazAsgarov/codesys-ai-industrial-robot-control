@@ -132,3 +132,22 @@ class CameraModel:
         t = (plane_z - origin[2]) / d[2]
         hit = origin + t * d
         return float(hit[0] / MM - geo.belt_origin_x), float(hit[1] / MM - geo.belt_origin_y)
+
+    def pixels_to_belt(
+        self, us: FloatArray, vs: FloatArray, z_mm: float, geo: CellGeometry
+    ) -> FloatArray:
+        """:meth:`pixel_to_belt` for many pixels at once: an ``(n, 2)`` array of belt x, y (mm)."""
+        u = np.asarray(us, dtype=np.float64)
+        v = np.asarray(vs, dtype=np.float64)
+        d_cam = np.stack(
+            [
+                (u - self.k[0, 2]) / self.k[0, 0],
+                -(v - self.k[1, 2]) / self.k[1, 1],
+                -np.ones_like(u),
+            ],
+            axis=1,
+        )
+        d = d_cam @ self.r_wc.T
+        t = ((geo.belt_surface_z + z_mm) * MM - self.position_m[2]) / d[:, 2]
+        hit = self.position_m + t[:, None] * d
+        return np.stack([hit[:, 0] / MM - geo.belt_origin_x, hit[:, 1] / MM - geo.belt_origin_y], 1)

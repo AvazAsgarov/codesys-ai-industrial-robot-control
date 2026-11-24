@@ -14,23 +14,16 @@ from airc.twin.config import TwinConfig
 from airc.twin.twin import PartSpec, Twin
 from airc.vision.camera import CameraModel
 from airc.vision.render import FrameRenderer, Randomisation
+from airc.vision.service import Roi, pe1_roi
 
-ROI_PX = 640
 Scene = tuple[tuple[int, float, float, float], ...]  # (class, dx from PE1, y, theta) per part
 SLOTS_MM = (-150.0, 0.0, 150.0)  # part positions along the belt around PE1
 
 
-def roi_slices(twin: Twin) -> tuple[slice, slice]:
-    """The detector's region of interest: ``ROI_PX`` square around PE1 in the image."""
+def roi_slices(twin: Twin) -> Roi:
+    """The detector's region of interest around PE1, seen by the exact camera of ``twin``."""
     camera = CameraModel.from_mujoco(twin.model, twin.data, "cam_inspect")
-    geo = twin.geo
-    z = float(np.mean([c.height_mm for c in twin.cfg.parts.classes])) / 2
-    centre = np.array([geo.belt_origin_x + geo.pe1_x, geo.belt_origin_y, geo.belt_surface_z + z])
-    u, v = camera.project(centre * 1e-3)
-    cam = twin.cfg.camera
-    u0 = int(min(max(round(u) - ROI_PX // 2, 0), cam.width_px - ROI_PX))
-    v0 = int(min(max(round(v) - ROI_PX // 2, 0), cam.height_px - ROI_PX))
-    return slice(v0, v0 + ROI_PX), slice(u0, u0 + ROI_PX)
+    return pe1_roi(camera, twin.geo, twin.cfg)
 
 
 def reference_scenes(seed: int, count: int, min_parts: int = 3) -> list[Scene]:

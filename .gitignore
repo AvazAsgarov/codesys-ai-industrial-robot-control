@@ -62,3 +62,6 @@ plc/*.log
 .airc/
 plc/scripts/*.log
 !.env.example
+
+# YOLOE text encoder, downloaded by Ultralytics when prompts are set
+mobileclip2_b.ts
