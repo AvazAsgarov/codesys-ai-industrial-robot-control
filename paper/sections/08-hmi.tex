@@ -1,5 +1,50 @@
 \section{Operator Interface}\label{sec:hmi}
-% TODO(P5): ISA-101 high-performance design principles \cite{ISA-101.01}, screen hierarchy.
-% TODO(P5): alarm presentation \cite{ISA-18.2}, user roles.
 
-Placeholder: this section will be written in a later phase~\cite{ISA-101.01}~\cite{ISA-18.2}.
+The operator interface is a native CODESYS visualization served by the soft-PLC both as
+TargetVisu and as WebVisu (Fig.~\ref{fig:hmi}). It has three pages: \emph{Overview} (line mimic,
+belt speed, placed parts per bin, safety and link status, alarm summary, commands),
+\emph{Robot} (joint positions against their limits, following error per joint, worst joint, jog
+panel, speed override) and \emph{Alarms}.
+
+\subsection{Design}
+
+The screens follow the high-performance principles of ISA-101~\cite{ISA-101.01}: neutral grey
+surfaces, one accent colour for navigation and the primary command, and colour otherwise reserved
+for abnormal states and alarms. Analog values are shown with their range. Alarms are grouped by
+priority after ISA-18.2~\cite{ISA-18.2}: P1 Critical, P2 Error and P3 Warning, each row with its
+priority prefix. A row is lit while its alarm is active or unacknowledged, and a separate list
+shows which conditions are still present, so the operator can see why a reset would fail. A top
+bar on every page shows the PackML state, the current pick step, the mode and the number of
+placed parts; the mode selector and the Reset, Start and Stop commands sit in a bottom bar.
+
+\subsection{Logic in the PLC, Not in the Screens}
+
+The screens contain no logic. Two function blocks carry it, so that the simulation tests can
+reach it. \texttt{FB\_HmiPanel} turns the panel buttons into cell commands: each button acts on
+its rising edge and is cleared after one cycle, so a held or stuck button cannot repeat a
+command; when several buttons arrive in one cycle, the order of priority is Abort, Stop, Clear,
+Reset, Suspend, Unsuspend, Start. The mode selector is applied only when it changes, so a mode
+requested over OPC UA is not overwritten by an untouched panel. The PackML state machine still
+rejects any command that is not allowed in the current state. \texttt{FB\_HmiView} prepares
+everything the screens display: state, mode and pick-step texts, state groups, alarm rows and
+equipment signals.
+
+Access rights use the visualization's user groups (Operator, Maintenance, Admin): Clear, Abort,
+jogging and the speed override require Maintenance. The jog buttons act only in Manual mode and
+in Execute, which the Robot page shows with a \emph{jog permitted} lamp. The screens themselves are
+generated from text descriptions by a script and exported as visualization objects, so they are
+versioned like the code.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.72\textwidth]{hmi_overview_live}
+\caption{Overview page of the operator HMI during a live run (Production, Execute, ten parts
+placed): line mimic, belt speed, parts per bin, safety and link status, alarm lists by priority,
+and the commands. Colour appears only for status lamps and the primary command.}
+\label{fig:hmi}
+\end{figure*}
+
+CODESYS's own alarm management was tried for the alarm rows, but its generated code did not
+build on SP22 Patch~4; the rows are therefore lamps prepared by \texttt{FB\_HmiView}, with
+\texttt{FB\_AlarmHandler} as the single alarm source. The screens show no alarm time stamps or
+history.
