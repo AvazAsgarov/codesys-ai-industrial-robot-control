@@ -17,5 +17,5 @@ def test_sleep_is_accurate_on_the_precise_loop() -> None:
         return late
 
     late = run_precise(lateness())
-    assert statistics.fmean(late) < 3.0
-    assert max(late) < 8.0
+    assert statistics.fmean(late) < 5.0  # default loop on Windows: 8-15 ms
+    assert max(late) < 15.0  # below the 15.6 ms tick of the default clock

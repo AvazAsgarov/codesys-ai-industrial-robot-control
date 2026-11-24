@@ -23,10 +23,11 @@ import numpy as np
 from airc.bridge.client import BridgeClient, BridgeDisconnectedError
 from airc.bridge.messages import PlcInputs, PlcOutputs, Six
 from airc.bridge.oracle import GroundTruthOracle
-from airc.twin.scenario import Scenario, SpawnSchedule
+from airc.twin.scenario import FaultEvent, FaultTimeline, Scenario, SpawnSchedule
 from airc.twin.twin import Twin, TwinState
 
 MM = 0.001
+BLOCKED_DAMPING = 1e7  # N·m·s/rad: a blocked joint
 
 
 _BaseLoop: type[asyncio.AbstractEventLoop] = (
@@ -94,6 +95,7 @@ class RunReport:
     lost: int = 0
     cycle_ms: list[float] = field(default_factory=list[float])
     max_gap_ms: float = 0.0  # longest time between two cycle starts
+    faults: int = 0
 
     @property
     def cycle_ms_mean(self) -> float:
@@ -138,8 +140,13 @@ class Runner:
         self.period_s = period_s if period_s is not None else twin.cfg.bridge_period_s
         self.schedule = SpawnSchedule(scenario)
         self.oracle = GroundTruthOracle(twin.geo.pe1_x)
+        self.faults = FaultTimeline(scenario)
         self.door_closed = True
         self.estop_ok = True
+        self.bridge_lost = False
+        self._forced_full: set[int] = set()
+        self._saved_damping: dict[int, float] = {}
+        self._t0: float | None = None
         self.after_cycle: Callable[[], None] | None = None  # e.g. a viewer sync
         self._heartbeat = False
         self._feedback_seq = 0
@@ -151,7 +158,7 @@ class Runner:
     def _inputs(self, out: PlcOutputs, state: TwinState) -> PlcInputs:
         self._heartbeat = not self._heartbeat
         self._feedback_seq += 1
-        full = state.bin_full
+        full = tuple(f or i in self._forced_full for i, f in enumerate(state.bin_full))
         return PlcInputs(
             heartbeat=self._heartbeat,
             twin_active=True,
@@ -195,6 +202,34 @@ class Runner:
             self._report.captures += 1
         self._pending = self._inputs(out, state)
 
+    def _apply(self, event: FaultEvent) -> None:
+        fault, on = event.fault, event.start
+        target = fault.target if fault.target is not None else 0
+        match fault.kind:
+            case "estop":
+                self.estop_ok = not on
+            case "door_open":
+                self.door_closed = not on
+            case "lose_bridge":
+                self.bridge_lost = on
+            case "drop_part":
+                if on:
+                    self.twin.drop_part(block_grip=True)
+                else:
+                    self.twin.allow_grip()
+            case "block_bin":
+                if on:
+                    self._forced_full.add(target)
+                else:
+                    self._forced_full.discard(target)
+            case "block_joint":
+                if on:
+                    self._saved_damping[target] = self.twin.joint_damping(target)
+                    self.twin.set_joint_damping(target, BLOCKED_DAMPING)
+                else:
+                    self.twin.set_joint_damping(target, self._saved_damping.pop(target))
+        self._report.faults += int(on)
+
     def _finish(self) -> RunReport:
         report = self._report
         state = self.twin.state()
@@ -233,6 +268,15 @@ class Runner:
             if duration_s is not None and time.perf_counter() - start >= duration_s:
                 break
             t0 = time.perf_counter()
+            if self._t0 is None:
+                self._t0 = t0
+            for event in self.faults.events(t0 - self._t0):
+                self._apply(event)
+            if self.bridge_lost:  # fault: no exchange with the PLC, the twin stands still
+                self._last_start = None
+                next_t += self.period_s
+                await asyncio.sleep(max(0.0, next_t - time.perf_counter()))
+                continue
             if self._last_start is not None:
                 gap = (t0 - self._last_start) * 1000.0
                 self._report.max_gap_ms = max(self._report.max_gap_ms, gap)

@@ -1,16 +1,19 @@
-"""Seeded scenarios: which parts appear on the belt, and when (``config/scenarios/*.yaml``).
+"""Seeded scenarios: which parts appear on the belt, when, and which faults happen.
+
+Scenario files live in ``config/scenarios/*.yaml``.
 
 Parts are spawned by belt travel, not by wall time: a new part appears every ``pitch_mm`` of belt
 movement (± jitter), so spawning pauses whenever the PLC stops the belt and the spacing on the
 belt never depends on the PLC's speed or on the simulator's pace.
 """
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, Self
 
 import numpy as np
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from airc.twin.twin import PartSpec
 
@@ -29,14 +32,42 @@ class SpawnConfig(_Frozen):
     theta_deg: float = 0.0  # uniform in +/- this
 
 
+FaultKind = Literal["estop", "door_open", "drop_part", "block_bin", "lose_bridge", "block_joint"]
+_TARGETED = ("block_bin", "block_joint")
+_EPS = 1e-9
+
+
+class Fault(_Frozen):
+    """A fault injected at ``at_s`` seconds into the run, active for ``duration_s``.
+
+    Kinds: ``estop`` (E-stop circuit opens), ``door_open`` (safety door opens), ``drop_part``
+    (the gripped part falls; suction cannot grip again while active), ``block_bin`` (bin
+    ``target`` 0..5 reports full), ``lose_bridge`` (the bridge stops talking to the PLC),
+    ``block_joint`` (joint ``target`` 0..5 cannot move).
+    """
+
+    at_s: float = Field(ge=0)
+    kind: FaultKind
+    duration_s: float = Field(default=0.0, ge=0)
+    target: int | None = Field(default=None, ge=0, le=5)
+
+    @model_validator(mode="after")
+    def _target_given(self) -> Self:
+        if self.kind in _TARGETED and self.target is None:
+            msg = f"fault {self.kind} needs a target (0..5)"
+            raise ValueError(msg)
+        return self
+
+
 class Scenario(_Frozen):
-    """A run of the cell: seed, part supply and (later) faults."""
+    """A run of the cell: seed, part supply and faults."""
 
     name: str
     seed: int
     duration_s: float | None = None
     spawn: SpawnConfig
     bin_capacity: int | None = None
+    faults: tuple[Fault, ...] = ()
 
     @classmethod
     def load(cls, path: Path) -> "Scenario":
@@ -75,3 +106,34 @@ class SpawnSchedule:
             parts.append(self._draw_part())
             self._next_mm += self._draw_pitch()
         return parts
+
+
+@dataclass(frozen=True)
+class FaultEvent:
+    """A fault starting (``start``) or ending."""
+
+    fault: Fault
+    start: bool
+
+
+class FaultTimeline:
+    """Reports each fault's start and end exactly once, as run time passes."""
+
+    def __init__(self, scenario: Scenario) -> None:
+        """Prepare the scenario's faults."""
+        self._faults = scenario.faults
+        self._started = [False] * len(self._faults)
+        self._ended = [False] * len(self._faults)
+
+    def events(self, t_s: float) -> list[FaultEvent]:
+        """Fault starts and ends due at run time ``t_s`` (seconds), in scenario order."""
+        out: list[FaultEvent] = []
+        for i, fault in enumerate(self._faults):
+            if not self._started[i] and t_s + _EPS >= fault.at_s:
+                self._started[i] = True
+                out.append(FaultEvent(fault, start=True))
+            due_end = t_s + _EPS >= fault.at_s + fault.duration_s
+            if self._started[i] and not self._ended[i] and due_end:
+                self._ended[i] = True
+                out.append(FaultEvent(fault, start=False))
+        return out

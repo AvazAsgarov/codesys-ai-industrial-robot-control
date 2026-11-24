@@ -110,6 +110,7 @@ class Twin:
         self._active: dict[int, _Active] = {}
         self._next_pid = 1
         self._held: int | None = None
+        self._grip_blocked = False
         self._last_sp: FloatArray | None = None
         self._last_belt: float | None = None
         self._bin_counts = [0] * len(self.geo.bin_drop_xy)
@@ -237,6 +238,10 @@ class Twin:
         self._last_sp = np.asarray(q_rad, dtype=np.float64).copy()
         mujoco.mj_forward(self.model, self.data)
 
+    def joint_damping(self, joint: int) -> float:
+        """Damping of a joint (index 0..5)."""
+        return float(self.model.dof_damping[self._dadr[joint]])
+
     def set_joint_damping(self, joint: int, damping: float) -> None:
         """Change the damping of a joint (index 0..5); a huge value blocks the joint."""
         self.model.dof_damping[self._dadr[joint]] = damping
@@ -293,10 +298,19 @@ class Twin:
             self.data.eq_active[self._weld_eq[self._active[self._held].slot]] = 0
         self._held = None
 
+    def drop_part(self, block_grip: bool = True) -> None:
+        """Fault: the gripped part falls; while ``block_grip`` the cup cannot grip again."""
+        self._release()
+        self._grip_blocked = block_grip
+
+    def allow_grip(self) -> None:
+        """End of a drop fault: the cup can grip again."""
+        self._grip_blocked = False
+
     def _update_suction(self, vacuum_on: bool) -> None:
         if not vacuum_on:
             self._release()
-        elif self._held is None:
+        elif self._held is None and not self._grip_blocked:
             pid = self._grip_candidate()
             if pid is not None:
                 self._weld(pid)
