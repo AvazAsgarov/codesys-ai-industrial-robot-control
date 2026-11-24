@@ -62,3 +62,6 @@ plc/*.log
 .airc/
 plc/scripts/*.log
 !.env.example
+
+# demo videos (airc run --record): large binaries, not versioned
+experiments/demo/
