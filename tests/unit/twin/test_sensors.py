@@ -59,3 +59,19 @@ def test_bin_full_at_capacity() -> None:
         state = twin.step(HOME_RAD, 0.0, 0.0, False)
     assert state.bin_full[4]
     assert not state.bin_full[0]
+
+
+def test_part_resting_on_another_in_the_bin_counts() -> None:
+    twin = Twin()
+    twin.drop_into_bin(PartSpec(cls=0, y_mm=0.0, theta_deg=0.0), bin_index=0)
+    state = twin.state()
+    for _ in range(40):
+        state = twin.step(HOME_RAD, 0.0, 0.0, False)
+    pid = twin.drop_into_bin(PartSpec(cls=0, y_mm=0.0, theta_deg=0.0), bin_index=0)
+    # put the second part right on top of the first one's footprint, above the bin's rim
+    first = twin.parts()[0]
+    twin.place_part_at(pid, first.x_mm, first.y_mm, z_mm=twin.cfg.bins.size_mm[2] + 30.0)
+    for _ in range(40):
+        state = twin.step(HOME_RAD, 0.0, 0.0, False)
+    assert twin.part(pid).in_bin == 0
+    assert state.bin_counts[0] == 2

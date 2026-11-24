@@ -39,6 +39,7 @@ suction:
   cup_radius_mm: 20
 
 bins:
-  size_mm: [160, 160, 120]       # inner width, depth, height
+  # inner width (X, limited by the 200 mm spacing of the PLC drop poses), depth (Y), height
+  size_mm: [160, 300, 160]       # rim 160: a held part clears it by 50 mm at the drop pose (Z 250)
   wall_mm: 5
   capacity: 10

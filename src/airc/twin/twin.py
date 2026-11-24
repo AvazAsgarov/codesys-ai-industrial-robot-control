@@ -21,6 +21,7 @@ from airc.twin.scene import MM, PART_GROUP, PartSlot, build_mjcf, part_slots
 FloatArray = NDArray[np.float64]
 BELT_JUMP_M = 0.2  # a larger belt position change in one cycle is a PLC restart, not motion
 SETTLED_SPEED = 0.05  # m/s: a part slower than this counts as resting
+STACK_ALLOWANCE_M = 0.08  # a part resting this far above a bin's rim lies on other parts in it
 RESTING_TOL_M = 0.005  # a part this close to the belt surface lies on it
 CUP_PENETRATION_M = 0.002  # the cup may press this far into the part top and still grip
 
@@ -197,6 +198,18 @@ class Twin:
         z = self.cfg.bins.size_mm[2] * MM + 0.03
         return self._add(spec.cls, np.array([bx * MM, by * MM, z]), spec.theta_deg)
 
+    def place_part_at(self, pid: int, x_mm: float, y_mm: float, z_mm: float) -> None:
+        """Test helper: move a part (upright, at rest) to belt-frame x/y and world z (mm)."""
+        a = self._active[pid]
+        pos = np.array(
+            [
+                (self.geo.belt_origin_x + x_mm) * MM,
+                (self.geo.belt_origin_y + y_mm) * MM,
+                z_mm * MM,
+            ]
+        )
+        self._place(a.slot, pos, 0.0)
+
     def part(self, pid: int) -> PartTruth:
         """Ground truth of a spawned part."""
         a = self._active[pid]
@@ -340,7 +353,7 @@ class Twin:
                 continue
             x, y, z = self._part_pos(a.slot)
             v = self.data.qvel[self._free_v[a.slot] : self._free_v[a.slot] + 3]
-            if float(np.linalg.norm(v)) > SETTLED_SPEED or z > h:
+            if float(np.linalg.norm(v)) > SETTLED_SPEED or z > h + STACK_ALLOWANCE_M:
                 continue
             for i, (bx, by) in enumerate(self.geo.bin_drop_xy):
                 if abs(x - bx * MM) <= w / 2 and abs(y - by * MM) <= d / 2:
