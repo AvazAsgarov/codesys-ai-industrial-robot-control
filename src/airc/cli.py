@@ -1,8 +1,9 @@
 """Command-line interface: ``airc``."""
 
 import json
+import threading
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Protocol
 
 import typer
 import yaml
@@ -34,6 +35,7 @@ app.add_typer(plc_app, name="plc")
 
 EXIT_CONFIG_ERROR = 2
 EXIT_PLC_ERROR = 3
+VISION_WARMUP_S = 120.0  # loading and compiling the detector on the CPU
 
 
 def _version_callback(value: bool) -> None:
@@ -200,6 +202,8 @@ def run_cell(  # noqa: PLR0913, PLR0917 - one parameter per command-line option
             typer.echo(f"error: {exc}", err=True)
             raise typer.Exit(EXIT_CONFIG_ERROR) from None
     worker = _vision_worker(twin) if vision == "yoloe" else None
+    if worker is not None:
+        _wait_for_vision(worker)
     runner = Runner(client, twin, scen, vision=worker, recorder=recorder)
     handle = None
     if viewer:
@@ -231,6 +235,19 @@ def run_cell(  # noqa: PLR0913, PLR0917 - one parameter per command-line option
         f"{report.captures}, bins {report.bin_counts}, wrong bin {report.wrong_bin}, "
         f"missed {report.missed}, lost {report.lost}"
     )
+
+
+class _Ready(Protocol):
+    ready: threading.Event
+
+
+def _wait_for_vision(worker: _Ready, timeout_s: float = VISION_WARMUP_S) -> bool:
+    """Wait until the detector is loaded, so the first part is answered before its deadline."""
+    typer.echo("loading the detector ...")
+    if worker.ready.wait(timeout_s):
+        return True
+    typer.echo(f"vision not ready after {timeout_s:.0f} s: the first captures may go unanswered")
+    return False
 
 
 def _vision_worker(twin: Twin) -> "VisionWorker":

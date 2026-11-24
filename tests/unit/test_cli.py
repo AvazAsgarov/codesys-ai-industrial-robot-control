@@ -34,3 +34,27 @@ def test_cli_run_rejects_an_unknown_record_camera(tmp_path):
     assert result.exit_code == 2
     assert "no_such_cam" in result.output
     assert not out.exists()
+
+
+class _Warming:
+    """Stands in for VisionWorker: `ready` is set after a delay (or never)."""
+
+    def __init__(self, delay_s: float | None) -> None:
+        import threading  # noqa: PLC0415
+
+        self.ready = threading.Event()
+        if delay_s is not None:
+            threading.Timer(delay_s, self.ready.set).start()
+
+
+def test_run_waits_for_the_vision_warm_up():
+    from airc.cli import _wait_for_vision  # noqa: PLC0415
+
+    assert _wait_for_vision(_Warming(0.2), timeout_s=5.0)
+
+
+def test_run_goes_on_if_the_warm_up_hangs(capsys):
+    from airc.cli import _wait_for_vision  # noqa: PLC0415
+
+    assert not _wait_for_vision(_Warming(None), timeout_s=0.2)
+    assert "not ready" in capsys.readouterr().out
