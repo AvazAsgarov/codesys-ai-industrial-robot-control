@@ -136,3 +136,35 @@ class OpenVinoDetector:
             )
         out.sort(key=lambda d: d.confidence, reverse=True)
         return out
+
+
+class Rotated:
+    """A detector that is shown the image turned by quarter turns (counter-clockwise).
+
+    The tilted inspection camera looks along the belt with the belt's +X to the image right, so
+    an upright part leans sideways in the image; turned once counter-clockwise, the far end of
+    the belt is at the top and parts stand upright as in everyday photos. Masks and boxes are
+    turned back: the answer is in the original image.
+    """
+
+    def __init__(self, detector: Detector, quarter_turns: int = 1) -> None:
+        """Wrap ``detector``; ``quarter_turns`` counter-clockwise (negative: clockwise)."""
+        self._inner = detector
+        self._k = quarter_turns % 4
+        self.name = detector.name if self._k == 0 else f"{detector.name}-rot{90 * self._k}"
+
+    def detect(self, rgb: NDArray[np.uint8]) -> list[Detection]:
+        """Detections in the original (unturned) image, best first."""
+        if self._k == 0:
+            return self._inner.detect(rgb)
+        turned = np.ascontiguousarray(np.rot90(rgb, self._k))
+        out: list[Detection] = []
+        for det in self._inner.detect(turned):
+            mask = np.ascontiguousarray(np.rot90(det.mask, -self._k))
+            box = det.box_xyxy
+            h = turned.shape[0]
+            for _ in range(self._k):  # undo one counter-clockwise turn: (x, y) <- (h - y', x')
+                box = (h - box[3], box[0], h - box[1], box[2])
+                h = turned.shape[1] if h == turned.shape[0] else turned.shape[0]
+            out.append(Detection(det.label, det.cls, det.confidence, box, mask))
+        return out

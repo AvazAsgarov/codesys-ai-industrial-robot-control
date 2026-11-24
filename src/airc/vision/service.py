@@ -20,6 +20,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from airc.bridge.messages import CaptureMsg, VisionMsg
+from airc.twin.cell import CellGeometry
+from airc.twin.config import TwinConfig
 from airc.twin.twin import Twin
 from airc.vision.camera import CameraModel
 from airc.vision.detector import Detection, Detector
@@ -81,6 +83,78 @@ def _wrap_theta(deg: float) -> float:
     return (deg + 90.0) % 180.0 - 90.0
 
 
+Roi = tuple[slice, slice]  # rows, columns of the full camera image
+
+
+def pe1_roi(camera: CameraModel, geo: CellGeometry, cfg: TwinConfig) -> Roi:
+    """The detector's window: ``ROI_PX`` square, native resolution, centred on PE1 if it fits.
+
+    The centre is where the camera sees PE1 on the belt's centre line at half the mean part
+    height; the window is shifted inside the image where it would cross the border.
+    """
+    heights = [c.height_mm for c in cfg.parts.classes]
+    pe1 = (
+        np.array(
+            [
+                geo.belt_origin_x + geo.pe1_x,
+                geo.belt_origin_y,
+                geo.belt_surface_z + np.mean(heights) / 2,
+            ]
+        )
+        * 1e-3
+    )
+    u, v = camera.project(pe1)
+    half = ROI_PX // 2
+    cam = cfg.camera
+    u0 = max(int(min(max(round(u) - half, 0), cam.width_px - ROI_PX)), 0)
+    v0 = max(int(min(max(round(v) - half, 0), cam.height_px - ROI_PX)), 0)
+    return slice(v0, v0 + ROI_PX), slice(u0, u0 + ROI_PX)
+
+
+def crop_roi(frame: Frame, roi: Roi) -> Frame:
+    """The window ``roi`` of a full camera frame (contiguous copies)."""
+    return Frame(
+        rgb=np.ascontiguousarray(frame.rgb[roi]),
+        bodies=np.ascontiguousarray(frame.bodies[roi]),
+    )
+
+
+@dataclass(frozen=True)
+class BeltPose:
+    """A detection's pose on the belt (belt frame) and its image pose in the full frame."""
+
+    x_mm: float
+    y_mm: float
+    theta_deg: float  # belt frame, wrapped to [-90, 90)
+    u: float  # mask centroid in the full image
+    v: float
+    z_mm: float  # height above the belt of the plane the centroid is mapped onto
+
+
+def belt_pose(
+    det: Detection, roi: Roi, camera: CameraModel, geo: CellGeometry, heights_mm: list[float]
+) -> BeltPose:
+    """Pixel -> belt pose of a detection found in the window ``roi``.
+
+    The mask centroid is mapped onto the plane at half the class height (the mean height for a
+    detection without class); the mask's principal axis is mapped through two points along it.
+
+    Raises:
+        ValueError: If the mask is empty.
+    """
+    pose = mask_pose(det.mask)
+    u = pose.u + roi[1].start
+    v = pose.v + roi[0].start
+    z = (heights_mm[det.cls] if det.cls is not None else float(np.mean(heights_mm))) / 2
+    x, y = camera.pixel_to_belt(u, v, z, geo)
+    t = np.radians(pose.theta_deg)
+    du, dv = AXIS_PX * np.cos(t), -AXIS_PX * np.sin(t)  # image v points down
+    x1, y1 = camera.pixel_to_belt(u - du, v - dv, z, geo)
+    x2, y2 = camera.pixel_to_belt(u + du, v + dv, z, geo)
+    theta = _wrap_theta(float(np.degrees(np.arctan2(y2 - y1, x2 - x1))))
+    return BeltPose(x, y, theta, u, v, z)
+
+
 class VisionWorker:
     """A thread that owns the renderer and the detector (OpenGL and OpenVINO stay in it)."""
 
@@ -107,25 +181,8 @@ class VisionWorker:
         self._jobs: queue.Queue[CaptureJob | None] = queue.Queue()
         self._done: queue.Queue[VisionResult] = queue.Queue()
         self._seq = 0
-        geo = twin.geo
-        heights = [c.height_mm for c in twin.cfg.parts.classes]
-        self._heights = heights
-        pe1 = (
-            np.array(
-                [
-                    geo.belt_origin_x + geo.pe1_x,
-                    geo.belt_origin_y,
-                    geo.belt_surface_z + np.mean(heights) / 2,
-                ]
-            )
-            * 1e-3
-        )
-        u, v = self._camera.project(pe1)
-        half = ROI_PX // 2
-        cam = twin.cfg.camera
-        u0 = int(min(max(round(u) - half, 0), cam.width_px - ROI_PX))
-        v0 = int(min(max(round(v) - half, 0), cam.height_px - ROI_PX))
-        self._roi = (slice(max(v0, 0), max(v0, 0) + ROI_PX), slice(max(u0, 0), max(u0, 0) + ROI_PX))
+        self._heights = [c.height_mm for c in twin.cfg.parts.classes]
+        self._roi = pe1_roi(self._camera, twin.geo, twin.cfg)
         self._thread = threading.Thread(target=self._run, name="vision", daemon=True)
         self._thread.start()
 
@@ -197,10 +254,7 @@ class VisionWorker:
         return VisionMsg(self._seq, job.capture.part_id, False, 0, 0.0, 0.0, 0.0, 0.0)
 
     def _answer(self, job: CaptureJob, frame: Frame, detector: Detector, t0: float) -> VisionResult:
-        roi = Frame(
-            rgb=np.ascontiguousarray(frame.rgb[self._roi]),
-            bodies=np.ascontiguousarray(frame.bodies[self._roi]),
-        )
+        roi = crop_roi(frame, self._roi)
         if self._hook is not None:
             self._hook(roi)
         detections = detector.detect(roi.rgb)
@@ -208,20 +262,13 @@ class VisionWorker:
         pe1 = self._twin.geo.pe1_x
         best: tuple[float, Detection, float, float, float] | None = None
         for det in detections:
-            pose = mask_pose(det.mask)
-            u = pose.u + self._roi[1].start
-            v = pose.v + self._roi[0].start
-            z = (
-                self._heights[det.cls] if det.cls is not None else float(np.mean(self._heights))
-            ) / 2
-            x, y = self._camera.pixel_to_belt(u, v, z, self._twin.geo)
-            distance = abs(x - travel - pe1)
+            pose = belt_pose(det, self._roi, self._camera, self._twin.geo, self._heights)
+            distance = abs(pose.x_mm - travel - pe1)
             if distance > MAX_DISTANCE_MM:
                 continue
             key = distance + (0.0 if det.cls is not None else 1e6)  # a part before anything else
             if best is None or key < best[0]:
-                theta = self._belt_theta(u, v, pose.theta_deg, z)
-                best = (key, det, x - travel, y, theta)
+                best = (key, det, pose.x_mm - travel, pose.y_mm, pose.theta_deg)
         latency = (time.perf_counter() - t0) * 1000.0
         if best is None or best[1].cls is None:
             return VisionResult(
@@ -240,14 +287,6 @@ class VisionWorker:
             theta_deg=theta,
         )
         return VisionResult(msg, latency, len(detections), self._crop(roi.rgb, det), job=job)
-
-    def _belt_theta(self, u: float, v: float, theta_img_deg: float, z_mm: float) -> float:
-        """Image orientation -> belt-frame orientation (two points along the axis)."""
-        t = np.radians(theta_img_deg)
-        du, dv = AXIS_PX * np.cos(t), -AXIS_PX * np.sin(t)  # image v points down
-        x1, y1 = self._camera.pixel_to_belt(u - du, v - dv, z_mm, self._twin.geo)
-        x2, y2 = self._camera.pixel_to_belt(u + du, v + dv, z_mm, self._twin.geo)
-        return _wrap_theta(float(np.degrees(np.arctan2(y2 - y1, x2 - x1))))
 
     @staticmethod
     def _crop(rgb: NDArray[np.uint8], det: Detection) -> NDArray[np.uint8]:
