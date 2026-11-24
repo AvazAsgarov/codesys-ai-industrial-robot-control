@@ -1,6 +1,8 @@
 """Command-line interface: ``airc``."""
 
 import json
+import os
+import time
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -10,7 +12,9 @@ import yaml
 from airc import __version__
 from airc.bridge.client import BridgeClient
 from airc.bridge.tags import TagMap
-from airc.common.config import ConfigError, load_config
+from airc.common.config import ConfigError, DecisionConfig, load_config
+from airc.decision.service import DecisionService
+from airc.decision.worker import DecisionWorker
 from airc.plc import runtime
 from airc.plc.runtime import RuntimeSettings, load_runtime_settings
 from airc.runner import Runner, raise_priority, run_precise
@@ -163,23 +167,42 @@ def run_cell(
             "`airc vision export`) or 'oracle' (simulator ground truth).",
         ),
     ] = "oracle",
+    decision: Annotated[
+        str,
+        typer.Option(
+            "--decision",
+            help="Quality decisions: 'thx02' (hosted API, config/cell.yaml decision block; "
+            "optional key from the environment variable named there), 'replay:<path>' "
+            "(answer from a recording) or 'off' (the PLC's fallback rule decides). "
+            "Needs --vision yoloe.",
+        ),
+    ] = "off",
 ) -> None:
     """Run the digital twin against the soft-PLC through the OPC UA bridge."""
     try:
         cfg = load_config()
         scen = Scenario.load(scenario)
-    except (ConfigError, OSError) as exc:
+        decision_cfg = _decision_config(cfg.decision, decision)
+    except (ConfigError, OSError, ValueError) as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_CONFIG_ERROR) from None
     if vision not in ("oracle", "yoloe"):
         typer.echo("error: --vision oracle|yoloe", err=True)
         raise typer.Exit(EXIT_CONFIG_ERROR)
+    if decision_cfg is not None and vision != "yoloe":
+        typer.echo("error: --decision needs --vision yoloe (the oracle has no image)", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR)
     twin = Twin(cfg=TwinConfig.load(parts=scen.parts), bin_capacity=scen.bin_capacity)
     client = BridgeClient(
         cfg.plc.opcua_endpoint, TagMap.load(), timeout_s=twin.cfg.bridge_timeout_s
     )
+    try:
+        decider = _decision_worker(decision_cfg, scen) if decision_cfg is not None else None
+    except (OSError, ValueError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR) from None
     worker = _vision_worker(twin) if vision == "yoloe" else None
-    runner = Runner(client, twin, scen, vision=worker)
+    runner = Runner(client, twin, scen, vision=worker, decision=decider)
     handle = None
     if viewer:
         import mujoco.viewer  # noqa: PLC0415 - GUI libraries only when asked for
@@ -197,6 +220,8 @@ def run_cell(
             handle.close()
         if worker is not None:
             worker.close()
+        if decider is not None:
+            decider.close()
     typer.echo(
         f"cycles {report.cycles}, overruns {report.overruns}, reconnects {report.reconnects}, "
         f"cycle {report.cycle_ms_mean:.1f} ms mean / {report.cycle_ms_p95:.1f} ms p95, "
@@ -206,6 +231,45 @@ def run_cell(
         f"parts spawned {report.spawned} (skipped {report.spawn_skipped}), captures "
         f"{report.captures}, bins {report.bin_counts}, wrong bin {report.wrong_bin}, "
         f"missed {report.missed}, lost {report.lost}"
+    )
+    if decider is not None:
+        typer.echo(
+            f"decisions requested {report.decision_requests}, answered {len(report.decisions)}, "
+            f"written {report.decisions_written}, fallbacks {report.decision_fallbacks}, "
+            f"dropped {report.decisions_dropped}, latency {report.decision_latency_ms_p50:.0f} ms "
+            f"p50 / {report.decision_latency_ms_p95:.0f} ms p95"
+        )
+
+
+def _decision_config(base: DecisionConfig, choice: str) -> DecisionConfig | None:
+    """The ``decision`` block for ``--decision thx02|replay:<path>|off`` (``None``: off).
+
+    Raises:
+        ValueError: If the choice is unknown or the resulting block is invalid.
+    """
+    if choice == "off":
+        return None
+    if choice == "thx02":
+        update: dict[str, object] = {"mode": "api"}
+    elif choice.startswith("replay:") and len(choice) > len("replay:"):
+        update = {"mode": "replay", "replay_file": Path(choice.removeprefix("replay:")).resolve()}
+    else:
+        msg = f"--decision thx02|replay:<path>|off, got {choice!r}"
+        raise ValueError(msg)
+    return DecisionConfig.model_validate(base.model_dump() | update)
+
+
+def _decision_worker(cfg: DecisionConfig, scen: Scenario) -> DecisionWorker:
+    """THX-02 (or its recording) in its own thread; the API key never leaves the environment."""
+    run_id = f"{scen.name}-{time.strftime('%Y%m%dT%H%M%S')}"
+    if cfg.mode == "api":
+        key = "set" if os.environ.get(cfg.api_key_env) else "not set, free tier"
+        typer.echo(f"decision: {cfg.model} at {cfg.base_url} (${cfg.api_key_env}: {key})")
+    else:
+        typer.echo(f"decision: replay of {cfg.replay_file}")
+    return DecisionWorker(
+        lambda: DecisionService.from_config(cfg, run_id=run_id, seed=scen.seed),
+        deadline_s=cfg.deadline_s,
     )
 
 

@@ -6,6 +6,11 @@ ground truth) -> prepare joint feedback and sensors, which go out together with 
 read (one OPC UA round trip per cycle; the 20 ms extra age of the feedback is compensated by
 ``feedback_for_seq`` in the PLC). Cycles are paced on the monotonic clock;
 a late cycle is counted as an overrun and the schedule restarts from now (no burst to catch up).
+
+With a decision worker (Phase 4), each valid vision result with a crop is also sent to THX-02
+in the worker's thread; an AI decision that comes back for a part still before the pick
+window is written to the PLC (at most one per cycle). Fallbacks are never written: the PLC's
+own deadline rule (alarm ``DecisionFallback``) decides those parts (ADR 0006).
 """
 
 import asyncio
@@ -18,18 +23,20 @@ import sys
 import time
 from collections import deque
 from collections.abc import Callable, Coroutine, Generator
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass, field, replace
+from typing import Any, Protocol
 
 import numpy as np
 
 from airc.bridge.client import BridgeClient, BridgeDisconnectedError
-from airc.bridge.messages import PackMLState, PlcInputs, PlcOutputs, Six
+from airc.bridge.messages import DecisionSource, PackMLState, PlcInputs, PlcOutputs, Six
 from airc.bridge.oracle import GroundTruthOracle
+from airc.decision.result import Decision
+from airc.decision.worker import DecisionJob, DecisionWorker
 from airc.plc.runtime import disable_timer_throttling
 from airc.twin.scenario import FaultEvent, FaultTimeline, Scenario, SpawnSchedule
 from airc.twin.twin import MAX_STEP_S, Twin, TwinState
-from airc.vision.service import CaptureJob, VisionResult, VisionWorker
+from airc.vision.service import CaptureJob, VisionResult
 
 MM = 0.001
 BLOCKED_DAMPING = 1e7  # N·m·s/rad: a blocked joint
@@ -89,6 +96,25 @@ def raise_priority() -> None:
         disable_timer_throttling(os.getpid())
 
 
+class VisionSource(Protocol):
+    """Answers captures off the bridge loop (:class:`~airc.vision.service.VisionWorker`)."""
+
+    def submit(self, job: CaptureJob) -> None:
+        """Queue a capture (returns at once)."""
+        ...
+
+    def poll(self) -> list[VisionResult]:
+        """Results finished since the last poll (never blocks)."""
+        ...
+
+
+def _percentile(values: list[float], q: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    return ordered[max(0, int(len(ordered) * q) - 1)]
+
+
 def run_precise[T](coro: Coroutine[Any, Any, T]) -> T:
     """Run a coroutine on a :class:`PerfCounterLoop` with 1 ms system timer resolution."""
     with fine_timer(), asyncio.Runner(loop_factory=PerfCounterLoop) as runner:
@@ -113,6 +139,10 @@ class RunReport:
     max_gap_ms: float = 0.0  # longest time between two cycle starts
     faults: int = 0
     vision: list[VisionResult] = field(default_factory=list[VisionResult])  # answers, in order
+    decision_requests: int = 0  # parts sent to the decision worker
+    decisions: list[Decision] = field(default_factory=list[Decision])  # all answers, AI or not
+    decisions_written: int = 0  # AI decisions written to the PLC
+    decisions_dropped: int = 0  # AI decisions too late (part at the pick window) or unknown part
 
     @property
     def cycle_ms_mean(self) -> float:
@@ -122,10 +152,22 @@ class RunReport:
     @property
     def cycle_ms_p95(self) -> float:
         """95th percentile of the cycle work time (ms)."""
-        if not self.cycle_ms:
-            return 0.0
-        ordered = sorted(self.cycle_ms)
-        return ordered[max(0, int(len(ordered) * 0.95) - 1)]
+        return _percentile(self.cycle_ms, 0.95)
+
+    @property
+    def decision_fallbacks(self) -> int:
+        """Decisions that came back as the rule fallback (never written to the PLC)."""
+        return sum(d.source != DecisionSource.AI for d in self.decisions)
+
+    @property
+    def decision_latency_ms_p50(self) -> float:
+        """Median decision latency (ms), fallbacks included."""
+        return _percentile([d.latency_ms for d in self.decisions], 0.50)
+
+    @property
+    def decision_latency_ms_p95(self) -> float:
+        """95th percentile of the decision latency (ms), fallbacks included."""
+        return _percentile([d.latency_ms for d in self.decisions], 0.95)
 
 
 def _six(values: np.ndarray) -> Six:
@@ -136,13 +178,15 @@ def _six(values: np.ndarray) -> Six:
 class Runner:
     """Runs the twin against the PLC through the bridge client."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - the runner's collaborators
         self,
         client: BridgeClient,
         twin: Twin,
         scenario: Scenario,
         period_s: float | None = None,
-        vision: VisionWorker | None = None,
+        *,
+        vision: VisionSource | None = None,
+        decision: DecisionWorker | None = None,
     ) -> None:
         """Create a runner.
 
@@ -153,6 +197,8 @@ class Runner:
             period_s: Cycle period; default from the twin configuration (20 ms).
             vision: Answers captures from camera frames (in its own thread); default: the
                 ground-truth stand-in (Phase 2).
+            decision: Asks THX-02 about each part vision saw (in its own thread); needs
+                ``vision`` (the oracle has no image). ``None``: the PLC's fallback rule decides.
         """
         self.client = client
         self.twin = twin
@@ -162,6 +208,12 @@ class Runner:
         self.oracle = GroundTruthOracle(twin.geo.pe1_x)
         self.vision = vision
         self._unwritten: list[VisionResult] = []  # vision answers not yet written to the PLC
+        self.decision = decision
+        self.pick_start_x = twin.geo.pe2_x  # belt frame: a decision must arrive before this
+        self._captured_at: dict[int, float] = {}  # PLC part id -> perf_counter at the capture
+        self._awaiting: dict[int, tuple[float, float]] = {}  # part id -> (x, belt) at capture
+        self._decided: deque[Decision] = deque()  # decisions not yet handled
+        self._decision_seq = 0
         self.faults = FaultTimeline(scenario)
         self.door_closed = True
         self.estop_ok = True
@@ -197,6 +249,7 @@ class Runner:
             bin_full=(full[0], full[1], full[2], full[3], full[4], full[5]),
             door_closed=self.door_closed,
             estop_ok=self.estop_ok,
+            decision_active=self.decision is not None,
         )
 
     async def cycle(self) -> None:
@@ -229,11 +282,16 @@ class Runner:
             if out.capture.seq not in (0, self._last_capture):
                 self.vision.submit(CaptureJob.snapshot(self.twin, out.capture, out.belt_pos_mm))
                 self._last_capture = out.capture.seq
+                self._captured_at[out.capture.part_id] = t0
                 self._report.captures += 1
-            self._unwritten += self.vision.poll()
+            for result in self.vision.poll():
+                self._unwritten.append(result)
+                self._request_decision(result)
             while self._unwritten:  # a failed write stays here and is re-sent after reconnect
                 await self.client.write_vision(self._unwritten[0].msg)
                 self._report.vision.append(self._unwritten.pop(0))
+            if self.decision is not None:  # after the vision: the PLC needs that first
+                await self._handle_decisions(out.belt_pos_mm)
         elif out.capture.seq not in (0, self._last_capture):
             vision = self.oracle.on_capture(out.capture, self.twin.parts(), out.belt_pos_mm)
             await self.client.write_vision(vision)
@@ -249,6 +307,52 @@ class Runner:
                 (t2 - t1) * 1000.0,
                 (t3 - t2) * 1000.0,
             )
+
+    def _request_decision(self, result: VisionResult) -> None:
+        """Send a part vision saw (with its crop) to the decision worker (returns at once)."""
+        msg = result.msg
+        captured_at = self._captured_at.pop(msg.part_id, None)
+        if self.decision is None or not msg.valid or result.crop.size == 0 or result.job is None:
+            return
+        classes = self.twin.cfg.parts.classes
+        name = classes[msg.cls].name if 0 <= msg.cls < len(classes) else str(msg.cls)
+        self._awaiting[msg.part_id] = (msg.x_mm, result.job.capture.belt_pos_mm)
+        at = captured_at if captured_at is not None else time.perf_counter()
+        self.decision.submit(DecisionJob(msg.part_id, result.crop, name, msg.confidence, at))
+        self._report.decision_requests += 1
+
+    async def _handle_decisions(self, belt_pos_mm: float) -> None:
+        """Write the next AI decision still in time; log and count the others (never waits)."""
+        assert self.decision is not None
+        self._decided.extend(self.decision.poll())
+        while self._decided:
+            decision = self._decided[0]
+            where = self._awaiting.get(decision.part_id)
+            write = False
+            if decision.source != DecisionSource.AI:  # the PLC's deadline rule decides the part
+                _log.info("part %d: no AI decision (%s)", decision.part_id, decision.reason)
+            elif where is None:
+                _log.warning("part %d: decision for an unknown part dropped", decision.part_id)
+                self._report.decisions_dropped += 1
+            elif (x := where[0] + belt_pos_mm - where[1]) >= self.pick_start_x:
+                _log.warning(
+                    "part %d: decision after %.0f ms dropped: part at %.0f mm, pick window %.0f",
+                    decision.part_id,
+                    decision.latency_ms,
+                    x,
+                    self.pick_start_x,
+                )
+                self._report.decisions_dropped += 1
+            else:  # a failed write raises here: the decision stays first and is re-sent
+                self._decision_seq += 1
+                await self.client.write_decision(decision.to_msg(self._decision_seq))
+                self._report.decisions_written += 1
+                write = True
+            self._decided.popleft()
+            self._awaiting.pop(decision.part_id, None)
+            self._report.decisions.append(decision)
+            if write:
+                break  # one write per cycle: the PLC sees every sequence number
 
     def _record(self, out: PlcOutputs, state: TwinState) -> None:
         """Flight recorder: keep the last cycles; dump them when the cell leaves Execute."""
@@ -323,8 +427,10 @@ class Runner:
         await self.client.ensure_connected()  # connect first: the cycle gaps show steady state
         report = await self._loop(duration_s, stop)
         if self._pending is not None:  # flush the last cycle's inputs
+            # no decision service after the run: the PLC decides by its rule again
+            last = replace(self._pending, decision_active=False)
             try:
-                await self.client.write_inputs(self._pending)
+                await self.client.write_inputs(last)
             except BridgeDisconnectedError:
                 report.reconnects += 1
             self._pending = None

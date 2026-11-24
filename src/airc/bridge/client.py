@@ -51,6 +51,7 @@ INPUT_TAGS = (
     "bin_full",
     "door_closed",
     "estop_ok",
+    "decision_active",
 )
 VISION_MEMBERS = (
     "vision.part_id",
@@ -210,6 +211,7 @@ class BridgeClient:
             list(inp.bin_full),
             inp.door_closed,
             inp.estop_ok,
+            inp.decision_active,
         ]
         await self._write(INPUT_TAGS, values)
 

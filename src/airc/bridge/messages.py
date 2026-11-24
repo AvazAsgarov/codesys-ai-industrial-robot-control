@@ -133,6 +133,9 @@ class PlcInputs:
     bin_full: tuple[bool, bool, bool, bool, bool, bool]
     door_closed: bool
     estop_ok: bool
+    # A decision service is configured: the PLC waits for ``stDecision`` up to its deadline.
+    # FALSE: the PLC decides each part by its rule as soon as vision has identified it.
+    decision_active: bool = False
 
 
 @dataclass(frozen=True)
