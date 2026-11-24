@@ -1,0 +1,10 @@
+# Phase 2 demo: parts of the three types flow on the belt; the PLC picks and sorts them by class.
+name: p2_demo
+seed: 42
+duration_s: 300
+spawn:
+  pitch_mm: 600          # one part per 600 mm of belt travel (6 s at 100 mm/s)
+  jitter_mm: 100
+  mix: [1, 1, 1]         # Type A, B, C
+  y_offset_mm: 50
+  theta_deg: 30

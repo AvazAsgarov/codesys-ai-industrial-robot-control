@@ -42,6 +42,7 @@ class FakePlc:
     server: Server = field(default_factory=Server)
     nodes: dict[str, Any] = field(default_factory=dict)
     write_log: list[str] = field(default_factory=list)
+    write_values: list[tuple[str, Any]] = field(default_factory=list)
 
     @property
     def endpoint(self) -> str:
@@ -71,7 +72,9 @@ class FakePlc:
 
         def _on_write(event: Any, _dispatcher: Any) -> None:
             for req in event.request_params.NodesToWrite:
-                self.write_log.append(by_node.get(req.NodeId.to_string(), "?"))
+                name = by_node.get(req.NodeId.to_string(), "?")
+                self.write_log.append(name)
+                self.write_values.append((name, req.Value.Value.Value))
 
         self.server.iserver.subscribe_server_callback(
             CallbackType.PostWrite,  # pyright: ignore[reportArgumentType]

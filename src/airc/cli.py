@@ -7,9 +7,14 @@ import typer
 import yaml
 
 from airc import __version__
+from airc.bridge.client import BridgeClient
+from airc.bridge.tags import TagMap
 from airc.common.config import ConfigError, load_config
 from airc.plc import runtime
 from airc.plc.runtime import RuntimeSettings, load_runtime_settings
+from airc.runner import Runner, raise_priority, run_precise
+from airc.twin.scenario import Scenario
+from airc.twin.twin import Twin
 
 app = typer.Typer(
     name="airc",
@@ -127,3 +132,49 @@ def plc_deploy(
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(EXIT_PLC_ERROR) from None
     typer.echo(log.rstrip())
+
+
+@app.command("run")
+def run_cell(
+    scenario: Annotated[
+        Path, typer.Option("--scenario", "-s", help="Scenario YAML (config/scenarios/...).")
+    ] = Path("config/scenarios/p2_demo.yaml"),
+    duration: Annotated[
+        float | None, typer.Option("--duration", "-d", help="Seconds (default: the scenario's).")
+    ] = None,
+    viewer: Annotated[bool, typer.Option("--viewer", help="Open the MuJoCo viewer.")] = False,
+) -> None:
+    """Run the digital twin against the soft-PLC through the OPC UA bridge."""
+    try:
+        cfg = load_config()
+        scen = Scenario.load(scenario)
+    except (ConfigError, OSError) as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(EXIT_CONFIG_ERROR) from None
+    twin = Twin(bin_capacity=scen.bin_capacity)
+    runner = Runner(BridgeClient(cfg.plc.opcua_endpoint, TagMap.load()), twin, scen)
+    handle = None
+    if viewer:
+        import mujoco.viewer  # noqa: PLC0415 - GUI libraries only when asked for
+
+        handle = mujoco.viewer.launch_passive(twin.model, twin.data)
+        runner.after_cycle = handle.sync
+    raise_priority()
+    try:
+        report = run_precise(runner.run(duration_s=duration or scen.duration_s))
+    except KeyboardInterrupt:
+        typer.echo("interrupted")
+        raise typer.Exit(1) from None
+    finally:
+        if handle is not None:
+            handle.close()
+    typer.echo(
+        f"cycles {report.cycles}, overruns {report.overruns}, reconnects {report.reconnects}, "
+        f"cycle {report.cycle_ms_mean:.1f} ms mean / {report.cycle_ms_p95:.1f} ms p95, "
+        f"longest gap {report.max_gap_ms:.0f} ms"
+    )
+    typer.echo(
+        f"parts spawned {report.spawned} (skipped {report.spawn_skipped}), captures "
+        f"{report.captures}, bins {report.bin_counts}, wrong bin {report.wrong_bin}, "
+        f"lost {report.lost}"
+    )
