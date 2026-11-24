@@ -1,5 +1,7 @@
-// Exchange with the Python bridge (OPC UA from Phase 2). In Phase 1, tests write the inputs.
+// Exchange with the Python bridge over OPC UA (published by the symbol configuration).
+// In Phase 1, tests write the inputs.
 {attribute 'qualified_only'}
+{attribute 'symbol' := 'readwrite'}
 VAR_GLOBAL
     // --- inputs (bridge -> PLC) ---
     xHeartbeat : BOOL;                                     // toggled by the bridge every cycle

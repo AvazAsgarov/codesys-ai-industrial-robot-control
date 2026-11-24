@@ -90,3 +90,21 @@ Restart the `CODESYS Control Win V3 - x64` service (or the simulation) to contin
 
 Application folders (spec §5.2): `Config`, `Types`, `Interfaces`, `Framework`, `Equipment`,
 `Process`, `Comm`, `Programs`, `Tests`.
+
+## Soft-PLC runtime and deploy (Phase 2, ADR 0008)
+
+The application runs on **CODESYS Control Win V3 x64**, started as a console process of the
+current user (no administrator rights, demo mode ≈ 2 h per start):
+
+```powershell
+python tools/uv_run.py airc plc start    # applies config/runtime.yaml to the runtime's CODESYSControl.cfg, starts it
+python tools/uv_run.py airc plc deploy   # headless IDE runs deploy_runtime.py on a temp copy of RobotCell.project
+python tools/uv_run.py airc plc status
+python tools/uv_run.py airc plc stop
+```
+
+`deploy_runtime.py` creates the symbol configuration (OPC UA support) on the copy, points the
+device at `127.0.0.1` through the local gateway, creates or uses the runtime's initial user from
+`.env` (`AIRC_PLC_USER`, `AIRC_PLC_PASSWORD`, see `.env.example`), downloads, starts and writes the
+boot application. A deploy takes about 3 minutes (mostly CODESYS start-up); its log is
+`plc/scripts/deploy_runtime.log` (gitignored), ending in `DEPLOY OK`.

@@ -1,0 +1,26 @@
+# CODESYS Control Win V3 x64 as the project's soft-PLC (ADR 0008).
+# The runtime runs as a console process of the current user (no admin rights): its data and its
+# CODESYSControl.cfg live under data_dir/<instance id>/. `airc plc start` applies `settings` to that
+# file before every start (idempotent, the first original is kept as CODESYSControl.cfg.orig).
+executable: C:/Program Files/CODESYS 3.5.22.40/GatewayPLC/CODESYSControlService.exe
+data_dir: ${APPDATA}/CODESYS/CODESYSControlWinV3x64
+ide_executable: C:/Program Files/CODESYS 3.5.22.40/CODESYS/Common/CODESYS.exe
+ide_profile: CODESYS V3.5 SP22 Patch 4
+gateway_port: 1217
+programming_port: 11740
+opcua_port: 4840
+start_timeout_s: 30
+deploy_timeout_s: 900
+
+# Security option A (owner decision, 2026-11-23): anonymous, plaintext OPC UA, reachable from this
+# computer only. OPC UA and the web server are bound to the loopback adapter. The programming port
+# (11740) cannot be bound to loopback; it stays protected by the runtime user management and must
+# be blocked from the network by the firewall (see ADR 0008).
+settings:
+  CmpUserMgr:
+    SECURITY.UserMgmtAllowAnonymous: "YES"
+  CmpOPCUAServer:
+    UseLoopback: "1"
+    NetworkAdapter: Loopback Pseudo-Interface 1
+  CmpWebServer:
+    LocalAddress: 127.0.0.1

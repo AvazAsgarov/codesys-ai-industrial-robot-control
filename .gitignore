@@ -56,3 +56,7 @@ media/*.mp4
 # CODESYS base build intermediates
 plc/RobotCell.base*
 plc/*.log
+
+# Local soft-PLC state (pid, logs) and deploy logs
+.airc/
+plc/scripts/*.log
