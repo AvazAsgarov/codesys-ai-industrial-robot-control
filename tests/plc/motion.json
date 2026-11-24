@@ -288,6 +288,50 @@
             "PRG_TestMotion.fbRobot.xReady": true,
             "PRG_TestMotion.xLastDone": true
           }
+        }
+      ]
+    },
+    {
+      "name": "robot_reset_after_group_error_clears_fault",
+      "steps": [
+        {
+          "write": {
+            "PRG_TestMotion.stProbe.c.X": 743.6,
+            "PRG_TestMotion.stProbe.c.Y": 0,
+            "PRG_TestMotion.stProbe.c.Z": -900,
+            "PRG_TestMotion.stProbe.c.A": 0,
+            "PRG_TestMotion.stProbe.c.B": 120,
+            "PRG_TestMotion.stProbe.c.C": 180,
+            "PRG_TestMotion.iTargetSel": 4,
+            "PRG_TestMotion.eCmd": 6,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 2000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.xLastError": true,
+            "PRG_TestMotion.fbRobot.xFault": true,
+            "PRG_TestMotion.fbRobot.fbStatus.GroupErrorStop": true
+          }
+        },
+        {
+          "write": {
+            "PRG_TestMotion.eCmd": 5,
+            "PRG_TestMotion.xGo": true
+          }
+        },
+        {
+          "waitMs": 2000
+        },
+        {
+          "expect": {
+            "PRG_TestMotion.fbRobot.xFault": false,
+            "PRG_TestMotion.fbRobot.xReady": true,
+            "PRG_TestMotion.xLastDone": true
+          }
         },
         {
           "write": {

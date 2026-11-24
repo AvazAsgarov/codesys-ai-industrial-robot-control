@@ -48,6 +48,9 @@ Phase 2 — Digital twin and OPC UA bridge.
 - Clearing could hang after a SoftMotion lag error: a reset answered "no error to reset" kept the
   fault latched, and re-enabling an already enabled group failed. The TCP lag tolerance is now set
   to 10 mm (the twin's servo lag is supervised by `FB_JointMonitor`).
+- After an abort with a part on the cup, recovery lifts straight up and goes through the ready
+  pose before the point-to-point move to Quarantine (a direct move could leave the working
+  area); a reset after a real group error no longer re-latches the fault in the same cycle.
 
 ## [0.2.0] - 2026-11-23
 

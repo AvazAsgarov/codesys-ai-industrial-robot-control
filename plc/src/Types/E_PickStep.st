@@ -17,6 +17,7 @@ TYPE E_PickStep :
     Retract := 11,
     Aborting := 12,
     Aborted := 13,
-    Error := 14
+    Error := 14,
+    RecoverLift := 15       // after an abort with a part on the cup: straight up first
 );
 END_TYPE

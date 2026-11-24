@@ -249,7 +249,8 @@
           "expect": {
             "PRG_TestPick.fbSeq.udiPlaced": 2,
             "PRG_TestPick.fbSeq.eLastBin": "E_Bin.Quarantine",
-            "PRG_TestPick.fbVac.xValveOn": false
+            "PRG_TestPick.fbVac.xValveOn": false,
+            "PRG_TestPick.xSawRecoverLift": true
           }
         },
         {
