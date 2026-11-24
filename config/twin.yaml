@@ -1,0 +1,40 @@
+# MuJoCo digital twin (spec §8). Cell geometry (robot kinematics, belt frame, photo-eyes, bins)
+# comes from the PLC sources (plc/src/Config/GVL_CellGeometry.st); this file holds what only the
+# twin needs. Units: mm, kg, seconds, N·m.
+physics_timestep_s: 0.002
+bridge_period_s: 0.02
+
+belt:
+  length_mm: 2100
+  width_mm: 300
+  thickness_mm: 20
+
+photo_eye_height_mm: 20          # beam height above the belt
+
+# Simulated servo drives: PD position control, torque limit, rotor inertia (armature).
+servo:
+  kp: [2000, 2000, 2000, 400, 400, 400]            # N·m/rad
+  damping: [60, 60, 60, 10, 10, 10]                # N·m·s/rad
+  torque_limit: [300, 300, 300, 60, 60, 60]        # N·m
+  armature: [0.1, 0.1, 0.1, 0.02, 0.02, 0.02]      # kg·m²
+  # Joint limits [deg], as the PLC drives (Phase 1 plan, Task 1)
+  range_deg: [[-170, 170], [-90, 150], [-120, 150], [-180, 180], [-120, 120], [-360, 360]]
+
+# P2 placeholder parts (scanned objects come in Phase 3). Class index = PLC usiClass.
+parts:
+  mass_kg: 0.15
+  friction: 0.8
+  pool_per_class: 8
+  classes:
+    - {name: type_a, shape: box, size_mm: [60, 60, 40], rgba: [0.80, 0.15, 0.15, 1]}
+    - {name: type_b, shape: cylinder, size_mm: [60, 40], rgba: [0.15, 0.30, 0.85, 1]}
+    - {name: type_c, shape: box, size_mm: [80, 40, 40], rgba: [0.15, 0.65, 0.25, 1]}
+
+suction:
+  max_gap_mm: 5                  # weld when the cup is this close to the part top
+  cup_radius_mm: 20
+
+bins:
+  size_mm: [160, 160, 120]       # inner width, depth, height
+  wall_mm: 5
+  capacity: 10
