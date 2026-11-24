@@ -87,7 +87,22 @@ async def _production_run(endpoint: str, scenario: Scenario) -> tuple[RunReport,
                     f"worst joint={d.worst_joint} following error={d.following_error_deg}"
                 )
         await control.send_command(PackMLCommand.STOP)
-        await _wait_state(control, PackMLState.STOPPED, 60)
+        for k in range(600):
+            state = (await control.read_outputs()).state
+            if state == PackMLState.STOPPED:
+                break
+            if state == PackMLState.ABORTED:
+                d = await control.read_diag()
+                runner_state = f"runner done={task.done()}"
+                if task.done():
+                    runner_state += f" error={task.exception()!r}"
+                pytest.fail(
+                    f"Stop ended in ABORTED after {k / 10:.1f} s: alarm "
+                    f"{ALARMS.get(d.newest_alarm)}, step {d.pick_step}, {runner_state}"
+                )
+            await asyncio.sleep(0.1)
+        else:
+            pytest.fail("the cell did not stop within 60 s")
     finally:
         stop.set()
         report = await task

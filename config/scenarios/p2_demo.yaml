@@ -2,6 +2,7 @@
 name: p2_demo
 seed: 42
 duration_s: 300
+bin_capacity: 30          # bins hold ~40 parts; a full bin suspends the cell (operator empties it)
 spawn:
   pitch_mm: 1000         # one part per metre of belt (10 s at 100 mm/s): the pick cycle is ~9 s
   jitter_mm: 100
