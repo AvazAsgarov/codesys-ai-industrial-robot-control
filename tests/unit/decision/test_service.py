@@ -18,6 +18,8 @@ from airc.decision.service import DecisionService, PartRequest, crop_to_png
 from airc.decision.thx02 import Thx02Client
 from tests.unit.decision.conftest import BASE_URL, PNG, FakeSleep, answer, transport
 
+WINDOWS_TIMER_TICK_MS = 15.625  # default Windows clock resolution
+
 API = DecisionConfig(mode="api", base_url=BASE_URL, deadline_s=2.5)
 
 
@@ -88,7 +90,9 @@ def test_deadline_falls_back_without_waiting_for_the_api():
     assert d.source is DecisionSource.FALLBACK
     assert d.reason == "deadline"
     assert elapsed < 1.0
-    assert d.latency_ms >= 50.0
+    # the deadline was waited for; asyncio timers on Windows fire up to one clock tick
+    # (about 15.6 ms) early, so a 50 ms deadline can measure 49 ms
+    assert d.latency_ms >= 50.0 - WINDOWS_TIMER_TICK_MS
 
 
 def test_config_deadline_is_the_default():
