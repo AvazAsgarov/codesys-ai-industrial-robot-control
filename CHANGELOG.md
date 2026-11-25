@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-25
+
+Phase 6 — Verification and validation.
+
+### Added
+
+- `docs/verification.md`: what was verified on the final build (78/78 PLC simulation tests,
+  CI, the three soft-PLC end-to-end tests, live runs from the HMI, vision benchmark, reviews).
+
+### Fixed
+
+- The soft-PLC end-to-end tests built the twin with the Phase 2 placeholder parts; every grip
+  failed against the Phase 3 PLC. They now load the scenario's parts, like `airc run`.
+- `airc plc start` adopts a CODESYS Control already running from another checkout instead of
+  starting a second instance that competes for the OPC UA port.
+- The speed override on the Robot page is no longer gated to a user group the demo build has
+  no accounts for; the PLC's interlocks protect the machine (ADR 0010).
+
 ## [0.6.0] - 2026-11-25
 
 Phase 4 — Decision layer.
