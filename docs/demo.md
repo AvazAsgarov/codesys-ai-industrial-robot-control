@@ -34,7 +34,7 @@ The soft-PLC runs in demo mode for about 2 hours; after that, `airc plc start` a
 5. **Show a fault:** the fault scenario injects an E-stop, a full bin, a lost bridge and an open
    door: `airc run --vision yoloe --scenario config/scenarios/p2_faults.yaml --viewer`. The cell
    aborts (E-stop, door, bridge) or suspends (full bin); the alarm lamps light on the Alarms page.
-   Recover from the HMI: **Acknowledge**, **Clear** (Maintenance), **Reset**, **Start**.
+   Recover from the HMI: **Acknowledge**, **Clear** (Alarms page), **Reset**, **Start**.
 6. **Manual mode:** Stop, select **Manual**, Reset, Start; the jog buttons on the Robot page move
    single joints (only in Manual and Execute, `Jog permitted` lamp).
 

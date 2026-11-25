@@ -468,10 +468,7 @@
     {
      "label": "Clear",
      "variable": "GVL_HmiPanel.xClear",
-     "icon": "reset",
-     "access": {
-      "min": "Maintenance"
-     }
+     "icon": "reset"
     }
    ]
   }

@@ -112,3 +112,18 @@ def test_ide_processes_found_and_exempted(monkeypatch: pytest.MonkeyPatch) -> No
     )
     assert runtime.unthrottle_ide() == [18164, 2280]
     assert exempted == [18164, 2280]
+
+
+def test_start_adopts_a_runtime_started_from_another_checkout(
+    state_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each checkout has its own pid file; a second CODESYS Control must never be launched."""
+
+    def must_not_launch(_settings: object) -> int:
+        raise AssertionError("a second runtime must not be started")
+
+    monkeypatch.setattr(runtime, "firewall_allows_inbound", lambda _exe: False)
+    monkeypatch.setattr(runtime, "_launch", must_not_launch)
+    monkeypatch.setattr(runtime.subprocess, "run", _Calls('"CODESYSControlService.exe","4242"'))
+    assert runtime.start(runtime.load_runtime_settings()) == 4242
+    assert (state_dir / "runtime.pid").read_text(encoding="utf-8").strip() == "4242"
