@@ -195,6 +195,22 @@ def process_alive(pid: int, image: str = RUNTIME_IMAGE) -> bool:
     return f'"{image}","{pid}"'.lower() in out.lower()
 
 
+def running_runtime_pids(image: str = RUNTIME_IMAGE) -> list[int]:
+    """Process ids of every running ``image`` (one CODESYS Control per computer)."""
+    out = subprocess.run(
+        ["tasklist", "/FI", f"IMAGENAME eq {image}", "/NH", "/FO", "CSV"],
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout
+    pids: list[int] = []
+    for line in out.splitlines():
+        fields = [f.strip('"') for f in line.split('","')]
+        if len(fields) > 1 and fields[0].lower() == image.lower() and fields[1].isdigit():
+            pids.append(int(fields[1]))
+    return pids
+
+
 def _read_pid() -> int | None:
     path = _pid_file()
     if not path.is_file():
@@ -323,6 +339,10 @@ def start(settings: RuntimeSettings, allow_network: bool = False) -> int:
     pid = _read_pid()
     if pid is not None and process_alive(pid):
         return pid
+    running = running_runtime_pids()  # started from another checkout (each has its own pid file)
+    if running:
+        _pid_file().write_text(str(running[0]), encoding="utf-8")
+        return running[0]
     cfg = find_runtime_cfg(settings)
     if cfg is None:
         first = _launch(settings)

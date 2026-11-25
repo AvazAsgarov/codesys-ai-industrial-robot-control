@@ -18,6 +18,7 @@ from airc.bridge.tags import TagMap
 from airc.common.config import load_config
 from airc.plc import runtime
 from airc.runner import Runner, RunReport, run_precise
+from airc.twin.config import TwinConfig
 from airc.twin.scenario import Scenario
 from airc.twin.twin import Twin
 from airc.vision.service import VisionWorker
@@ -87,7 +88,7 @@ async def _production_run(
     ``vision`` builds the vision service for the twin; without it the ground truth answers.
     """
     tags = TagMap.load()
-    twin = Twin(bin_capacity=scenario.bin_capacity)
+    twin = Twin(cfg=TwinConfig.load(parts=scenario.parts), bin_capacity=scenario.bin_capacity)
     runner = Runner(
         BridgeClient(endpoint, tags, timeout_s=twin.cfg.bridge_timeout_s),
         twin,
@@ -166,7 +167,7 @@ async def _faults_run(endpoint: str, scenario: Scenario) -> tuple[RunReport, lis
     Returns the report and one line per non-Execute episode: ``<state> <alarm> <recovery s>``.
     """
     tags = TagMap.load()
-    twin = Twin(bin_capacity=scenario.bin_capacity)
+    twin = Twin(cfg=TwinConfig.load(parts=scenario.parts), bin_capacity=scenario.bin_capacity)
     runner = Runner(
         BridgeClient(endpoint, tags, timeout_s=twin.cfg.bridge_timeout_s), twin, scenario
     )
