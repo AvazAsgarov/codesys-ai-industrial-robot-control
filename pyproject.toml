@@ -1,6 +1,6 @@
 [project]
 name = "airc"
-version = "0.3.0"
+version = "0.7.0"
 description = "AI Industrial Robot Control: services for a vision-guided, AI-supervised robotic sorting cell on a CODESYS soft-PLC."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
