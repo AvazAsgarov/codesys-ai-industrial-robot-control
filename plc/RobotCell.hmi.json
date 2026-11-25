@@ -1,1374 +1,1370 @@
 {
-  "version": 1,
-  "screens": [
+ "version": 1,
+ "screens": [
+  {
+   "name": "Overview",
+   "title": "Sorting cell",
+   "subtitle": "Robot pick-and-place line",
+   "theme": "light",
+   "icon": "home",
+   "info": [
     {
-      "name": "Overview",
-      "title": "Sorting cell",
-      "subtitle": "Robot pick-and-place line",
-      "theme": "light",
-      "icon": "home",
-      "info": [
-        {
-          "label": "State",
-          "value": "GVL_HmiView.sState"
-        },
-        {
-          "label": "Mode",
-          "value": "GVL_HmiView.sMode"
-        },
-        {
-          "label": "Placed",
-          "value": "GVL_HmiView.uiPlaced",
-          "unit": "parts"
-        },
-        {
-          "label": "Newest alarm",
-          "value": "GVL_HmiView.sNewestAlarm"
-        }
-      ],
-      "accent": "#2F5D8A",
-      "machine": {
-        "states": [
-          {
-            "on": "GVL_HmiView.xAborted",
-            "text": "Aborted",
-            "tone": "alarm",
-            "icon": "fault"
-          },
-          {
-            "on": "GVL_HmiView.xHeld",
-            "text": "Suspended",
-            "tone": "warn",
-            "icon": "pause"
-          },
-          {
-            "on": "GVL_HmiView.xActing",
-            "text": "Changing state",
-            "tone": "warn"
-          },
-          {
-            "on": "GVL_HmiView.xManual",
-            "text": "Manual",
-            "tone": "accent",
-            "icon": "manual"
-          },
-          {
-            "on": "GVL_HmiView.xExecute",
-            "text": "Execute",
-            "tone": "neutral",
-            "icon": "play"
-          },
-          {
-            "on": "GVL_HmiView.xIdle",
-            "text": "Idle",
-            "tone": "neutral"
-          }
-        ],
-        "idle": {
-          "text": "Stopped",
-          "tone": "neutral",
-          "icon": "stop"
-        },
-        "detail": "GVL_HmiView.sPickStep",
-        "start": "GVL_HmiPanel.xStart",
-        "stop": "GVL_HmiPanel.xStop",
-        "reset": "GVL_HmiPanel.xReset",
-        "mode": {
-          "variable": "GVL_HmiPanel.iModeSelect",
-          "options": [
-            "Production",
-            "Maintenance",
-            "Manual"
-          ],
-          "values": [
-            "1",
-            "2",
-            "3"
-          ]
-        }
-      },
-      "size": "1920x1080",
-      "grid": [
-        12,
-        8
-      ],
-      "widgets": [
-        {
-          "type": "line",
-          "at": [
-            1,
-            1,
-            12,
-            2
-          ],
-          "title": "Line",
-          "stations": [
-            {
-              "name": "Conveyor",
-              "tag": "CV-101",
-              "symbol": "conveyor",
-              "on": "GVL_HmiView.xBeltRunning",
-              "fault": "GVL_HmiView.axAlarmActive[5]",
-              "value": "GVL_Bridge.lrBeltVel",
-              "unit": "mm/s",
-              "screen": "Robot"
-            },
-            {
-              "name": "Camera",
-              "tag": "PE-1",
-              "symbol": "camera",
-              "on": "GVL_Bridge.xPE1",
-              "warning": "GVL_HmiView.axAlarm[13]",
-              "screen": "Alarms"
-            },
-            {
-              "name": "Robot",
-              "tag": "R-1",
-              "symbol": "robot6",
-              "on": "GVL_HmiView.xRobotMoving",
-              "fault": "GVL_HmiView.axAlarmActive[4]",
-              "warning": "GVL_HmiView.axAlarmActive[6]",
-              "manual": "GVL_HmiView.xManual",
-              "screen": "Robot"
-            },
-            {
-              "name": "Gripper",
-              "tag": "VG-1",
-              "symbol": "gripper",
-              "on": "GVL_Bridge.xVacuumOn",
-              "fault": "GVL_HmiView.axAlarm[10]",
-              "warning": "GVL_HmiView.axAlarm[9]",
-              "screen": "Robot"
-            },
-            {
-              "name": "Bins",
-              "tag": "BN-1..6",
-              "symbol": "bin",
-              "on": "GVL_HmiView.xExecute",
-              "warning": "GVL_HmiView.xAnyBinFull",
-              "value": "GVL_HmiView.uiPlaced",
-              "unit": "parts",
-              "screen": "Alarms"
-            }
-          ]
-        },
-        {
-          "type": "value",
-          "at": [
-            1,
-            3,
-            3,
-            3
-          ],
-          "title": "Belt speed",
-          "icon": "speed",
-          "value": "GVL_Bridge.lrBeltVel",
-          "unit": "mm/s",
-          "decimals": 0,
-          "min": 0,
-          "max": 150,
-          "trend": true
-        },
-        {
-          "type": "value",
-          "at": [
-            4,
-            3,
-            3,
-            3
-          ],
-          "title": "Parts placed",
-          "icon": "count",
-          "value": "GVL_HmiView.uiPlaced",
-          "unit": "parts",
-          "decimals": 0,
-          "trend": true
-        },
-        {
-          "type": "bar",
-          "at": [
-            7,
-            3,
-            1,
-            3
-          ],
-          "title": "Type A",
-          "value": "PRG_Main.fbCell.aBins[0].uiCount",
-          "min": 0,
-          "max": 30,
-          "unit": "parts",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 27,
-              "tone": "warn"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            8,
-            3,
-            1,
-            3
-          ],
-          "title": "Type B",
-          "value": "PRG_Main.fbCell.aBins[1].uiCount",
-          "min": 0,
-          "max": 30,
-          "unit": "parts",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 27,
-              "tone": "warn"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            9,
-            3,
-            1,
-            3
-          ],
-          "title": "Type C",
-          "value": "PRG_Main.fbCell.aBins[2].uiCount",
-          "min": 0,
-          "max": 30,
-          "unit": "parts",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 27,
-              "tone": "warn"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            10,
-            3,
-            1,
-            3
-          ],
-          "title": "Rework",
-          "value": "PRG_Main.fbCell.aBins[3].uiCount",
-          "min": 0,
-          "max": 30,
-          "unit": "parts",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 27,
-              "tone": "warn"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            11,
-            3,
-            1,
-            3
-          ],
-          "title": "Scrap",
-          "value": "PRG_Main.fbCell.aBins[4].uiCount",
-          "min": 0,
-          "max": 30,
-          "unit": "parts",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 27,
-              "tone": "warn"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            12,
-            3,
-            1,
-            3
-          ],
-          "title": "Quarantine",
-          "value": "PRG_Main.fbCell.aBins[5].uiCount",
-          "min": 0,
-          "max": 30,
-          "unit": "parts",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 27,
-              "tone": "warn"
-            }
-          ]
-        },
-        {
-          "type": "status",
-          "at": [
-            1,
-            6,
-            3,
-            3
-          ],
-          "title": "Safety and links",
-          "icon": "info",
-          "items": [
-            {
-              "label": "E-stop released",
-              "off": "E-STOP PRESSED",
-              "on": "GVL_Bridge.xEStopOk"
-            },
-            {
-              "label": "Door closed",
-              "off": "DOOR OPEN",
-              "on": "GVL_Bridge.xDoorClosed"
-            },
-            {
-              "label": "Twin bridge active",
-              "off": "Twin bridge off",
-              "on": "GVL_Bridge.xTwinActive"
-            },
-            {
-              "label": "Vacuum OK",
-              "off": "No vacuum",
-              "on": "GVL_Bridge.xVacuumOk"
-            },
-            {
-              "label": "Part at PE-1",
-              "off": "PE-1 free",
-              "on": "GVL_Bridge.xPE1"
-            }
-          ]
-        },
-        {
-          "type": "status",
-          "at": [
-            4,
-            6,
-            3,
-            3
-          ],
-          "title": "Safety alarms",
-          "icon": "alarm",
-          "items": [
-            {
-              "label": "P1 Emergency stop pressed",
-              "on": "GVL_HmiView.axAlarm[1]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Safety door opened in automatic mode",
-              "on": "GVL_HmiView.axAlarm[2]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Connection to the digital twin bridge lost",
-              "on": "GVL_HmiView.axAlarm[3]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Robot axis group error",
-              "on": "GVL_HmiView.axAlarm[4]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P2 Conveyor axis error",
-              "on": "GVL_HmiView.axAlarm[5]",
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "status",
-          "at": [
-            7,
-            6,
-            3,
-            3
-          ],
-          "title": "Process alarms",
-          "icon": "alarm",
-          "items": [
-            {
-              "label": "P1 Joint following error above fault limit",
-              "on": "GVL_HmiView.axAlarm[7]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Joint feedback not updated",
-              "on": "GVL_HmiView.axAlarm[8]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P2 Vacuum not reached - part not gripped",
-              "on": "GVL_HmiView.axAlarm[9]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P2 Vacuum lost while carrying a part",
-              "on": "GVL_HmiView.axAlarm[10]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P3 A bin is full - cell suspended until it is emptied",
-              "on": "GVL_HmiView.axAlarm[12]",
-              "tone": "warn"
-            }
-          ]
-        },
-        {
-          "type": "buttons",
-          "at": [
-            10,
-            6,
-            3,
-            3
-          ],
-          "title": "Commands",
-          "items": [
-            {
-              "label": "Acknowledge",
-              "variable": "GVL_HmiPanel.xAckAll",
-              "action": "tap",
-              "icon": "check"
-            },
-            {
-              "label": "Suspend",
-              "variable": "GVL_HmiPanel.xSuspend",
-              "action": "tap",
-              "icon": "pause"
-            },
-            {
-              "label": "Unsuspend",
-              "variable": "GVL_HmiPanel.xUnsuspend",
-              "action": "tap",
-              "icon": "play"
-            },
-            {
-              "label": "Clear",
-              "variable": "GVL_HmiPanel.xClear",
-              "action": "tap",
-              "icon": "reset"
-            }
-          ]
-        }
-      ]
+     "label": "State",
+     "value": "GVL_HmiView.sState"
     },
     {
-      "name": "Robot",
-      "title": "Robot",
-      "subtitle": "6-axis arm R-1, joint space",
-      "theme": "light",
-      "icon": "machine",
-      "info": [
-        {
-          "label": "State",
-          "value": "GVL_HmiView.sState"
-        },
-        {
-          "label": "Mode",
-          "value": "GVL_HmiView.sMode"
-        },
-        {
-          "label": "Placed",
-          "value": "GVL_HmiView.uiPlaced",
-          "unit": "parts"
-        },
-        {
-          "label": "Newest alarm",
-          "value": "GVL_HmiView.sNewestAlarm"
-        }
-      ],
-      "accent": "#2F5D8A",
-      "machine": {
-        "states": [
-          {
-            "on": "GVL_HmiView.xAborted",
-            "text": "Aborted",
-            "tone": "alarm",
-            "icon": "fault"
-          },
-          {
-            "on": "GVL_HmiView.xHeld",
-            "text": "Suspended",
-            "tone": "warn",
-            "icon": "pause"
-          },
-          {
-            "on": "GVL_HmiView.xActing",
-            "text": "Changing state",
-            "tone": "warn"
-          },
-          {
-            "on": "GVL_HmiView.xManual",
-            "text": "Manual",
-            "tone": "accent",
-            "icon": "manual"
-          },
-          {
-            "on": "GVL_HmiView.xExecute",
-            "text": "Execute",
-            "tone": "neutral",
-            "icon": "play"
-          },
-          {
-            "on": "GVL_HmiView.xIdle",
-            "text": "Idle",
-            "tone": "neutral"
-          }
-        ],
-        "idle": {
-          "text": "Stopped",
-          "tone": "neutral",
-          "icon": "stop"
-        },
-        "detail": "GVL_HmiView.sPickStep",
-        "start": "GVL_HmiPanel.xStart",
-        "stop": "GVL_HmiPanel.xStop",
-        "reset": "GVL_HmiPanel.xReset",
-        "mode": {
-          "variable": "GVL_HmiPanel.iModeSelect",
-          "options": [
-            "Production",
-            "Maintenance",
-            "Manual"
-          ],
-          "values": [
-            "1",
-            "2",
-            "3"
-          ]
-        }
-      },
-      "size": "1920x1080",
-      "grid": [
-        12,
-        8
-      ],
-      "widgets": [
-        {
-          "type": "bar",
-          "at": [
-            1,
-            1,
-            1,
-            3
-          ],
-          "title": "J1",
-          "value": "GVL_Bridge.aJointPosSp[1]",
-          "min": -180,
-          "max": 180,
-          "unit": "°"
-        },
-        {
-          "type": "bar",
-          "at": [
-            2,
-            1,
-            1,
-            3
-          ],
-          "title": "J2",
-          "value": "GVL_Bridge.aJointPosSp[2]",
-          "min": -180,
-          "max": 180,
-          "unit": "°"
-        },
-        {
-          "type": "bar",
-          "at": [
-            3,
-            1,
-            1,
-            3
-          ],
-          "title": "J3",
-          "value": "GVL_Bridge.aJointPosSp[3]",
-          "min": -180,
-          "max": 180,
-          "unit": "°"
-        },
-        {
-          "type": "bar",
-          "at": [
-            4,
-            1,
-            1,
-            3
-          ],
-          "title": "J4",
-          "value": "GVL_Bridge.aJointPosSp[4]",
-          "min": -360,
-          "max": 360,
-          "unit": "°"
-        },
-        {
-          "type": "bar",
-          "at": [
-            5,
-            1,
-            1,
-            3
-          ],
-          "title": "J5",
-          "value": "GVL_Bridge.aJointPosSp[5]",
-          "min": -180,
-          "max": 180,
-          "unit": "°"
-        },
-        {
-          "type": "bar",
-          "at": [
-            6,
-            1,
-            1,
-            3
-          ],
-          "title": "J6",
-          "value": "GVL_Bridge.aJointPosSp[6]",
-          "min": -360,
-          "max": 360,
-          "unit": "°"
-        },
-        {
-          "type": "bar",
-          "at": [
-            7,
-            1,
-            1,
-            3
-          ],
-          "title": "J1 error",
-          "value": "GVL_Bridge.aFollowingError[1]",
-          "min": 0,
-          "max": 6,
-          "unit": "°",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 2,
-              "tone": "warn"
-            },
-            {
-              "from": 5,
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            8,
-            1,
-            1,
-            3
-          ],
-          "title": "J2 error",
-          "value": "GVL_Bridge.aFollowingError[2]",
-          "min": 0,
-          "max": 6,
-          "unit": "°",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 2,
-              "tone": "warn"
-            },
-            {
-              "from": 5,
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            9,
-            1,
-            1,
-            3
-          ],
-          "title": "J3 error",
-          "value": "GVL_Bridge.aFollowingError[3]",
-          "min": 0,
-          "max": 6,
-          "unit": "°",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 2,
-              "tone": "warn"
-            },
-            {
-              "from": 5,
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            10,
-            1,
-            1,
-            3
-          ],
-          "title": "J4 error",
-          "value": "GVL_Bridge.aFollowingError[4]",
-          "min": 0,
-          "max": 6,
-          "unit": "°",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 2,
-              "tone": "warn"
-            },
-            {
-              "from": 5,
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            11,
-            1,
-            1,
-            3
-          ],
-          "title": "J5 error",
-          "value": "GVL_Bridge.aFollowingError[5]",
-          "min": 0,
-          "max": 6,
-          "unit": "°",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 2,
-              "tone": "warn"
-            },
-            {
-              "from": 5,
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "bar",
-          "at": [
-            12,
-            1,
-            1,
-            3
-          ],
-          "title": "J6 error",
-          "value": "GVL_Bridge.aFollowingError[6]",
-          "min": 0,
-          "max": 6,
-          "unit": "°",
-          "bands": [
-            {
-              "from": 0,
-              "tone": "accent"
-            },
-            {
-              "from": 2,
-              "tone": "warn"
-            },
-            {
-              "from": 5,
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "buttons",
-          "at": [
-            1,
-            4,
-            3,
-            3
-          ],
-          "title": "Jog J1-J3 (Manual)",
-          "icon": "manual",
-          "items": [
-            {
-              "label": "J1 -",
-              "variable": "GVL_Hmi.axJogMinus[1]",
-              "action": "tap"
-            },
-            {
-              "label": "J1 +",
-              "variable": "GVL_Hmi.axJogPlus[1]",
-              "action": "tap"
-            },
-            {
-              "label": "J2 -",
-              "variable": "GVL_Hmi.axJogMinus[2]",
-              "action": "tap"
-            },
-            {
-              "label": "J2 +",
-              "variable": "GVL_Hmi.axJogPlus[2]",
-              "action": "tap"
-            },
-            {
-              "label": "J3 -",
-              "variable": "GVL_Hmi.axJogMinus[3]",
-              "action": "tap"
-            },
-            {
-              "label": "J3 +",
-              "variable": "GVL_Hmi.axJogPlus[3]",
-              "action": "tap"
-            }
-          ]
-        },
-        {
-          "type": "buttons",
-          "at": [
-            4,
-            4,
-            3,
-            3
-          ],
-          "title": "Jog J4-J6 (Manual)",
-          "icon": "manual",
-          "items": [
-            {
-              "label": "J4 -",
-              "variable": "GVL_Hmi.axJogMinus[4]",
-              "action": "tap"
-            },
-            {
-              "label": "J4 +",
-              "variable": "GVL_Hmi.axJogPlus[4]",
-              "action": "tap"
-            },
-            {
-              "label": "J5 -",
-              "variable": "GVL_Hmi.axJogMinus[5]",
-              "action": "tap"
-            },
-            {
-              "label": "J5 +",
-              "variable": "GVL_Hmi.axJogPlus[5]",
-              "action": "tap"
-            },
-            {
-              "label": "J6 -",
-              "variable": "GVL_Hmi.axJogMinus[6]",
-              "action": "tap"
-            },
-            {
-              "label": "J6 +",
-              "variable": "GVL_Hmi.axJogPlus[6]",
-              "action": "tap"
-            }
-          ]
-        },
-        {
-          "type": "status",
-          "at": [
-            7,
-            4,
-            3,
-            3
-          ],
-          "title": "Robot",
-          "icon": "info",
-          "items": [
-            {
-              "label": "Jog permitted",
-              "off": "Jog locked",
-              "on": "GVL_HmiView.xJogPermitted",
-              "tone": "accent"
-            },
-            {
-              "label": "Robot moving",
-              "off": "Robot at rest",
-              "on": "GVL_HmiView.xRobotMoving"
-            },
-            {
-              "label": "Vacuum on",
-              "off": "Vacuum off",
-              "on": "GVL_Bridge.xVacuumOn"
-            },
-            {
-              "label": "Following error warning",
-              "on": "GVL_HmiView.axAlarmActive[6]",
-              "tone": "warn"
-            },
-            {
-              "label": "Following error fault",
-              "on": "GVL_HmiView.axAlarmActive[7]",
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "setpoint",
-          "at": [
-            10,
-            4,
-            3,
-            3
-          ],
-          "title": "Speed override",
-          "icon": "speed",
-          "access": {
-            "min": "Maintenance",
-            "below": "see"
-          },
-          "variable": "GVL_Hmi.rOverride",
-          "min": 0.1,
-          "max": 1,
-          "step": 0.1,
-          "decimals": 1
-        },
-        {
-          "type": "value",
-          "at": [
-            1,
-            7,
-            3,
-            2
-          ],
-          "title": "Worst joint",
-          "icon": "machine",
-          "value": "GVL_Bridge.iWorstJoint",
-          "decimals": 0
-        },
-        {
-          "type": "value",
-          "at": [
-            4,
-            7,
-            3,
-            2
-          ],
-          "title": "Vision class (0 box, 1 jar, 2 can)",
-          "icon": "info",
-          "value": "GVL_Bridge.stVision.usiClass",
-          "decimals": 0
-        },
-        {
-          "type": "value",
-          "at": [
-            7,
-            7,
-            3,
-            2
-          ],
-          "title": "Vision confidence",
-          "icon": "info",
-          "value": "GVL_Bridge.stVision.rConfidence",
-          "decimals": 2
-        },
-        {
-          "type": "value",
-          "at": [
-            10,
-            7,
-            3,
-            2
-          ],
-          "title": "Vision position x",
-          "icon": "info",
-          "value": "GVL_Bridge.stVision.lrX",
-          "unit": "mm",
-          "decimals": 1
-        }
-      ]
+     "label": "Mode",
+     "value": "GVL_HmiView.sMode"
     },
     {
-      "name": "Alarms",
-      "title": "Alarms",
-      "subtitle": "ISA-18.2 priorities: P1 critical, P2 error, P3 warning",
-      "theme": "light",
-      "icon": "alarm",
-      "info": [
-        {
-          "label": "State",
-          "value": "GVL_HmiView.sState"
-        },
-        {
-          "label": "Mode",
-          "value": "GVL_HmiView.sMode"
-        },
-        {
-          "label": "Placed",
-          "value": "GVL_HmiView.uiPlaced",
-          "unit": "parts"
-        },
-        {
-          "label": "Newest alarm",
-          "value": "GVL_HmiView.sNewestAlarm"
-        }
-      ],
-      "accent": "#2F5D8A",
-      "machine": {
-        "states": [
-          {
-            "on": "GVL_HmiView.xAborted",
-            "text": "Aborted",
-            "tone": "alarm",
-            "icon": "fault"
-          },
-          {
-            "on": "GVL_HmiView.xHeld",
-            "text": "Suspended",
-            "tone": "warn",
-            "icon": "pause"
-          },
-          {
-            "on": "GVL_HmiView.xActing",
-            "text": "Changing state",
-            "tone": "warn"
-          },
-          {
-            "on": "GVL_HmiView.xManual",
-            "text": "Manual",
-            "tone": "accent",
-            "icon": "manual"
-          },
-          {
-            "on": "GVL_HmiView.xExecute",
-            "text": "Execute",
-            "tone": "neutral",
-            "icon": "play"
-          },
-          {
-            "on": "GVL_HmiView.xIdle",
-            "text": "Idle",
-            "tone": "neutral"
-          }
-        ],
-        "idle": {
-          "text": "Stopped",
-          "tone": "neutral",
-          "icon": "stop"
-        },
-        "detail": "GVL_HmiView.sPickStep",
-        "start": "GVL_HmiPanel.xStart",
-        "stop": "GVL_HmiPanel.xStop",
-        "reset": "GVL_HmiPanel.xReset",
-        "mode": {
-          "variable": "GVL_HmiPanel.iModeSelect",
-          "options": [
-            "Production",
-            "Maintenance",
-            "Manual"
-          ],
-          "values": [
-            "1",
-            "2",
-            "3"
-          ]
-        }
-      },
-      "size": "1920x1080",
-      "grid": [
-        12,
-        8
-      ],
-      "widgets": [
-        {
-          "type": "status",
-          "at": [
-            1,
-            1,
-            3,
-            5
-          ],
-          "title": "P1 critical",
-          "icon": "alarm",
-          "items": [
-            {
-              "label": "P1 Emergency stop pressed",
-              "on": "GVL_HmiView.axAlarm[1]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Safety door opened in automatic mode",
-              "on": "GVL_HmiView.axAlarm[2]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Connection to the digital twin bridge lost",
-              "on": "GVL_HmiView.axAlarm[3]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Robot axis group error",
-              "on": "GVL_HmiView.axAlarm[4]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Joint following error above fault limit",
-              "on": "GVL_HmiView.axAlarm[7]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P1 Joint feedback not updated",
-              "on": "GVL_HmiView.axAlarm[8]",
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "status",
-          "at": [
-            4,
-            1,
-            3,
-            5
-          ],
-          "title": "P2 error",
-          "icon": "alarm",
-          "items": [
-            {
-              "label": "P2 Conveyor axis error",
-              "on": "GVL_HmiView.axAlarm[5]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P2 Vacuum not reached - part not gripped",
-              "on": "GVL_HmiView.axAlarm[9]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P2 Vacuum lost while carrying a part",
-              "on": "GVL_HmiView.axAlarm[10]",
-              "tone": "alarm"
-            },
-            {
-              "label": "P2 Part queue full",
-              "on": "GVL_HmiView.axAlarm[16]",
-              "tone": "alarm"
-            }
-          ]
-        },
-        {
-          "type": "status",
-          "at": [
-            7,
-            1,
-            3,
-            5
-          ],
-          "title": "P3 warning",
-          "icon": "warning",
-          "items": [
-            {
-              "label": "P3 Joint following error above warning limit",
-              "on": "GVL_HmiView.axAlarm[6]",
-              "tone": "warn"
-            },
-            {
-              "label": "P3 Part left the pick window unpicked",
-              "on": "GVL_HmiView.axAlarm[11]",
-              "tone": "warn"
-            },
-            {
-              "label": "P3 A bin is full - cell suspended until it is emptied",
-              "on": "GVL_HmiView.axAlarm[12]",
-              "tone": "warn"
-            },
-            {
-              "label": "P3 No vision result for a captured part",
-              "on": "GVL_HmiView.axAlarm[13]",
-              "tone": "warn"
-            },
-            {
-              "label": "P3 AI decision late - fallback rule used",
-              "on": "GVL_HmiView.axAlarm[14]",
-              "tone": "warn"
-            },
-            {
-              "label": "P3 Low detection confidence - part quarantined",
-              "on": "GVL_HmiView.axAlarm[15]",
-              "tone": "warn"
-            }
-          ]
-        },
-        {
-          "type": "value",
-          "at": [
-            1,
-            6,
-            9,
-            3
-          ],
-          "title": "Newest alarm",
-          "icon": "alarm",
-          "value": "GVL_HmiView.sNewestAlarm"
-        },
-        {
-          "type": "buttons",
-          "at": [
-            10,
-            1,
-            3,
-            3
-          ],
-          "title": "Alarm handling",
-          "items": [
-            {
-              "label": "Acknowledge all",
-              "variable": "GVL_HmiPanel.xAckAll",
-              "action": "tap",
-              "icon": "check"
-            },
-            {
-              "label": "Clear",
-              "variable": "GVL_HmiPanel.xClear",
-              "action": "tap",
-              "icon": "reset"
-            },
-            {
-              "label": "Abort",
-              "variable": "GVL_HmiPanel.xAbort",
-              "action": "tap",
-              "icon": "stop"
-            }
-          ]
-        },
-        {
-          "type": "status",
-          "at": [
-            10,
-            4,
-            3,
-            5
-          ],
-          "title": "Conditions present",
-          "icon": "warning",
-          "items": [
-            {
-              "label": "E-stop pressed",
-              "on": "GVL_HmiView.axAlarmActive[1]",
-              "tone": "alarm"
-            },
-            {
-              "label": "Door open",
-              "on": "GVL_HmiView.axAlarmActive[2]",
-              "tone": "alarm"
-            },
-            {
-              "label": "Bridge lost",
-              "on": "GVL_HmiView.axAlarmActive[3]",
-              "tone": "alarm"
-            },
-            {
-              "label": "Axis group error",
-              "on": "GVL_HmiView.axAlarmActive[4]",
-              "tone": "alarm"
-            },
-            {
-              "label": "Following error fault",
-              "on": "GVL_HmiView.axAlarmActive[7]",
-              "tone": "alarm"
-            },
-            {
-              "label": "Feedback stale",
-              "on": "GVL_HmiView.axAlarmActive[8]",
-              "tone": "alarm"
-            },
-            {
-              "label": "Vacuum lost",
-              "on": "GVL_HmiView.axAlarmActive[10]",
-              "tone": "alarm"
-            },
-            {
-              "label": "Bin full",
-              "on": "GVL_HmiView.axAlarmActive[12]",
-              "tone": "warn"
-            }
-          ]
-        }
-      ]
+     "label": "Placed",
+     "value": "GVL_HmiView.uiPlaced",
+     "unit": "parts"
+    },
+    {
+     "label": "Newest alarm",
+     "value": "GVL_HmiView.sNewestAlarm"
     }
-  ],
-  "symbols": {
-    "robot6": {
-      "svg": "<rect x=\"22\" y=\"84\" width=\"36\" height=\"10\" rx=\"2\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><rect x=\"32\" y=\"70\" width=\"16\" height=\"14\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><circle cx=\"40\" cy=\"66\" r=\"8\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><polygon points=\"35,62 45,70 66,32 56,26\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><circle cx=\"61\" cy=\"29\" r=\"7\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><polygon points=\"60,23 62,35 86,38 86,26\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><circle cx=\"86\" cy=\"32\" r=\"5\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><line x1=\"86\" y1=\"37\" x2=\"86\" y2=\"50\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M79 50 L93 50 L90 56 L82 56 Z\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/>",
-      "viewBox": [
-        100,
-        100
-      ],
-      "ports": {},
-      "description": "6-axis articulated robot arm with suction tool, side view"
+   ],
+   "accent": "#2F5D8A",
+   "machine": {
+    "states": [
+     {
+      "on": "GVL_HmiView.xAborted",
+      "text": "Aborted",
+      "tone": "alarm",
+      "icon": "fault"
+     },
+     {
+      "on": "GVL_HmiView.xHeld",
+      "text": "Suspended",
+      "tone": "warn",
+      "icon": "pause"
+     },
+     {
+      "on": "GVL_HmiView.xActing",
+      "text": "Changing state",
+      "tone": "warn"
+     },
+     {
+      "on": "GVL_HmiView.xManual",
+      "text": "Manual",
+      "tone": "accent",
+      "icon": "manual"
+     },
+     {
+      "on": "GVL_HmiView.xExecute",
+      "text": "Execute",
+      "tone": "neutral",
+      "icon": "play"
+     },
+     {
+      "on": "GVL_HmiView.xIdle",
+      "text": "Idle",
+      "tone": "neutral"
+     }
+    ],
+    "idle": {
+     "text": "Stopped",
+     "tone": "neutral",
+     "icon": "stop"
     },
-    "camera": {
-      "svg": "<rect x=\"22\" y=\"20\" width=\"46\" height=\"30\" rx=\"4\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><rect x=\"68\" y=\"27\" width=\"10\" height=\"16\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M36 50 L54 50 L58 60 L32 60 Z\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M32 60 L18 90 M58 60 L72 90\" stroke=\"var(--line)\" stroke-width=\"1\" stroke-dasharray=\"3 3\" fill=\"none\" vector-effect=\"non-scaling-stroke\"/><line x1=\"10\" y1=\"90\" x2=\"90\" y2=\"90\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/>",
-      "viewBox": [
-        100,
-        100
-      ],
-      "ports": {},
-      "description": "Industrial camera looking down, with photo-eye beam"
-    },
-    "gripper": {
-      "svg": "<rect x=\"38\" y=\"10\" width=\"24\" height=\"14\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><rect x=\"45\" y=\"24\" width=\"10\" height=\"34\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M30 76 L40 58 L60 58 L70 76 Z\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M62 17 L82 17 L82 40\" fill=\"none\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><rect x=\"26\" y=\"80\" width=\"48\" height=\"10\" fill=\"var(--body2)\" stroke=\"var(--line)\" stroke-width=\"1\" stroke-dasharray=\"3 2\" vector-effect=\"non-scaling-stroke\"/>",
-      "viewBox": [
-        100,
-        100
-      ],
-      "ports": {},
-      "description": "Vacuum suction gripper with cup"
-    },
-    "bin": {
-      "svg": "<path d=\"M14 30 L86 30 L78 88 L22 88 Z\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><line x1=\"10\" y1=\"30\" x2=\"90\" y2=\"30\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M50 6 L50 22 M43 15 L50 22 L57 15\" fill=\"none\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><line x1=\"24\" y1=\"74\" x2=\"76\" y2=\"74\" stroke=\"var(--line)\" stroke-width=\"1\" stroke-dasharray=\"4 3\" vector-effect=\"non-scaling-stroke\"/>",
-      "viewBox": [
-        100,
-        100
-      ],
-      "ports": {},
-      "description": "Open output bin (tote) for sorted parts"
+    "detail": "GVL_HmiView.sPickStep",
+    "start": "GVL_HmiPanel.xStart",
+    "stop": "GVL_HmiPanel.xStop",
+    "reset": "GVL_HmiPanel.xReset",
+    "mode": {
+     "variable": "GVL_HmiPanel.iModeSelect",
+     "options": [
+      "Production",
+      "Maintenance",
+      "Manual"
+     ],
+     "values": [
+      "1",
+      "2",
+      "3"
+     ]
     }
+   },
+   "size": "1920x1080",
+   "grid": [
+    12,
+    8
+   ],
+   "widgets": [
+    {
+     "type": "line",
+     "at": [
+      1,
+      1,
+      12,
+      2
+     ],
+     "title": "Line",
+     "stations": [
+      {
+       "name": "Conveyor",
+       "tag": "CV-101",
+       "symbol": "conveyor",
+       "on": "GVL_HmiView.xBeltRunning",
+       "fault": "GVL_HmiView.axAlarmActive[5]",
+       "value": "GVL_Bridge.lrBeltVel",
+       "unit": "mm/s",
+       "screen": "Robot"
+      },
+      {
+       "name": "Camera",
+       "tag": "PE-1",
+       "symbol": "camera",
+       "on": "GVL_Bridge.xPE1",
+       "warning": "GVL_HmiView.axAlarm[13]",
+       "screen": "Alarms"
+      },
+      {
+       "name": "Robot",
+       "tag": "R-1",
+       "symbol": "robot6",
+       "on": "GVL_HmiView.xRobotMoving",
+       "fault": "GVL_HmiView.axAlarmActive[4]",
+       "warning": "GVL_HmiView.axAlarmActive[6]",
+       "manual": "GVL_HmiView.xManual",
+       "screen": "Robot"
+      },
+      {
+       "name": "Gripper",
+       "tag": "VG-1",
+       "symbol": "gripper",
+       "on": "GVL_Bridge.xVacuumOn",
+       "fault": "GVL_HmiView.axAlarm[10]",
+       "warning": "GVL_HmiView.axAlarm[9]",
+       "screen": "Robot"
+      },
+      {
+       "name": "Bins",
+       "tag": "BN-1..6",
+       "symbol": "bin",
+       "on": "GVL_HmiView.xExecute",
+       "warning": "GVL_HmiView.xAnyBinFull",
+       "value": "GVL_HmiView.uiPlaced",
+       "unit": "parts",
+       "screen": "Alarms"
+      }
+     ]
+    },
+    {
+     "type": "value",
+     "at": [
+      1,
+      3,
+      3,
+      3
+     ],
+     "title": "Belt speed",
+     "icon": "speed",
+     "value": "GVL_Bridge.lrBeltVel",
+     "unit": "mm/s",
+     "decimals": 0,
+     "min": 0,
+     "max": 150,
+     "trend": true
+    },
+    {
+     "type": "value",
+     "at": [
+      4,
+      3,
+      3,
+      3
+     ],
+     "title": "Parts placed",
+     "icon": "count",
+     "value": "GVL_HmiView.uiPlaced",
+     "unit": "parts",
+     "decimals": 0,
+     "trend": true
+    },
+    {
+     "type": "bar",
+     "at": [
+      7,
+      3,
+      1,
+      3
+     ],
+     "title": "Type A",
+     "value": "PRG_Main.fbCell.aBins[0].uiCount",
+     "min": 0,
+     "max": 30,
+     "unit": "parts",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 27,
+       "tone": "warn"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      8,
+      3,
+      1,
+      3
+     ],
+     "title": "Type B",
+     "value": "PRG_Main.fbCell.aBins[1].uiCount",
+     "min": 0,
+     "max": 30,
+     "unit": "parts",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 27,
+       "tone": "warn"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      9,
+      3,
+      1,
+      3
+     ],
+     "title": "Type C",
+     "value": "PRG_Main.fbCell.aBins[2].uiCount",
+     "min": 0,
+     "max": 30,
+     "unit": "parts",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 27,
+       "tone": "warn"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      10,
+      3,
+      1,
+      3
+     ],
+     "title": "Rework",
+     "value": "PRG_Main.fbCell.aBins[3].uiCount",
+     "min": 0,
+     "max": 30,
+     "unit": "parts",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 27,
+       "tone": "warn"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      11,
+      3,
+      1,
+      3
+     ],
+     "title": "Scrap",
+     "value": "PRG_Main.fbCell.aBins[4].uiCount",
+     "min": 0,
+     "max": 30,
+     "unit": "parts",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 27,
+       "tone": "warn"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      12,
+      3,
+      1,
+      3
+     ],
+     "title": "Quarantine",
+     "value": "PRG_Main.fbCell.aBins[5].uiCount",
+     "min": 0,
+     "max": 30,
+     "unit": "parts",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 27,
+       "tone": "warn"
+      }
+     ]
+    },
+    {
+     "type": "status",
+     "at": [
+      1,
+      6,
+      3,
+      3
+     ],
+     "title": "Safety and links",
+     "icon": "info",
+     "items": [
+      {
+       "label": "E-stop released",
+       "off": "E-STOP PRESSED",
+       "on": "GVL_Bridge.xEStopOk"
+      },
+      {
+       "label": "Door closed",
+       "off": "DOOR OPEN",
+       "on": "GVL_Bridge.xDoorClosed"
+      },
+      {
+       "label": "Twin bridge active",
+       "off": "Twin bridge off",
+       "on": "GVL_Bridge.xTwinActive"
+      },
+      {
+       "label": "Vacuum OK",
+       "off": "No vacuum",
+       "on": "GVL_Bridge.xVacuumOk"
+      },
+      {
+       "label": "Part at PE-1",
+       "off": "PE-1 free",
+       "on": "GVL_Bridge.xPE1"
+      }
+     ]
+    },
+    {
+     "type": "status",
+     "at": [
+      4,
+      6,
+      3,
+      3
+     ],
+     "title": "Safety alarms",
+     "icon": "alarm",
+     "items": [
+      {
+       "label": "P1 Emergency stop pressed",
+       "on": "GVL_HmiView.axAlarm[1]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Safety door opened in automatic mode",
+       "on": "GVL_HmiView.axAlarm[2]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Connection to the digital twin bridge lost",
+       "on": "GVL_HmiView.axAlarm[3]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Robot axis group error",
+       "on": "GVL_HmiView.axAlarm[4]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P2 Conveyor axis error",
+       "on": "GVL_HmiView.axAlarm[5]",
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "status",
+     "at": [
+      7,
+      6,
+      3,
+      3
+     ],
+     "title": "Process alarms",
+     "icon": "alarm",
+     "items": [
+      {
+       "label": "P1 Joint following error above fault limit",
+       "on": "GVL_HmiView.axAlarm[7]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Joint feedback not updated",
+       "on": "GVL_HmiView.axAlarm[8]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P2 Vacuum not reached - part not gripped",
+       "on": "GVL_HmiView.axAlarm[9]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P2 Vacuum lost while carrying a part",
+       "on": "GVL_HmiView.axAlarm[10]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P3 A bin is full - cell suspended until it is emptied",
+       "on": "GVL_HmiView.axAlarm[12]",
+       "tone": "warn"
+      }
+     ]
+    },
+    {
+     "type": "buttons",
+     "at": [
+      10,
+      6,
+      3,
+      3
+     ],
+     "title": "Commands",
+     "items": [
+      {
+       "label": "Acknowledge",
+       "variable": "GVL_HmiPanel.xAckAll",
+       "action": "tap",
+       "icon": "check"
+      },
+      {
+       "label": "Suspend",
+       "variable": "GVL_HmiPanel.xSuspend",
+       "action": "tap",
+       "icon": "pause"
+      },
+      {
+       "label": "Unsuspend",
+       "variable": "GVL_HmiPanel.xUnsuspend",
+       "action": "tap",
+       "icon": "play"
+      },
+      {
+       "label": "Clear",
+       "variable": "GVL_HmiPanel.xClear",
+       "action": "tap",
+       "icon": "reset"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Robot",
+   "title": "Robot",
+   "subtitle": "6-axis arm R-1, joint space",
+   "theme": "light",
+   "icon": "machine",
+   "info": [
+    {
+     "label": "State",
+     "value": "GVL_HmiView.sState"
+    },
+    {
+     "label": "Mode",
+     "value": "GVL_HmiView.sMode"
+    },
+    {
+     "label": "Placed",
+     "value": "GVL_HmiView.uiPlaced",
+     "unit": "parts"
+    },
+    {
+     "label": "Newest alarm",
+     "value": "GVL_HmiView.sNewestAlarm"
+    }
+   ],
+   "accent": "#2F5D8A",
+   "machine": {
+    "states": [
+     {
+      "on": "GVL_HmiView.xAborted",
+      "text": "Aborted",
+      "tone": "alarm",
+      "icon": "fault"
+     },
+     {
+      "on": "GVL_HmiView.xHeld",
+      "text": "Suspended",
+      "tone": "warn",
+      "icon": "pause"
+     },
+     {
+      "on": "GVL_HmiView.xActing",
+      "text": "Changing state",
+      "tone": "warn"
+     },
+     {
+      "on": "GVL_HmiView.xManual",
+      "text": "Manual",
+      "tone": "accent",
+      "icon": "manual"
+     },
+     {
+      "on": "GVL_HmiView.xExecute",
+      "text": "Execute",
+      "tone": "neutral",
+      "icon": "play"
+     },
+     {
+      "on": "GVL_HmiView.xIdle",
+      "text": "Idle",
+      "tone": "neutral"
+     }
+    ],
+    "idle": {
+     "text": "Stopped",
+     "tone": "neutral",
+     "icon": "stop"
+    },
+    "detail": "GVL_HmiView.sPickStep",
+    "start": "GVL_HmiPanel.xStart",
+    "stop": "GVL_HmiPanel.xStop",
+    "reset": "GVL_HmiPanel.xReset",
+    "mode": {
+     "variable": "GVL_HmiPanel.iModeSelect",
+     "options": [
+      "Production",
+      "Maintenance",
+      "Manual"
+     ],
+     "values": [
+      "1",
+      "2",
+      "3"
+     ]
+    }
+   },
+   "size": "1920x1080",
+   "grid": [
+    12,
+    8
+   ],
+   "widgets": [
+    {
+     "type": "bar",
+     "at": [
+      1,
+      1,
+      1,
+      3
+     ],
+     "title": "J1",
+     "value": "GVL_Bridge.aJointPosSp[1]",
+     "min": -180,
+     "max": 180,
+     "unit": "°"
+    },
+    {
+     "type": "bar",
+     "at": [
+      2,
+      1,
+      1,
+      3
+     ],
+     "title": "J2",
+     "value": "GVL_Bridge.aJointPosSp[2]",
+     "min": -180,
+     "max": 180,
+     "unit": "°"
+    },
+    {
+     "type": "bar",
+     "at": [
+      3,
+      1,
+      1,
+      3
+     ],
+     "title": "J3",
+     "value": "GVL_Bridge.aJointPosSp[3]",
+     "min": -180,
+     "max": 180,
+     "unit": "°"
+    },
+    {
+     "type": "bar",
+     "at": [
+      4,
+      1,
+      1,
+      3
+     ],
+     "title": "J4",
+     "value": "GVL_Bridge.aJointPosSp[4]",
+     "min": -360,
+     "max": 360,
+     "unit": "°"
+    },
+    {
+     "type": "bar",
+     "at": [
+      5,
+      1,
+      1,
+      3
+     ],
+     "title": "J5",
+     "value": "GVL_Bridge.aJointPosSp[5]",
+     "min": -180,
+     "max": 180,
+     "unit": "°"
+    },
+    {
+     "type": "bar",
+     "at": [
+      6,
+      1,
+      1,
+      3
+     ],
+     "title": "J6",
+     "value": "GVL_Bridge.aJointPosSp[6]",
+     "min": -360,
+     "max": 360,
+     "unit": "°"
+    },
+    {
+     "type": "bar",
+     "at": [
+      7,
+      1,
+      1,
+      3
+     ],
+     "title": "J1 error",
+     "value": "GVL_Bridge.aFollowingError[1]",
+     "min": 0,
+     "max": 6,
+     "unit": "°",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 2,
+       "tone": "warn"
+      },
+      {
+       "from": 5,
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      8,
+      1,
+      1,
+      3
+     ],
+     "title": "J2 error",
+     "value": "GVL_Bridge.aFollowingError[2]",
+     "min": 0,
+     "max": 6,
+     "unit": "°",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 2,
+       "tone": "warn"
+      },
+      {
+       "from": 5,
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      9,
+      1,
+      1,
+      3
+     ],
+     "title": "J3 error",
+     "value": "GVL_Bridge.aFollowingError[3]",
+     "min": 0,
+     "max": 6,
+     "unit": "°",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 2,
+       "tone": "warn"
+      },
+      {
+       "from": 5,
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      10,
+      1,
+      1,
+      3
+     ],
+     "title": "J4 error",
+     "value": "GVL_Bridge.aFollowingError[4]",
+     "min": 0,
+     "max": 6,
+     "unit": "°",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 2,
+       "tone": "warn"
+      },
+      {
+       "from": 5,
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      11,
+      1,
+      1,
+      3
+     ],
+     "title": "J5 error",
+     "value": "GVL_Bridge.aFollowingError[5]",
+     "min": 0,
+     "max": 6,
+     "unit": "°",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 2,
+       "tone": "warn"
+      },
+      {
+       "from": 5,
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "bar",
+     "at": [
+      12,
+      1,
+      1,
+      3
+     ],
+     "title": "J6 error",
+     "value": "GVL_Bridge.aFollowingError[6]",
+     "min": 0,
+     "max": 6,
+     "unit": "°",
+     "bands": [
+      {
+       "from": 0,
+       "tone": "accent"
+      },
+      {
+       "from": 2,
+       "tone": "warn"
+      },
+      {
+       "from": 5,
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "buttons",
+     "at": [
+      1,
+      4,
+      3,
+      3
+     ],
+     "title": "Jog J1-J3 (Manual)",
+     "icon": "manual",
+     "items": [
+      {
+       "label": "J1 -",
+       "variable": "GVL_Hmi.axJogMinus[1]",
+       "action": "tap"
+      },
+      {
+       "label": "J1 +",
+       "variable": "GVL_Hmi.axJogPlus[1]",
+       "action": "tap"
+      },
+      {
+       "label": "J2 -",
+       "variable": "GVL_Hmi.axJogMinus[2]",
+       "action": "tap"
+      },
+      {
+       "label": "J2 +",
+       "variable": "GVL_Hmi.axJogPlus[2]",
+       "action": "tap"
+      },
+      {
+       "label": "J3 -",
+       "variable": "GVL_Hmi.axJogMinus[3]",
+       "action": "tap"
+      },
+      {
+       "label": "J3 +",
+       "variable": "GVL_Hmi.axJogPlus[3]",
+       "action": "tap"
+      }
+     ]
+    },
+    {
+     "type": "buttons",
+     "at": [
+      4,
+      4,
+      3,
+      3
+     ],
+     "title": "Jog J4-J6 (Manual)",
+     "icon": "manual",
+     "items": [
+      {
+       "label": "J4 -",
+       "variable": "GVL_Hmi.axJogMinus[4]",
+       "action": "tap"
+      },
+      {
+       "label": "J4 +",
+       "variable": "GVL_Hmi.axJogPlus[4]",
+       "action": "tap"
+      },
+      {
+       "label": "J5 -",
+       "variable": "GVL_Hmi.axJogMinus[5]",
+       "action": "tap"
+      },
+      {
+       "label": "J5 +",
+       "variable": "GVL_Hmi.axJogPlus[5]",
+       "action": "tap"
+      },
+      {
+       "label": "J6 -",
+       "variable": "GVL_Hmi.axJogMinus[6]",
+       "action": "tap"
+      },
+      {
+       "label": "J6 +",
+       "variable": "GVL_Hmi.axJogPlus[6]",
+       "action": "tap"
+      }
+     ]
+    },
+    {
+     "type": "status",
+     "at": [
+      7,
+      4,
+      3,
+      3
+     ],
+     "title": "Robot",
+     "icon": "info",
+     "items": [
+      {
+       "label": "Jog permitted",
+       "off": "Jog locked",
+       "on": "GVL_HmiView.xJogPermitted",
+       "tone": "accent"
+      },
+      {
+       "label": "Robot moving",
+       "off": "Robot at rest",
+       "on": "GVL_HmiView.xRobotMoving"
+      },
+      {
+       "label": "Vacuum on",
+       "off": "Vacuum off",
+       "on": "GVL_Bridge.xVacuumOn"
+      },
+      {
+       "label": "Following error warning",
+       "on": "GVL_HmiView.axAlarmActive[6]",
+       "tone": "warn"
+      },
+      {
+       "label": "Following error fault",
+       "on": "GVL_HmiView.axAlarmActive[7]",
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "setpoint",
+     "at": [
+      10,
+      4,
+      3,
+      3
+     ],
+     "title": "Speed override",
+     "icon": "speed",
+     "variable": "GVL_Hmi.rOverride",
+     "min": 0.1,
+     "max": 1,
+     "step": 0.1,
+     "decimals": 1
+    },
+    {
+     "type": "value",
+     "at": [
+      1,
+      7,
+      3,
+      2
+     ],
+     "title": "Worst joint",
+     "icon": "machine",
+     "value": "GVL_Bridge.iWorstJoint",
+     "decimals": 0
+    },
+    {
+     "type": "value",
+     "at": [
+      4,
+      7,
+      3,
+      2
+     ],
+     "title": "Vision class (0 box, 1 jar, 2 can)",
+     "icon": "info",
+     "value": "GVL_Bridge.stVision.usiClass",
+     "decimals": 0
+    },
+    {
+     "type": "value",
+     "at": [
+      7,
+      7,
+      3,
+      2
+     ],
+     "title": "Vision confidence",
+     "icon": "info",
+     "value": "GVL_Bridge.stVision.rConfidence",
+     "decimals": 2
+    },
+    {
+     "type": "value",
+     "at": [
+      10,
+      7,
+      3,
+      2
+     ],
+     "title": "Vision position x",
+     "icon": "info",
+     "value": "GVL_Bridge.stVision.lrX",
+     "unit": "mm",
+     "decimals": 1
+    }
+   ]
+  },
+  {
+   "name": "Alarms",
+   "title": "Alarms",
+   "subtitle": "ISA-18.2 priorities: P1 critical, P2 error, P3 warning",
+   "theme": "light",
+   "icon": "alarm",
+   "info": [
+    {
+     "label": "State",
+     "value": "GVL_HmiView.sState"
+    },
+    {
+     "label": "Mode",
+     "value": "GVL_HmiView.sMode"
+    },
+    {
+     "label": "Placed",
+     "value": "GVL_HmiView.uiPlaced",
+     "unit": "parts"
+    },
+    {
+     "label": "Newest alarm",
+     "value": "GVL_HmiView.sNewestAlarm"
+    }
+   ],
+   "accent": "#2F5D8A",
+   "machine": {
+    "states": [
+     {
+      "on": "GVL_HmiView.xAborted",
+      "text": "Aborted",
+      "tone": "alarm",
+      "icon": "fault"
+     },
+     {
+      "on": "GVL_HmiView.xHeld",
+      "text": "Suspended",
+      "tone": "warn",
+      "icon": "pause"
+     },
+     {
+      "on": "GVL_HmiView.xActing",
+      "text": "Changing state",
+      "tone": "warn"
+     },
+     {
+      "on": "GVL_HmiView.xManual",
+      "text": "Manual",
+      "tone": "accent",
+      "icon": "manual"
+     },
+     {
+      "on": "GVL_HmiView.xExecute",
+      "text": "Execute",
+      "tone": "neutral",
+      "icon": "play"
+     },
+     {
+      "on": "GVL_HmiView.xIdle",
+      "text": "Idle",
+      "tone": "neutral"
+     }
+    ],
+    "idle": {
+     "text": "Stopped",
+     "tone": "neutral",
+     "icon": "stop"
+    },
+    "detail": "GVL_HmiView.sPickStep",
+    "start": "GVL_HmiPanel.xStart",
+    "stop": "GVL_HmiPanel.xStop",
+    "reset": "GVL_HmiPanel.xReset",
+    "mode": {
+     "variable": "GVL_HmiPanel.iModeSelect",
+     "options": [
+      "Production",
+      "Maintenance",
+      "Manual"
+     ],
+     "values": [
+      "1",
+      "2",
+      "3"
+     ]
+    }
+   },
+   "size": "1920x1080",
+   "grid": [
+    12,
+    8
+   ],
+   "widgets": [
+    {
+     "type": "status",
+     "at": [
+      1,
+      1,
+      3,
+      5
+     ],
+     "title": "P1 critical",
+     "icon": "alarm",
+     "items": [
+      {
+       "label": "P1 Emergency stop pressed",
+       "on": "GVL_HmiView.axAlarm[1]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Safety door opened in automatic mode",
+       "on": "GVL_HmiView.axAlarm[2]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Connection to the digital twin bridge lost",
+       "on": "GVL_HmiView.axAlarm[3]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Robot axis group error",
+       "on": "GVL_HmiView.axAlarm[4]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Joint following error above fault limit",
+       "on": "GVL_HmiView.axAlarm[7]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P1 Joint feedback not updated",
+       "on": "GVL_HmiView.axAlarm[8]",
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "status",
+     "at": [
+      4,
+      1,
+      3,
+      5
+     ],
+     "title": "P2 error",
+     "icon": "alarm",
+     "items": [
+      {
+       "label": "P2 Conveyor axis error",
+       "on": "GVL_HmiView.axAlarm[5]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P2 Vacuum not reached - part not gripped",
+       "on": "GVL_HmiView.axAlarm[9]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P2 Vacuum lost while carrying a part",
+       "on": "GVL_HmiView.axAlarm[10]",
+       "tone": "alarm"
+      },
+      {
+       "label": "P2 Part queue full",
+       "on": "GVL_HmiView.axAlarm[16]",
+       "tone": "alarm"
+      }
+     ]
+    },
+    {
+     "type": "status",
+     "at": [
+      7,
+      1,
+      3,
+      5
+     ],
+     "title": "P3 warning",
+     "icon": "warning",
+     "items": [
+      {
+       "label": "P3 Joint following error above warning limit",
+       "on": "GVL_HmiView.axAlarm[6]",
+       "tone": "warn"
+      },
+      {
+       "label": "P3 Part left the pick window unpicked",
+       "on": "GVL_HmiView.axAlarm[11]",
+       "tone": "warn"
+      },
+      {
+       "label": "P3 A bin is full - cell suspended until it is emptied",
+       "on": "GVL_HmiView.axAlarm[12]",
+       "tone": "warn"
+      },
+      {
+       "label": "P3 No vision result for a captured part",
+       "on": "GVL_HmiView.axAlarm[13]",
+       "tone": "warn"
+      },
+      {
+       "label": "P3 AI decision late - fallback rule used",
+       "on": "GVL_HmiView.axAlarm[14]",
+       "tone": "warn"
+      },
+      {
+       "label": "P3 Low detection confidence - part quarantined",
+       "on": "GVL_HmiView.axAlarm[15]",
+       "tone": "warn"
+      }
+     ]
+    },
+    {
+     "type": "value",
+     "at": [
+      1,
+      6,
+      9,
+      3
+     ],
+     "title": "Newest alarm",
+     "icon": "alarm",
+     "value": "GVL_HmiView.sNewestAlarm"
+    },
+    {
+     "type": "buttons",
+     "at": [
+      10,
+      1,
+      3,
+      3
+     ],
+     "title": "Alarm handling",
+     "items": [
+      {
+       "label": "Acknowledge all",
+       "variable": "GVL_HmiPanel.xAckAll",
+       "action": "tap",
+       "icon": "check"
+      },
+      {
+       "label": "Clear",
+       "variable": "GVL_HmiPanel.xClear",
+       "action": "tap",
+       "icon": "reset"
+      },
+      {
+       "label": "Abort",
+       "variable": "GVL_HmiPanel.xAbort",
+       "action": "tap",
+       "icon": "stop"
+      }
+     ]
+    },
+    {
+     "type": "status",
+     "at": [
+      10,
+      4,
+      3,
+      5
+     ],
+     "title": "Conditions present",
+     "icon": "warning",
+     "items": [
+      {
+       "label": "E-stop pressed",
+       "on": "GVL_HmiView.axAlarmActive[1]",
+       "tone": "alarm"
+      },
+      {
+       "label": "Door open",
+       "on": "GVL_HmiView.axAlarmActive[2]",
+       "tone": "alarm"
+      },
+      {
+       "label": "Bridge lost",
+       "on": "GVL_HmiView.axAlarmActive[3]",
+       "tone": "alarm"
+      },
+      {
+       "label": "Axis group error",
+       "on": "GVL_HmiView.axAlarmActive[4]",
+       "tone": "alarm"
+      },
+      {
+       "label": "Following error fault",
+       "on": "GVL_HmiView.axAlarmActive[7]",
+       "tone": "alarm"
+      },
+      {
+       "label": "Feedback stale",
+       "on": "GVL_HmiView.axAlarmActive[8]",
+       "tone": "alarm"
+      },
+      {
+       "label": "Vacuum lost",
+       "on": "GVL_HmiView.axAlarmActive[10]",
+       "tone": "alarm"
+      },
+      {
+       "label": "Bin full",
+       "on": "GVL_HmiView.axAlarmActive[12]",
+       "tone": "warn"
+      }
+     ]
+    }
+   ]
   }
+ ],
+ "symbols": {
+  "robot6": {
+   "svg": "<rect x=\"22\" y=\"84\" width=\"36\" height=\"10\" rx=\"2\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><rect x=\"32\" y=\"70\" width=\"16\" height=\"14\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><circle cx=\"40\" cy=\"66\" r=\"8\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><polygon points=\"35,62 45,70 66,32 56,26\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><circle cx=\"61\" cy=\"29\" r=\"7\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><polygon points=\"60,23 62,35 86,38 86,26\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><circle cx=\"86\" cy=\"32\" r=\"5\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><line x1=\"86\" y1=\"37\" x2=\"86\" y2=\"50\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M79 50 L93 50 L90 56 L82 56 Z\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/>",
+   "viewBox": [
+    100,
+    100
+   ],
+   "ports": {},
+   "description": "6-axis articulated robot arm with suction tool, side view"
+  },
+  "camera": {
+   "svg": "<rect x=\"22\" y=\"20\" width=\"46\" height=\"30\" rx=\"4\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><rect x=\"68\" y=\"27\" width=\"10\" height=\"16\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M36 50 L54 50 L58 60 L32 60 Z\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M32 60 L18 90 M58 60 L72 90\" stroke=\"var(--line)\" stroke-width=\"1\" stroke-dasharray=\"3 3\" fill=\"none\" vector-effect=\"non-scaling-stroke\"/><line x1=\"10\" y1=\"90\" x2=\"90\" y2=\"90\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/>",
+   "viewBox": [
+    100,
+    100
+   ],
+   "ports": {},
+   "description": "Industrial camera looking down, with photo-eye beam"
+  },
+  "gripper": {
+   "svg": "<rect x=\"38\" y=\"10\" width=\"24\" height=\"14\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><rect x=\"45\" y=\"24\" width=\"10\" height=\"34\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M30 76 L40 58 L60 58 L70 76 Z\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M62 17 L82 17 L82 40\" fill=\"none\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><rect x=\"26\" y=\"80\" width=\"48\" height=\"10\" fill=\"var(--body2)\" stroke=\"var(--line)\" stroke-width=\"1\" stroke-dasharray=\"3 2\" vector-effect=\"non-scaling-stroke\"/>",
+   "viewBox": [
+    100,
+    100
+   ],
+   "ports": {},
+   "description": "Vacuum suction gripper with cup"
+  },
+  "bin": {
+   "svg": "<path d=\"M14 30 L86 30 L78 88 L22 88 Z\" fill=\"var(--state)\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><line x1=\"10\" y1=\"30\" x2=\"90\" y2=\"30\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><path d=\"M50 6 L50 22 M43 15 L50 22 L57 15\" fill=\"none\" stroke=\"var(--line)\" stroke-width=\"2\" vector-effect=\"non-scaling-stroke\"/><line x1=\"24\" y1=\"74\" x2=\"76\" y2=\"74\" stroke=\"var(--line)\" stroke-width=\"1\" stroke-dasharray=\"4 3\" vector-effect=\"non-scaling-stroke\"/>",
+   "viewBox": [
+    100,
+    100
+   ],
+   "ports": {},
+   "description": "Open output bin (tote) for sorted parts"
+  }
+ }
 }

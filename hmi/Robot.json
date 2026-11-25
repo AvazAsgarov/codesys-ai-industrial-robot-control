@@ -363,50 +363,32 @@
     {
      "label": "J1 -",
      "variable": "GVL_Hmi.axJogMinus[1]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J1 +",
      "variable": "GVL_Hmi.axJogPlus[1]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J2 -",
      "variable": "GVL_Hmi.axJogMinus[2]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J2 +",
      "variable": "GVL_Hmi.axJogPlus[2]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J3 -",
      "variable": "GVL_Hmi.axJogMinus[3]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J3 +",
      "variable": "GVL_Hmi.axJogPlus[3]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     }
    ]
   },
@@ -424,50 +406,32 @@
     {
      "label": "J4 -",
      "variable": "GVL_Hmi.axJogMinus[4]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J4 +",
      "variable": "GVL_Hmi.axJogPlus[4]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J5 -",
      "variable": "GVL_Hmi.axJogMinus[5]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J5 +",
      "variable": "GVL_Hmi.axJogPlus[5]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J6 -",
      "variable": "GVL_Hmi.axJogMinus[6]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     },
     {
      "label": "J6 +",
      "variable": "GVL_Hmi.axJogPlus[6]",
-     "mode": "tap",
-     "access": {
-      "min": "Maintenance"
-     }
+     "mode": "tap"
     }
    ]
   },
@@ -524,10 +488,7 @@
    "min": 0.1,
    "max": 1.0,
    "step": 0.1,
-   "decimals": 1,
-   "access": {
-    "min": "Maintenance"
-   }
+   "decimals": 1
   },
   {
    "type": "value",

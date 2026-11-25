@@ -234,18 +234,12 @@
     {
      "label": "Clear",
      "variable": "GVL_HmiPanel.xClear",
-     "icon": "reset",
-     "access": {
-      "min": "Maintenance"
-     }
+     "icon": "reset"
     },
     {
      "label": "Abort",
      "variable": "GVL_HmiPanel.xAbort",
-     "icon": "stop",
-     "access": {
-      "min": "Maintenance"
-     }
+     "icon": "stop"
     }
    ]
   },

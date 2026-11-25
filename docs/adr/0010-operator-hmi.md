@@ -28,9 +28,13 @@ Text that the simulation tests can reach, not in element properties of the visua
   `axAlarmActive[]`. `FB_AlarmHandler` stays the single alarm source; acknowledge goes through the
   panel. The tool's rows on CODESYS alarm management were tried and dropped: their generated code
   does not build on SP22 Patch 4 (`__Alm__GVL.g_inst` is not generated).
-- **Access rights use the visualization's user groups** (Operator, Maintenance, Admin):
-  Clear, Abort, jog and the speed override need Maintenance. This replaces the PIN login in ST
-  that the Phase 5 plan proposed.
+- **The PLC protects the machine, not the screen.** Mode changes are accepted only in Stopped,
+  Idle or Aborted; jog acts only in Manual mode and Execute; Clear only leaves Aborted once the
+  condition is gone; Abort must be reachable by everyone. The screens can gate Clear, Abort, jog
+  and the speed override to the visualization's Maintenance user group (`GATE_BY_ROLE` in
+  `hmi/build_screens.py`), but that needs user accounts in the Visualization Manager; the demo
+  build has none, so the gates are off (since Phase 6). This replaces the PIN login in ST that
+  the Phase 5 plan proposed.
 
 ## Consequences
 

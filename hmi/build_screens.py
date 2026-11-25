@@ -36,7 +36,11 @@ SEVERITY = {"critical": "alarm", "error": "alarm", "warning": "warning"}  # the 
 BINS = ["Type A", "Type B", "Type C", "Rework", "Scrap", "Quarantine"]
 BIN_CAPACITY = 30
 JOINT_RANGE = (180, 180, 180, 360, 180, 360)  # bar scale per joint [deg]: wrist axes turn further
-MAINT = {"min": "Maintenance"}
+# Role gating (CODESYS user groups) needs visualization user accounts; the demo build has none,
+# so the machine is protected by the PLC instead (ADR 0010). True gates Clear, Abort, jog and
+# override to the Maintenance group.
+GATE_BY_ROLE = False
+MAINT: dict[str, object] = {"access": {"min": "Maintenance"}} if GATE_BY_ROLE else {}
 
 TONE = {"critical": "alarm", "error": "alarm", "warning": "warn"}
 
@@ -243,7 +247,7 @@ overview = page(
                     "label": "Clear",
                     "variable": "GVL_HmiPanel.xClear",
                     "icon": "reset",
-                    "access": MAINT,
+                    **MAINT,
                 },
             ],
         },
@@ -301,13 +305,13 @@ robot = page(
                             "label": f"J{j} -",
                             "variable": f"GVL_Hmi.axJogMinus[{j}]",
                             "mode": "tap",
-                            "access": MAINT,
+                            **MAINT,
                         },
                         {
                             "label": f"J{j} +",
                             "variable": f"GVL_Hmi.axJogPlus[{j}]",
                             "mode": "tap",
-                            "access": MAINT,
+                            **MAINT,
                         },
                     )
                 ],
@@ -353,7 +357,7 @@ robot = page(
             "max": 1.0,
             "step": 0.1,
             "decimals": 1,
-            "access": MAINT,
+            **MAINT,
         },
         {
             "type": "value",
@@ -436,13 +440,13 @@ alarms = page(
                     "label": "Clear",
                     "variable": "GVL_HmiPanel.xClear",
                     "icon": "reset",
-                    "access": MAINT,
+                    **MAINT,
                 },
                 {
                     "label": "Abort",
                     "variable": "GVL_HmiPanel.xAbort",
                     "icon": "stop",
-                    "access": MAINT,
+                    **MAINT,
                 },
             ],
         },
