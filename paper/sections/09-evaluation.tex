@@ -1,5 +1,157 @@
 \section{Evaluation}\label{sec:evaluation}
-% TODO(P6): setup, KPIs, results tables/figures generated from experiments/results/.
-% TODO(P6): ablation rule-based vs. YOLO+THX-02; fault-injection results; limitations.
 
-Placeholder: this section will be written in a later phase.
+The evaluation has three parts: unit tests of the PLC application in CODESYS's own simulation,
+end-to-end runs of the soft-PLC with the twin, and a benchmark of the vision pipeline on rendered
+frames. All runs used one laptop (Intel Core Ultra 7 255U, 16\,GB RAM, no discrete GPU) and the
+default process parameters, which equal the \emph{Standard} recipe (belt 100\,mm/s).
+
+\subsection{PLC Tests in Simulation}
+
+Each test case is a JSON file of steps run by a script against the CODESYS simulation, which
+uses the real compiler and SoftMotion libraries: write variables, wait a number of cycles or
+milliseconds, and compare variables with expected values. Test programs (\texttt{PRG\_Test*})
+inject parts, vision and decision messages, vacuum signals and faults where a block is tested
+without the twin. Time-based cases wait in real time; because the simulation slows down under CPU
+load, the waits have margin and the expectations check steady states. Table~\ref{tab:plctests}
+lists the 78 cases in 12 files. All of them pass on the final build: a full run of the
+77 cases, then, after the review fixes to the operator panel, a second run of the two affected
+files (\texttt{hmi} 7/7 with one new case, \texttt{cell} 9/9).
+
+\begin{table}[t]
+\caption{PLC Test Cases Run in the CODESYS Simulation}
+\label{tab:plctests}
+\centering
+\footnotesize
+\begin{tabular}{@{}lrp{5.0cm}@{}}
+\toprule
+File & Cases & What is checked \\
+\midrule
+\texttt{types} & 1 & configuration defaults \\
+\texttt{motion\_smoke} & 1 & one SoftMotion PTP move \\
+\texttt{packml} & 8 & transitions, abort from any state, hold, suspend, mode-change rules, invalid commands \\
+\texttt{alarms} & 7 & latching, acknowledgement, classes, one-shot events \\
+\texttt{equipment} & 6 & photo-eye, vacuum no-grip and loss, bin, E-stop latch, door in Manual \\
+\texttt{motion} & 8 & conveyor, PTP and linear moves, override, stop, group reset \\
+\texttt{joint\_monitor} & 10 & thresholds, stale feedback, delayed and torn samples, blocked joint \\
+\texttt{tracking} & 12 & message intake, bin routing, duplicates, deadline fallback, missed part, queue overflow, rule without decision layer \\
+\texttt{pick} & 7 & tracked pick, height per class, window end, vacuum loss, abort, unidentified part \\
+\texttt{cell} & 9 & production cycle, stop, E-stop in transfer with recovery, door, bin full, suspend, vacuum loss, bridge loss, jog \\
+\texttt{recipes} & 2 & apply \emph{HighSpeed}, restore \emph{Standard} \\
+\texttt{hmi} & 7 & panel commands, mode selector (refused outside Stopped, Idle, Aborted), recovery from the panel, view data \\
+\midrule
+Total & 78 & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{End-to-End Runs on the Soft-PLC}
+
+For the end-to-end runs the application was downloaded to CODESYS Control Win V3 x64 (4\,ms
+\texttt{MainTask}) and connected to the twin over OPC UA. Production was started with Reset and
+Start, from the HMI in the 20-minute run and through OPC UA in the automated tests. The bridge
+reports, per run, the parts spawned or captured, the parts placed in each bin, parts placed in a
+bin other than the one matching their true class (\emph{wrong}), parts that ran off the end of
+the belt unpicked (\emph{missed}), parts that fell anywhere else (\emph{lost}), and the longest gap
+between two bridge cycles, which must stay below the PLC's 500\,ms bridge watchdog.
+Table~\ref{tab:e2e} summarises the production runs. In all of them the decision layer was off and
+the PLC sorted by class.
+
+\begin{table}[t]
+\caption{End-to-End Production Runs (Soft-PLC, Twin, 20\,ms Bridge)}
+\label{tab:e2e}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & Sorting test & Recorded & Live \\
+\midrule
+Vision & ground truth & YOLOE & YOLOE \\
+Duration & 300\,s & 6\,min & 20\,min \\
+Spawned / captured & 30 / -- & -- / 34 & -- / 87 \\
+Placed in class bins & 29 & 28 & 78 (30/23/25) \\
+Wrong bin / missed / lost & 0 / -- / 0 & 0 / 0 / 0 & 0 / 0 / 0 \\
+Longest cycle gap & 39\,ms & 199\,ms & 256\,ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+The runs end on a timer, so the parts captured but not placed (1, 6 and 9) were still on the
+belt or on their way to a bin at the end: the run reports count a part that leaves the belt
+unpicked as missed and one that falls elsewhere as lost, and both counts are zero. In the live run
+bin A reached its capacity of 30 near the end and the cell suspended, as designed.
+
+In the 20-minute live run the camera and YOLOE answered every capture. Of the 87 captured
+parts, 78 were placed in the bins of their classes (30, 23 and 25 parts); no part was placed in a
+wrong bin, missed or lost. The bridge cycle (20\,ms period) took 8.1\,ms on average and 13.0\,ms
+at the 95th percentile, and the longest gap between two cycles was 256\,ms, about half of the
+watchdog time. The longest gaps grew from 39\,ms with the ground-truth stand-in to
+199--256\,ms when the camera rendering and the detector ran in the same process as the bridge;
+the vision load therefore appears to set the timing margin of the link on this laptop, although
+the runs do not isolate the cause.
+
+\emph{Fault injection.} A second automated test runs the fault scenario of
+Section~\ref{sec:twin} on the soft-PLC: an E-stop at 60\,s, a full Type~A bin at 120\,s, a lost
+bridge (heartbeat stopped for 1\,s) at 180\,s and an opened door at 240\,s, with ground-truth
+vision. Each fault was detected: the E-stop, the lost bridge and the door aborted the cell, and
+the full bin suspended it. After the lost bridge, the newest alarm reported by the PLC was the
+following-error fault of the frozen twin rather than \emph{BridgeLost}, since both trip within
+the same watchdog time. After each abort the operator sequence (Clear, Reset, Start, played by
+the test through OPC UA) brought the cell back to Execute, and the suspended cell resumed by
+itself when the injected bin fault ended after 15\,s. No part was lost; a part held during an abort was
+placed in Quarantine on restart, as designed. The fault test also found a real defect during
+development: after a SoftMotion lag error, Clearing could hang because the group reset reported
+``no error to reset''; \texttt{FB\_Robot} now handles this case (Section~\ref{sec:plc}).
+
+\subsection{Vision Benchmark}
+
+The vision pipeline was scored on 500 frames rendered from the twin with 1--3 parts each near
+PE1 (951 parts: 284 boxes, 358 jars, 309 cans), random yaw, seeded lighting, noise and blur
+(Table~\ref{tab:vision}). Ground truth (classes, masks, belt poses) is exact. A detection
+matches a part when the class agrees and the box IoU is at least 0.5; position errors are
+measured on the belt plane at a confidence of at least 0.25, and latency is the detector call
+alone on the CPU (OpenVINO FP32). Prompt wording and camera tilt were tuned on another seed (300);
+the test seed (301) was run once.
+
+\begin{table}[t]
+\caption{Vision Benchmark, Seed 301, 500 Frames, 951 Parts}
+\label{tab:vision}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Detector & mAP & AP box/jar/can & Pos.\ error & Lat.\ p50 \\
+ & @0.5 & & mean/p95 [mm] & [ms] \\
+\midrule
+YOLOE, visual prompt & \textbf{0.997} & 1.000/0.997/0.993 & 2.0/3.1 & 166 \\
+YOLOE, text prompt & 0.138 & 0.331/0.083/0.000 & 2.2/4.2 & 166 \\
+YOLOE, text, 90\,° turn & 0.566 & 0.419/0.554/0.725 & 2.1/2.8 & 176 \\
+YOLO26, COCO & 0.058 & 0.000/0.174/0.000 & 2.0/2.5 & 176 \\
+Oracle masks & 1.000 & 1/1/1 & 1.8/3.2 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+With visual prompts the detector reaches 0.997 mAP@0.5 without any training, against a design
+threshold of 0.80 below which the part set or the detector would have had to change. Text
+prompts fail on these products seen from above (0.138); turning the image by 90\,° so that the
+upright parts appear upright raises them to 0.566, and YOLO26 has no COCO class for a box or a
+can (0.058). The position error is dominated by geometry, not by the detector: even the true
+masks give 1.8\,mm, because the centroid of a tilted view is not the centroid of the footprint.
+This is small compared with the suction cup radius of 20\,mm. The box orientation error is
+1.0\,° at the 95th percentile, but about 3\,\% of the nearly square boxes are reported 90\,° off;
+the suction cup does not need the orientation to pick. The p50 latency of 166\,ms is decoupled
+from the bridge cycle by the vision worker (Section~\ref{sec:perception}).
+
+\subsection{Limitations}
+
+All results come from simulation. The images are renders of the twin, and the visual prompts are
+built from renders of the same twin, so the benchmark shows that the pipeline works without
+training, not that it transfers to real camera images. The soft-PLC runs on Windows without
+hard real-time guarantees and under a demonstration licence that stops it after about two hours;
+the safety logic is modelled, not certified; the OPC UA link is unauthenticated and limited to
+the local host. The end-to-end figures come from single runs with one seed each, so no
+confidence intervals are given, and only the \emph{Standard} recipe was run end to end. The
+decision layer was not exercised in the cell, and the twin does not yet produce defective parts,
+so quality sorting and the planned comparison of the rule baseline with the decision layer
+remain open.

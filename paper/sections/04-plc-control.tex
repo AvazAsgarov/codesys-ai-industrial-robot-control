@@ -1,6 +1,166 @@
 \section{PLC Control}\label{sec:plc}
-% TODO(P1): task configuration, OOP program organisation, PackML states and modes \cite{ISA-TR88.00.02}.
-% TODO(P1): SoftMotion axis group, 6-DOF kinematics, conveyor tracking.
-% TODO(P1): alarms, interlocks, joint supervision.
 
-Placeholder: this section will be written in a later phase~\cite{ISA-TR88.00.02}.
+The control application is written in IEC~61131-3 Structured Text~\cite{IEC61131-3} in
+CODESYS~V3.5 SP22 Patch~4 with SoftMotion~4.20 and runs on CODESYS Control Win V3 x64. The
+project file is binary, so every program organisation unit (POU), data type and global variable
+list is also exported as a text file (\texttt{plc/src/}) for review and version control.
+
+\subsection{Tasks and Program Organisation}
+
+All cell logic runs in one cyclic task, \texttt{MainTask} (4\,ms, priority~1), which is also the
+SoftMotion bus cycle task. A planned split into a 2\,ms motion task and a 10\,ms logic task was
+dropped: commanding the axis group from a second task would need cross-task synchronisation for
+no gain on a soft-PLC. The robotics path planner runs in the freewheeling
+\texttt{SoftMotion\_PlanningTask} (priority~15), and a 50\,ms \texttt{CommTask} is reserved for
+communication housekeeping.
+
+The application is organised in folders by responsibility: \emph{Types} (enumerations and
+structures, e.g.\ \texttt{E\_PackMLState}, \texttt{ST\_PartRecord}), \emph{Interfaces},
+\emph{Framework} (state machine, alarm handler, part queue), \emph{Equipment} (one function block
+per physical module), \emph{Process} (cell logic), \emph{Comm}, \emph{Hmi} and \emph{Programs}. It
+uses the object-oriented extensions of IEC~61131-3: equipment blocks implement the interface
+\texttt{I\_Equipment} (methods \texttt{Reset}, properties \texttt{HasError} and
+\texttt{ErrorId}), and every block that can raise an alarm receives an \texttt{I\_AlarmSink}
+reference instead of a global alarm list. Programs are thin: \texttt{PRG\_Main} only maps the
+\texttt{GVL\_Bridge} and \texttt{GVL\_Hmi} variables to one instance of \texttt{FB\_SortingCell},
+the PackML unit that owns all equipment. Operator commands are written asynchronously (HMI or
+OPC UA); \texttt{PRG\_Main} reads them once per cycle into a snapshot and clears a command only
+if it still holds that value, so a command written during a cycle is not lost. Without tests and
+generated code the application has 18 function blocks and about 2600 lines of Structured Text,
+comments included.
+
+\subsection{PackML State Machine and Modes}
+
+\texttt{FB\_PackMLStateMachine} implements the 17 states of ISA-TR88.00.02~\cite{ISA-TR88.00.02}
+and three unit modes: Production, Maintenance (reduced speed) and Manual (joint jogging). A
+command acts once, in the cycle in which it changes to a new value. Abort has priority over
+Stop, and Stop over all other transitions; an abort condition only enters Aborting, so a
+condition that is still present (an E-stop held down) cannot prevent Aborting from completing.
+Acting states end when the unit reports \texttt{xStateComplete}; Execute ends only on a command
+or a request. Mode changes are accepted only in Stopped, Idle and Aborted, where no motion is
+commanded.
+
+\texttt{FB\_SortingCell} maps every state to equipment actions and defines when the acting state
+is complete (Table~\ref{tab:packml}). Three requests come from conditions rather than operators:
+a Critical alarm or an unsafe condition requests Abort, an Error alarm requests Stop, and a full
+bin requests Suspend. A suspension caused by a full bin ends by itself when the bin is emptied; an
+operator's Suspend waits for the Unsuspend command. Resetting and Clearing are not interrupted by
+the alarms they are clearing.
+
+\begin{table}[t]
+\caption{PackML State Actions in \texttt{FB\_SortingCell}}
+\label{tab:packml}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{1.8cm}p{3.1cm}p{2.6cm}@{}}
+\toprule
+State & Equipment action & Complete when \\
+\midrule
+Resetting & acknowledge alarms; reset robot, gripper, conveyor; forget tracked parts & safe, robot ready, no Critical or Error alarm \\
+Starting, Unholding, Unsuspending & robot home $\rightarrow$ ready pose; conveyor to speed & sequence waits for parts, belt at speed \\
+Execute & pick sequence runs (Manual: jogging) & --- (producing state) \\
+Stopping, Holding, Suspending, Completing & finish the current part, go home & sequence resting, robot and belt still \\
+Aborting & controlled group stop, conveyor halt, vacuum kept & robot still, sequence aborted \\
+Clearing & reset sequence and equipment & safe, no Critical alarm \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Motion Control and Conveyor Tracking}
+
+The arm is a generic 6-axis robot with a spherical wrist, modelled as a SoftMotion axis group
+(\texttt{AxisGroup\_Robot}) with six virtual drives and the built-in articulated kinematics
+\texttt{Kin\_ArticulatedRobot\_6DOF}; the conveyor is a seventh virtual axis in millimetres. The
+kinematic parameters are $a_1 = 50$, $d_1 = 400$, $a_2 = 450$, $a_3 = 50$, $d_4 = 450$ and
+$d_6 = 120$\,mm (flange plus suction tool). No inverse kinematics is written by hand.
+
+\texttt{FB\_Robot} wraps the axis group behind a PLCopen-style command interface: a command
+(PTP in joint or machine coordinates, linear in machine coordinates or in the conveyor frame
+\texttt{PCS\_1}, stop, reset) starts on a rising edge of \texttt{xExecute} and ends with
+\texttt{xDone} or \texttt{xError}. A group reset that answers ``no error to reset'' counts as
+successful, a library behaviour that the fault tests exposed.
+
+\texttt{FB\_PickSequence} is the pick-and-place cycle: \emph{MoveHome} (PTP) $\rightarrow$
+\emph{MoveReady} $\rightarrow$ \emph{WaitPart} $\rightarrow$ \emph{StartTracking}
+(\texttt{MC\_TrackConveyorBelt}; \texttt{PCS\_1} follows the part) $\rightarrow$
+\emph{Approach} $\rightarrow$ \emph{Descend} $\rightarrow$ \emph{Grip} $\rightarrow$
+\emph{Lift} $\rightarrow$ \emph{MoveToBin} (PTP) $\rightarrow$ \emph{Release} $\rightarrow$
+\emph{Retract}. Linear moves are used only for the short tracked moves; the long transfers are
+point-to-point, which avoids wrist and base singularities on Cartesian paths across the cell. In
+\emph{WaitPart} the sequence chooses the decided part furthest downstream inside the pick window,
+which starts at photo-eye PE2 (1050\,mm in the belt frame) and ends at 1750\,mm, with a 300\,mm
+margin before the end in which no new pick is started. Approach, grip and lift heights follow the
+part's class. If the part passes the window end before it is gripped, the pick is abandoned and
+the part is counted as missed.
+
+Every error in the sequence (tracking, motion, vacuum) first stops the robot and then rests in
+an error step. The valve stays on after an abort or a lost part, so nothing is released outside a
+bin. After the next reset, a part still on the cup goes to Quarantine, because its history is
+unknown: the arm lifts vertically, passes the ready pose and then moves to the bin.
+
+\subsection{Part Tracking and Bin Selection}
+
+\texttt{FB\_PartTracker} follows every part from the capture at PE1 until it is placed, missed or
+dropped, in a queue of 32 records. A record passes through the states Captured, Identified,
+Decided, Scheduled and Picked. Its current belt position is computed from the vision pose and the
+conveyor travel since the capture, $x(t) = x_\text{cap} + p_\text{belt}(t) - p_\text{belt,cap}$.
+Vision and decision messages are applied only to known part ids in the expected state, each
+message once. A part without a valid vision result is never picked: it has no known class or
+height, so it runs to the end of the belt and is counted as missed.
+
+The bin is selected by \texttt{F\_SelectBin}: (1)~no valid vision result, a detection confidence
+below the recipe threshold (0.6) or an AI answer that the identification is unreliable
+$\rightarrow$ Quarantine; (2)~quality Scrap or Rework $\rightarrow$ that bin; (3)~otherwise the
+type bin of the detected class. When a decision service is active
+(\texttt{GVL\_Bridge.xDecisionActive}), the tracker waits for its answer until the recipe deadline
+(2.5\,s after capture) and then decides by the rule alone with a \emph{DecisionFallback} warning.
+Without a decision service the rule decides a part as soon as vision has identified it.
+
+\subsection{Alarms, Interlocks and Supervision}
+
+\texttt{FB\_AlarmHandler} keeps a latching alarm list in the style of ISA-18.2~\cite{ISA-18.2}:
+an alarm leaves the list only when its condition has gone \emph{and} it has been acknowledged.
+Sixteen alarms are defined in three classes (Table~\ref{tab:alarms}); the class decides the
+PackML reaction. Four process alarms are one-shot events: they are shown until acknowledged but
+are never active, so they cannot block a reset.
+
+\begin{table}[t]
+\caption{Alarm Classes and PackML Reaction}
+\label{tab:alarms}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{1.2cm}p{4.9cm}p{1.2cm}@{}}
+\toprule
+Class & Alarms & Reaction \\
+\midrule
+Critical & EStop, DoorOpen, BridgeLost, AxisGroupError, FollowingErrorFault, FeedbackStale & Abort \\
+Error & ConveyorError, VacuumNoGrip, VacuumLost, QueueOverflow & Stop \\
+Warning & FollowingErrorWarn, BinFull, PartMissed$^{*}$, VisionMissing$^{*}$, DecisionFallback$^{*}$, LowConfidence$^{*}$ & none (BinFull: Suspend) \\
+\bottomrule
+\multicolumn{3}{@{}l}{\scriptsize $^{*}$One-shot event, never active.}
+\end{tabular}
+\end{table}
+
+\texttt{FB\_SafetyMonitor} models the safety logic; it is not certified functional safety. An
+E-stop latches until it is released and the unit passes Resetting or Clearing. An open door is
+unsafe in Production and Maintenance; in Manual it is allowed at reduced speed (25\,\%, the same
+factor used in Maintenance). An unsafe condition requests Abort in every state; in addition,
+the conveyor runs and jogging is enabled only while the monitor reports the cell safe.
+
+\texttt{FB\_JointMonitor} is the PLC's arm-position sensor layer. It compares each measured
+joint position from the twin with the setpoint it answers: the PLC keeps the last 128 setpoint
+samples (512\,ms), and the bridge returns, with each feedback sample, the number of the setpoint
+sample it belongs to. Transport delay through OPC UA and the twin is therefore not counted as
+following error, while a blocked joint still is. The thresholds are 2\,° (warning) and 5\,°
+(fault), and an error must persist for three cycles (12\,ms), because an OPC UA write is not
+handed to the task atomically and a single torn sample must not abort the cell. Feedback that
+stops updating for 500\,ms raises \emph{FeedbackStale}. \texttt{FB\_BridgeWatchdog} supervises
+the heartbeat with the same 500\,ms timeout.
+
+\subsection{Recipes}
+
+Process parameters (belt speed, approach height, pick depth, path dynamics, confidence
+threshold, decision deadline, vacuum timeout and supervision limits) are retained variables
+written by two generated recipes: \emph{Standard} (belt 100\,mm/s, linear path 500\,mm/s) and
+\emph{HighSpeed} (200\,mm/s, 800\,mm/s). All runs reported in Section~\ref{sec:evaluation} use
+\emph{Standard}.
